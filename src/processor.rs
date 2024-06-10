@@ -6,7 +6,7 @@ use solana_program::{
     account_info::{next_account_info, AccountInfo},
     entrypoint::ProgramResult,
     msg,
-    program::{invoke, invoke_signed},
+    program::invoke_signed,
     program_pack::Pack,
     pubkey::Pubkey,
     rent::Rent,
@@ -38,6 +38,7 @@ pub fn initialize_mint_token(
     let system_program = next_account_info(accounts)?;
     let token_program = next_account_info(accounts)?;
 
+    let payer = next_account_info(accounts)?;
     let token_mint = next_account_info(accounts)?;
     let mint_authority = next_account_info(accounts)?;
 
@@ -47,51 +48,68 @@ pub fn initialize_mint_token(
     msg!("account gotten");
 
     let seeds = &[
-        mint_authority.key.as_ref(),
         payload.name.as_bytes().as_ref(),
         payload.ticker.as_bytes().as_ref(),
         payload.uri.as_bytes().as_ref(),
+        payer.key.as_ref(),
     ];
 
     let (token_mint_pda, token_mint_bump) = Pubkey::find_program_address(seeds, program_id);
+    let (mint_authority_pda, mint_authority_bump) =
+        Pubkey::find_program_address(&[b"mint_authority", payer.key.as_ref()], program_id);
 
     if token_mint_pda != token_mint.key.clone() {
-        msg!("incorrect token mint account");
+        msg!(
+            "incorrect token mint account expected={}, got={}",
+            token_mint_pda.to_string(),
+            token_mint.key.to_string()
+        );
         return Err(TokenMintError::IncorrectTokenMintAccount.into());
+    }
+
+    if mint_authority_pda != mint_authority.key.clone() {
+        msg!(
+            "incorrect mint authority expected={}, got={}",
+            mint_authority_pda.to_string(),
+            mint_authority.key.to_string()
+        );
+        return Err(TokenMintError::IncorrectMintAuthority.into());
     }
 
     let rent = Rent::from_account_info(sysvar_rent)?;
     let rent_lamports = rent.minimum_balance(Mint::LEN);
 
-    msg!("creating mint account");
-
-    let signer_seeds: &[&[&[u8]]] = &[&[
-        mint_authority.key.as_ref(),
+    let token_mint_signer_seeds: &[&[u8]] = &[
         payload.name.as_bytes().as_ref(),
         payload.ticker.as_bytes().as_ref(),
         payload.uri.as_bytes().as_ref(),
+        payer.key.as_ref(),
         &[token_mint_bump],
-    ]];
+    ];
 
+    let mint_authority_signer_seeds: &[&[u8]] = &[
+        b"mint_authority",
+        payer.key.as_ref(),
+        &[mint_authority_bump],
+    ];
+
+    let signers_seeds: &[&[&[u8]]] = &[token_mint_signer_seeds, mint_authority_signer_seeds];
+
+    msg!("creating mint account...");
     // Create the mint account
     invoke_signed(
         &create_account(
-            mint_authority.key,
+            payer.key,
             token_mint.key,
             rent_lamports,
             Mint::LEN.try_into().unwrap(),
             token_program.key,
         ),
-        &[
-            mint_authority.clone(),
-            token_mint.clone(),
-            system_program.clone(),
-        ],
-        &signer_seeds,
+        &[payer.clone(), token_mint.clone(), system_program.clone()],
+        &signers_seeds,
     )?;
 
-    msg!("creating mint initialize");
-
+    msg!("creating mint initialize...");
     // Initialize the mint account
     invoke_signed(
         &initialize_mint(
@@ -106,18 +124,18 @@ pub fn initialize_mint_token(
             sysvar_rent.clone(),
             mint_authority.clone(),
         ],
-        signer_seeds,
+        signers_seeds,
     )?;
     msg!("initialized token mint={}", token_mint_pda.to_string());
 
     // Create metadata
-
+    msg!("creating metadata...");
     let create_metadata_ix = CreateV1Builder::new()
         .metadata(metadata_pda.key.clone())
         .master_edition(Some(master_edition.key.clone()))
         .mint(token_mint.key.clone(), true)
         .authority(mint_authority.key.clone())
-        .payer(mint_authority.key.clone())
+        .payer(payer.key.clone())
         .update_authority(mint_authority.key.clone(), false)
         .is_mutable(true)
         .primary_sale_happened(false)
@@ -139,13 +157,13 @@ pub fn initialize_mint_token(
             metadata_pda.clone(),
             token_mint.clone(),
             mint_authority.clone(), // mint authority
-            mint_authority.clone(), // payer
+            payer.clone(),          // payer
             mint_authority.clone(), // update authority
             system_program.clone(),
             sysvar_instructions.clone(),
             sysvar_rent.clone(),
         ],
-        &signer_seeds,
+        &signers_seeds,
     )?;
 
     Ok(())
@@ -159,29 +177,43 @@ pub fn mint_token_to(
     let accounts = &mut account_infos.iter();
 
     let token_program = next_account_info(accounts)?;
-
     let token_mint = next_account_info(accounts)?;
-    let mint_reserve = next_account_info(accounts)?;
 
+    let mint_reserve = next_account_info(accounts)?;
     let mint_authority = next_account_info(accounts)?;
+
+    let payer = next_account_info(accounts)?;
 
     msg!("get token account");
 
-    // let (mint_reserve_pda, mint_reserve_bump) = Pubkey::find_program_address(
-    //     &["mint_reserve".as_bytes().as_ref(), token_mint.key.as_ref()],
-    //     program_id,
-    // );
+    let (mint_authority_pda, mint_authority_bump) = Pubkey::find_program_address(
+        &["mint_authority".as_bytes().as_ref(), payer.key.as_ref()],
+        program_id,
+    );
 
     let mint_reserve_ata = get_associated_token_address(&program_id, token_mint.key);
 
     if mint_reserve_ata != mint_reserve.key.clone() {
-        msg!("Invalid mint reserve ata");
+        msg!(
+            "Invalid mint reserve ata expected={}, got={}",
+            mint_reserve_ata.to_string(),
+            mint_reserve.key.to_string()
+        );
         return Err(error::TokenMintError::IncorrectMintReserveATA.into());
+    }
+
+    if mint_authority_pda != mint_authority.key.clone() {
+        msg!(
+            "Invalid mint authority expected={}, got{}",
+            mint_authority_pda.to_string(),
+            mint_authority.key.to_string()
+        );
+        return Err(error::TokenMintError::IncorrectMintAuthority.into());
     }
 
     msg!("mint to instruction");
 
-    invoke(
+    invoke_signed(
         &mint_to(
             &token_program.key,
             &token_mint.key,
@@ -195,6 +227,11 @@ pub fn mint_token_to(
             mint_reserve.clone(),
             mint_authority.clone(),
         ],
+        &[&[
+            "mint_authority".as_bytes().as_ref(),
+            payer.key.as_ref(),
+            &[mint_authority_bump],
+        ]],
     )?;
 
     Ok(())
