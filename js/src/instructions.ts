@@ -26,7 +26,7 @@ type InitializeMintTokenInstructionArgs = {
   systemProgram?: PublicKey;
   tokenProgram?: PublicKey;
   metadataProgram?: string;
-  mintAuthority: PublicKey;
+  payer: PublicKey;
   data: InitializeMintTokenSchema;
 };
 
@@ -37,15 +37,20 @@ function initializeMintTokenInstruction({
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
   metadataProgram = MPL_TOKEN_METADATA_PROGRAM_ID,
-  mintAuthority,
+  payer,
   data,
 }: InitializeMintTokenInstructionArgs) {
+  const [mintAuthority] = PublicKey.findProgramAddressSync(
+    [Buffer.from("mint_authority"), payer.toBuffer()],
+    programId
+  );
+
   const [mint] = PublicKey.findProgramAddressSync(
     [
-      mintAuthority.toBuffer(),
       Buffer.from(data.name),
       Buffer.from(data.ticker),
       Buffer.from(data.uri),
+      payer.toBuffer(),
     ],
     programId
   );
@@ -66,8 +71,9 @@ function initializeMintTokenInstruction({
         },
         { pubkey: systemProgram, isSigner: false, isWritable: false },
         { pubkey: tokenProgram, isSigner: false, isWritable: false },
+        { pubkey: payer, isSigner: true, isWritable: false },
         { pubkey: mint, isSigner: false, isWritable: true },
-        { pubkey: mintAuthority, isSigner: true, isWritable: true },
+        { pubkey: mintAuthority, isSigner: false, isWritable: true },
         {
           pubkey: new PublicKey(metadataProgram),
           isSigner: false,
@@ -86,25 +92,31 @@ type MintTokenInstructionArgs = {
   tokenProgram?: PublicKey;
   mint: PublicKey;
   mintReserveAta: PublicKey;
-  mintAuthority: PublicKey;
+  payer: PublicKey;
   data: MintTokenSchema;
 };
 
 export function mintTokenInstruction({
   programId = PROGRAM_ID,
   tokenProgram = TOKEN_PROGRAM_ID,
+  payer,
   mint,
   mintReserveAta,
-  mintAuthority,
   data,
 }: MintTokenInstructionArgs) {
+  const [mintAuthority] = PublicKey.findProgramAddressSync(
+    [Buffer.from("mint_authority"), payer.toBuffer()],
+    programId
+  );
+
   return new TransactionInstruction({
     programId,
     keys: [
       { pubkey: tokenProgram, isSigner: false, isWritable: false },
       { pubkey: mint, isSigner: false, isWritable: true },
       { pubkey: mintReserveAta, isSigner: false, isWritable: true },
-      { pubkey: mintAuthority, isSigner: true, isWritable: true },
+      { pubkey: mintAuthority, isSigner: false, isWritable: true },
+      { pubkey: payer, isSigner: true, isWritable: false },
     ],
     data: data.serialize(),
   });
@@ -119,13 +131,11 @@ type CreateMintInstructionArgs = {
 };
 
 export async function createMintInstruction(
-  connection: Connection,
   { name, ticker, uri, decimals, totalSupply }: CreateMintInstructionArgs,
-  payer: Keypair,
-  mintAuthority?: PublicKey
+  payer: Keypair
 ) {
   let [mint, initializeInstruction] = initializeMintTokenInstruction({
-    mintAuthority: mintAuthority ?? payer.publicKey,
+    payer: payer.publicKey,
     data: new InitializeMintTokenSchema(name, ticker, uri, decimals),
   });
 
@@ -146,7 +156,7 @@ export async function createMintInstruction(
     data,
     mint,
     mintReserveAta,
-    mintAuthority: mintAuthority ?? payer.publicKey,
+    payer: payer.publicKey,
   });
 
   return [

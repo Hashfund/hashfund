@@ -19,7 +19,6 @@ describe("mint token to a reserve", () => {
 
   test("Should mint a permissionless token", async () => {
     const [mint, instructions] = await createMintInstruction(
-      connection,
       {
         name: "hashfund #5",
         ticker: "Hash",

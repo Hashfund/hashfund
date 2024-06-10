@@ -14,6 +14,7 @@ import {
 } from "@solana/web3.js";
 import { BN } from "bn.js";
 import { loadWallet } from "../src/utils";
+import { PROGRAM_ID } from "../src";
 
 async function main() {
   let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
@@ -28,6 +29,11 @@ async function main() {
     true
   );
 
+  const [mintAuthority] = PublicKey.findProgramAddressSync(
+    [Buffer.from("mint_authority"), wallet.publicKey.toBuffer()],
+    PROGRAM_ID
+  );
+
   // const ataInstruction = createAssociatedTokenAccountInstruction(
   //   wallet.publicKey,
   //   ata,
@@ -38,7 +44,7 @@ async function main() {
   const mintInstruction = await createMintToInstruction(
     mint,
     ata.address,
-    wallet.publicKey,
+    mintAuthority,
     1_000_000_000_000_000
   );
 
