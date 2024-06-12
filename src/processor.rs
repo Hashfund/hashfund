@@ -6,9 +6,9 @@ use mpl_token_metadata::{
     types::{PrintSupply, TokenStandard},
 };
 use solana_program::{
-    borsh1::try_from_slice_unchecked, entrypoint::ProgramResult, msg, program::invoke_signed,
-    program_pack::Pack, pubkey::Pubkey, rent::Rent, system_instruction::create_account,
-    sysvar::Sysvar,
+    borsh1::try_from_slice_unchecked, clock::Clock, entrypoint::ProgramResult,
+    program::invoke_signed, program_pack::Pack, pubkey::Pubkey, rent::Rent,
+    system_instruction::create_account, sysvar::Sysvar,
 };
 use spl_token::{
     instruction::{initialize_mint, mint_to},
@@ -24,6 +24,7 @@ use crate::{
     context::Context,
     curve::{calculator::CurveCalculator, constant_price_curve::ConstantPriceCurve},
     error::{self, TokenMintError},
+    events::{emit, Event},
     state::{
         payload::{InitializeCurvePayload, InitializeMintPayload, MintToPayload, SwapPayload},
         BoundingCurveInfo, BOUNDING_CURVE_INFO_SIZE,
@@ -51,20 +52,10 @@ pub fn process_initialize_mint<'a>(
     let (mint_authority_pda, mint_authority_bump) = context.find_authority_id(accounts.payer.key);
 
     if token_mint_pda != accounts.mint.key.clone() {
-        msg!(
-            "incorrect mint account expected={}, got={}",
-            token_mint_pda.to_string(),
-            accounts.mint.key.to_string()
-        );
         return Err(TokenMintError::IncorrectTokenMintAccount.into());
     }
 
     if mint_authority_pda != accounts.authority.key.clone() {
-        msg!(
-            "incorrect mint authority expected={}, got={}",
-            mint_authority_pda.to_string(),
-            accounts.authority.key.to_string()
-        );
         return Err(TokenMintError::IncorrectMintAuthority.into());
     }
 
@@ -155,6 +146,17 @@ pub fn process_initialize_mint<'a>(
         &signers_seeds,
     )?;
 
+    let clock = Clock::get()?;
+
+    emit(Event::Mint {
+        mint: accounts.mint.key.clone(),
+        timestamp: clock.unix_timestamp,
+        name: payload.name.clone(),
+        ticker: payload.ticker.clone(),
+        uri: payload.uri.clone(),
+        creator: accounts.payer.key.clone(),
+    });
+
     Ok(())
 }
 
@@ -171,20 +173,10 @@ pub fn process_mint_to<'a>(
     let (mint_authority_pda, mint_authority_bump) = context.find_authority_id(accounts.payer.key);
 
     if mint_reserve_ata != accounts.reserve.key.clone() {
-        msg!(
-            "Invalid mint reserve ata expected={}, got={}",
-            mint_reserve_ata.to_string(),
-            accounts.reserve.key.to_string()
-        );
         return Err(error::TokenMintError::IncorrectMintReserveATA.into());
     }
 
     if mint_authority_pda != accounts.authority.key.clone() {
-        msg!(
-            "Invalid mint authority expected={}, got{}",
-            mint_authority_pda.to_string(),
-            accounts.authority.key.to_string()
-        );
         return Err(error::TokenMintError::IncorrectMintAuthority.into());
     }
 
@@ -209,6 +201,15 @@ pub fn process_mint_to<'a>(
         ]],
     )?;
 
+    let clock = Clock::get()?;
+
+    emit(Event::MintTo {
+        amount: payload.amount,
+        timestamp: clock.unix_timestamp,
+        mint: accounts.mint.key.clone(),
+        reserve: accounts.reserve.key.clone(),
+    });
+
     Ok(())
 }
 
@@ -225,28 +226,17 @@ pub fn process_initialize_curve<'a>(
         context.find_bounding_curve(&accounts.token_a_mint.key);
 
     if bounding_curve_pda != accounts.bounding_curve.key.clone() {
-        msg!(
-            "Invalid bounding curve, expected={}, got={}",
-            bounding_curve_pda.to_string(),
-            accounts.bounding_curve.key.to_string()
-        );
-
         return Err(error::TokenMintError::IncorrectBoundingCurveAccount.into());
     }
 
     let rent = Rent::get()?;
     let rent_lamports = rent.minimum_balance(BOUNDING_CURVE_INFO_SIZE);
 
-    msg!("unpacking mint");
-
     let token_a_mint = Mint::unpack(&accounts.token_a_mint.data.borrow())?;
     let token_b_mint = Mint::unpack(&accounts.token_b_mint.data.borrow())?;
 
     let token_a_denominator = 10u128.pow(token_a_mint.decimals.into());
     let token_b_denominator = 10u128.pow(token_b_mint.decimals.into());
-
-    msg!("mint_supply={}", token_a_mint.supply);
-    msg!("initial_buy_amount={}", payload.initial_buy_amount);
 
     let curve = ConstantPriceCurve::new(
         token_a_mint.supply.into(),
@@ -256,10 +246,6 @@ pub fn process_initialize_curve<'a>(
     );
 
     let initial_price: u64 = curve.calculate_initial_price().try_into().unwrap();
-
-    msg!("initial_price={}", initial_price);
-
-    msg!("creating bounding curve account");
 
     invoke_signed(
         &create_account(
@@ -285,11 +271,20 @@ pub fn process_initialize_curve<'a>(
     bounding_curve_state.mint = accounts.token_a_mint.key.clone();
     bounding_curve_state.serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
 
+    let clock = Clock::get()?;
+
+    emit(Event::InitializeCurve {
+        initial_price,
+        maximum_market_cap: payload.maximum_market_cap,
+        timestamp: clock.unix_timestamp,
+        mint: accounts.token_a_mint.key.clone(),
+        bounding_curve: accounts.bounding_curve.key.clone(),
+    });
+
     Ok(())
 }
 
 pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> ProgramResult {
-    msg!("processing...");
     let Context {
         payload, accounts, ..
     } = context;
@@ -300,16 +295,10 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
 
     if bounding_curve_info.mint != accounts.token_a_mint.key.clone() {
-        msg!(
-            "Invalid bounding curve for mint expected={}, got={}",
-            bounding_curve_info.mint.to_string(),
-            accounts.token_a_mint.key.to_string()
-        );
         return Err(error::TokenMintError::IncorrectBoundingCurveAccount.into());
     }
 
     if !bounding_curve_info.can_trade {
-        msg!("Bounding curve is untradable");
         return Err(error::TokenMintError::NotTradable.into());
     }
 
@@ -338,8 +327,7 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
                 payload.amount,
                 signers_seeds,
             )?;
-            bounding_curve_info
-                .serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
+
             Ok(())
         }
         _ => Err(error::TokenMintError::InvalidTradeDirection.into()),
