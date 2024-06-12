@@ -74,7 +74,7 @@ async function main() {
   console.log("tx=", tx);
 }
 
-main().catch(async (error) => {
-  console.log(error);
-  console.log(await error.getLogs());
-});
+// main().catch(async (error) => {
+//   console.log(error);
+//   console.log(await error.getLogs());
+// });

@@ -9,7 +9,6 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@coral-xyz/borsh": "^0.30.0",
     "@metaplex-foundation/mpl-token-metadata": "^3.2.1",
     "@metaplex-foundation/umi": "^0.9.1",
     "@metaplex-foundation/umi-bundle-defaults": "^0.9.1",
@@ -19,6 +18,8 @@
     "@types/bn.js": "^5.1.5",
     "@types/mocha": "^10.0.6",
     "bn.js": "^5.2.1",
+    "bs58": "^5.0.0",
+    "bs64": "^0.1.0",
     "dotenv": "^16.4.5",
     "fs": "^0.0.1-security"
   }
