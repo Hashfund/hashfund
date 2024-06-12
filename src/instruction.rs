@@ -1,7 +1,9 @@
 use borsh::BorshDeserialize;
-use solana_program::{msg, program_error::ProgramError};
+use solana_program::program_error::ProgramError;
 
-use crate::state::payload::{CreatePayload, MintPayload};
+use crate::state::payload::{
+    InitializeCurvePayload, InitializeMintPayload, MintToPayload, SwapPayload,
+};
 
 pub trait Instruction {
     fn unpack(input: &[u8]) -> Result<Self, ProgramError>
@@ -12,8 +14,10 @@ pub trait Instruction {
 }
 
 pub enum ProgramInstruction {
-    Create(CreatePayload),
-    Mint(MintPayload),
+    InitializeMint(InitializeMintPayload),
+    MintTo(MintToPayload),
+    InitializeCurve(InitializeCurvePayload),
+    Swap(SwapPayload),
 }
 
 impl Instruction for ProgramInstruction {
@@ -23,18 +27,18 @@ impl Instruction for ProgramInstruction {
             .ok_or(ProgramError::InvalidInstructionData)?;
 
         match variant {
-            0 => {
-                let payload = CreatePayload::try_from_slice(rest).unwrap();
-
-                msg!("payload decoded");
-
-                Ok(ProgramInstruction::Create(payload))
-            }
-            1 => {
-                let payload = MintPayload::try_from_slice(rest).unwrap();
-
-                Ok(ProgramInstruction::Mint(payload))
-            }
+            0 => Ok(ProgramInstruction::InitializeMint(
+                InitializeMintPayload::try_from_slice(rest).unwrap(),
+            )),
+            1 => Ok(ProgramInstruction::MintTo(
+                MintToPayload::try_from_slice(rest).unwrap(),
+            )),
+            2 => Ok(ProgramInstruction::InitializeCurve(
+                InitializeCurvePayload::try_from_slice(rest).unwrap(),
+            )),
+            3 => Ok(ProgramInstruction::Swap(
+                SwapPayload::try_from_slice(rest).unwrap(),
+            )),
             _ => Err(ProgramError::InvalidInstructionData),
         }
     }

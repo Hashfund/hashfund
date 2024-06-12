@@ -1,142 +1,131 @@
+use std::ops::Deref;
+
+use borsh::BorshSerialize;
 use mpl_token_metadata::{
     instructions::CreateV1Builder,
     types::{PrintSupply, TokenStandard},
 };
 use solana_program::{
-    account_info::{next_account_info, AccountInfo},
-    entrypoint::ProgramResult,
-    msg,
-    program::invoke_signed,
-    program_pack::Pack,
-    pubkey::Pubkey,
-    rent::Rent,
-    system_instruction::create_account,
+    borsh1::try_from_slice_unchecked, entrypoint::ProgramResult, msg, program::invoke_signed,
+    program_pack::Pack, pubkey::Pubkey, rent::Rent, system_instruction::create_account,
     sysvar::Sysvar,
 };
-use spl_associated_token_account::get_associated_token_address;
 use spl_token::{
     instruction::{initialize_mint, mint_to},
     state::Mint,
 };
 
 use crate::{
+    account::{
+        initialize_curve_account::InitializeCurveAccount,
+        initialize_mint_account::InitializeMintAccount, mint_to_account::MintToAccount,
+        swap_account::SwapAccount,
+    },
+    context::Context,
+    curve::{calculator::CurveCalculator, constant_price_curve::ConstantPriceCurve},
     error::{self, TokenMintError},
-    state::payload::{CreatePayload, MintPayload},
+    state::{
+        payload::{InitializeCurvePayload, InitializeMintPayload, MintToPayload, SwapPayload},
+        BoundingCurveInfo, BOUNDING_CURVE_INFO_SIZE,
+    },
 };
 
-pub fn initialize_mint_token(
-    program_id: &Pubkey,
-    account_infos: &[AccountInfo],
-    payload: &CreatePayload,
+pub fn process_initialize_mint<'a>(
+    context: &Context<'a, InitializeMintPayload, InitializeMintAccount<'a>>,
 ) -> ProgramResult {
-    msg!("begin processor");
-    let accounts = &mut account_infos.iter();
-
-    let sysvar_rent = next_account_info(accounts)?;
-    let sysvar_instructions = next_account_info(accounts)?;
-
-    let system_program = next_account_info(accounts)?;
-    let token_program = next_account_info(accounts)?;
-
-    let payer = next_account_info(accounts)?;
-    let token_mint = next_account_info(accounts)?;
-    let mint_authority = next_account_info(accounts)?;
-
-    let metadata_program = next_account_info(accounts)?;
-    let metadata_pda = next_account_info(accounts)?;
-    let master_edition = next_account_info(accounts)?;
-    msg!("account gotten");
+    let Context {
+        program_id,
+        accounts,
+        payload,
+        ..
+    } = context;
 
     let seeds = &[
         payload.name.as_bytes().as_ref(),
         payload.ticker.as_bytes().as_ref(),
         payload.uri.as_bytes().as_ref(),
-        payer.key.as_ref(),
+        accounts.payer.key.as_ref(),
     ];
 
     let (token_mint_pda, token_mint_bump) = Pubkey::find_program_address(seeds, program_id);
-    let (mint_authority_pda, mint_authority_bump) =
-        Pubkey::find_program_address(&[b"mint_authority", payer.key.as_ref()], program_id);
+    let (mint_authority_pda, mint_authority_bump) = context.find_authority_id(accounts.payer.key);
 
-    if token_mint_pda != token_mint.key.clone() {
+    if token_mint_pda != accounts.mint.key.clone() {
         msg!(
-            "incorrect token mint account expected={}, got={}",
+            "incorrect mint account expected={}, got={}",
             token_mint_pda.to_string(),
-            token_mint.key.to_string()
+            accounts.mint.key.to_string()
         );
         return Err(TokenMintError::IncorrectTokenMintAccount.into());
     }
 
-    if mint_authority_pda != mint_authority.key.clone() {
+    if mint_authority_pda != accounts.authority.key.clone() {
         msg!(
             "incorrect mint authority expected={}, got={}",
             mint_authority_pda.to_string(),
-            mint_authority.key.to_string()
+            accounts.authority.key.to_string()
         );
         return Err(TokenMintError::IncorrectMintAuthority.into());
     }
 
-    let rent = Rent::from_account_info(sysvar_rent)?;
+    let rent = Rent::from_account_info(&accounts.sysvar_rent)?;
     let rent_lamports = rent.minimum_balance(Mint::LEN);
 
     let token_mint_signer_seeds: &[&[u8]] = &[
         payload.name.as_bytes().as_ref(),
         payload.ticker.as_bytes().as_ref(),
         payload.uri.as_bytes().as_ref(),
-        payer.key.as_ref(),
+        accounts.payer.key.as_ref(),
         &[token_mint_bump],
     ];
 
     let mint_authority_signer_seeds: &[&[u8]] = &[
         b"mint_authority",
-        payer.key.as_ref(),
+        accounts.payer.key.as_ref(),
         &[mint_authority_bump],
     ];
 
     let signers_seeds: &[&[&[u8]]] = &[token_mint_signer_seeds, mint_authority_signer_seeds];
 
-    msg!("creating mint account...");
-    // Create the mint account
     invoke_signed(
         &create_account(
-            payer.key,
-            token_mint.key,
+            accounts.payer.key,
+            accounts.mint.key,
             rent_lamports,
             Mint::LEN.try_into().unwrap(),
-            token_program.key,
+            accounts.token_program.key,
         ),
-        &[payer.clone(), token_mint.clone(), system_program.clone()],
+        &[
+            accounts.payer.clone(),
+            accounts.mint.clone(),
+            accounts.system_program.clone(),
+        ],
         &signers_seeds,
     )?;
 
-    msg!("creating mint initialize...");
-    // Initialize the mint account
     invoke_signed(
         &initialize_mint(
-            &token_program.key,
-            token_mint.key,
-            &mint_authority.key,
+            &accounts.token_program.key,
+            accounts.mint.key,
+            &accounts.authority.key,
             None,
             payload.decimals,
         )?,
         &[
-            token_mint.clone(),
-            sysvar_rent.clone(),
-            mint_authority.clone(),
+            accounts.mint.clone(),
+            accounts.sysvar_rent.clone(),
+            accounts.authority.clone(),
         ],
         signers_seeds,
     )?;
-    msg!("initialized token mint={}", token_mint_pda.to_string());
 
-    // Create metadata
-    msg!("creating metadata...");
     let create_metadata_ix = CreateV1Builder::new()
-        .metadata(metadata_pda.key.clone())
-        .master_edition(Some(master_edition.key.clone()))
-        .mint(token_mint.key.clone(), true)
-        .authority(mint_authority.key.clone())
-        .payer(payer.key.clone())
-        .update_authority(mint_authority.key.clone(), false)
+        .metadata(accounts.metadata_pda.key.clone())
+        .master_edition(Some(accounts.master_edition.key.clone()))
+        .mint(accounts.mint.key.clone(), true)
+        .authority(accounts.authority.key.clone())
+        .payer(accounts.payer.key.clone())
+        .update_authority(accounts.mint.key.clone(), false)
         .is_mutable(true)
         .primary_sale_happened(false)
         .name(payload.name.clone())
@@ -144,24 +133,24 @@ pub fn initialize_mint_token(
         .seller_fee_basis_points(0)
         .token_standard(TokenStandard::FungibleAsset)
         .print_supply(PrintSupply::Zero)
-        .spl_token_program(Some(token_program.key.clone()))
-        .system_program(system_program.key.clone())
-        .sysvar_instructions(sysvar_instructions.key.clone())
+        .spl_token_program(Some(accounts.token_program.key.clone()))
+        .system_program(accounts.system_program.key.clone())
+        .sysvar_instructions(accounts.sysvar_instructions.key.clone())
         .instruction();
 
     invoke_signed(
         &create_metadata_ix,
         &[
-            metadata_program.clone(),
-            master_edition.clone(),
-            metadata_pda.clone(),
-            token_mint.clone(),
-            mint_authority.clone(), // mint authority
-            payer.clone(),          // payer
-            mint_authority.clone(), // update authority
-            system_program.clone(),
-            sysvar_instructions.clone(),
-            sysvar_rent.clone(),
+            accounts.metadata_program.clone(),
+            accounts.master_edition.clone(),
+            accounts.metadata_pda.clone(),
+            accounts.mint.clone(),
+            accounts.authority.clone(), // mint authority
+            accounts.payer.clone(),     // payer
+            accounts.authority.clone(), // update authority
+            accounts.system_program.clone(),
+            accounts.sysvar_instructions.clone(),
+            accounts.sysvar_rent.clone(),
         ],
         &signers_seeds,
     )?;
@@ -169,70 +158,193 @@ pub fn initialize_mint_token(
     Ok(())
 }
 
-pub fn mint_token_to(
-    program_id: &Pubkey,
-    account_infos: &[AccountInfo],
-    payload: &MintPayload,
+pub fn process_mint_to<'a>(
+    context: &Context<'a, MintToPayload, MintToAccount<'a>>,
 ) -> ProgramResult {
-    let accounts = &mut account_infos.iter();
+    let Context {
+        accounts, payload, ..
+    } = context;
 
-    let token_program = next_account_info(accounts)?;
-    let token_mint = next_account_info(accounts)?;
+    let bounding_curve = context.find_bounding_curve(accounts.mint.key).0;
+    let mint_reserve_ata = context.get_bounding_curve_ata(&bounding_curve, accounts.mint.key);
 
-    let mint_reserve = next_account_info(accounts)?;
-    let mint_authority = next_account_info(accounts)?;
+    let (mint_authority_pda, mint_authority_bump) = context.find_authority_id(accounts.payer.key);
 
-    let payer = next_account_info(accounts)?;
-
-    msg!("get token account");
-
-    let (mint_authority_pda, mint_authority_bump) = Pubkey::find_program_address(
-        &["mint_authority".as_bytes().as_ref(), payer.key.as_ref()],
-        program_id,
-    );
-
-    let mint_reserve_ata = get_associated_token_address(&program_id, token_mint.key);
-
-    if mint_reserve_ata != mint_reserve.key.clone() {
+    if mint_reserve_ata != accounts.reserve.key.clone() {
         msg!(
             "Invalid mint reserve ata expected={}, got={}",
             mint_reserve_ata.to_string(),
-            mint_reserve.key.to_string()
+            accounts.reserve.key.to_string()
         );
         return Err(error::TokenMintError::IncorrectMintReserveATA.into());
     }
 
-    if mint_authority_pda != mint_authority.key.clone() {
+    if mint_authority_pda != accounts.authority.key.clone() {
         msg!(
             "Invalid mint authority expected={}, got{}",
             mint_authority_pda.to_string(),
-            mint_authority.key.to_string()
+            accounts.authority.key.to_string()
         );
         return Err(error::TokenMintError::IncorrectMintAuthority.into());
     }
 
-    msg!("mint to instruction");
-
     invoke_signed(
         &mint_to(
-            &token_program.key,
-            &token_mint.key,
-            &mint_reserve.key,
-            mint_authority.key,
+            &accounts.token_program.key,
+            &accounts.mint.key,
+            &accounts.reserve.key,
+            accounts.authority.key,
             &[],
             payload.amount,
         )?,
         &[
-            token_mint.clone(),
-            mint_reserve.clone(),
-            mint_authority.clone(),
+            accounts.mint.clone(),
+            accounts.reserve.clone(),
+            accounts.authority.clone(),
         ],
         &[&[
             "mint_authority".as_bytes().as_ref(),
-            payer.key.as_ref(),
+            accounts.payer.key.as_ref(),
             &[mint_authority_bump],
         ]],
     )?;
 
     Ok(())
+}
+
+pub fn process_initialize_curve<'a>(
+    context: &Context<'a, InitializeCurvePayload, InitializeCurveAccount<'a>>,
+) -> ProgramResult {
+    let Context {
+        program_id,
+        payload,
+        accounts,
+    } = context;
+
+    let (bounding_curve_pda, bounding_curve_bump) =
+        context.find_bounding_curve(&accounts.token_a_mint.key);
+
+    if bounding_curve_pda != accounts.bounding_curve.key.clone() {
+        msg!(
+            "Invalid bounding curve, expected={}, got={}",
+            bounding_curve_pda.to_string(),
+            accounts.bounding_curve.key.to_string()
+        );
+
+        return Err(error::TokenMintError::IncorrectBoundingCurveAccount.into());
+    }
+
+    let rent = Rent::get()?;
+    let rent_lamports = rent.minimum_balance(BOUNDING_CURVE_INFO_SIZE);
+
+    msg!("unpacking mint");
+
+    let token_a_mint = Mint::unpack(&accounts.token_a_mint.data.borrow())?;
+    let token_b_mint = Mint::unpack(&accounts.token_b_mint.data.borrow())?;
+
+    let token_a_denominator = 10u128.pow(token_a_mint.decimals.into());
+    let token_b_denominator = 10u128.pow(token_b_mint.decimals.into());
+
+    msg!("mint_supply={}", token_a_mint.supply);
+    msg!("initial_buy_amount={}", payload.initial_buy_amount);
+
+    let curve = ConstantPriceCurve::new(
+        token_a_mint.supply.into(),
+        payload.initial_buy_amount.into(),
+        token_a_denominator,
+        token_b_denominator,
+    );
+
+    let initial_price: u64 = curve.calculate_initial_price().try_into().unwrap();
+
+    msg!("initial_price={}", initial_price);
+
+    msg!("creating bounding curve account");
+
+    invoke_signed(
+        &create_account(
+            accounts.payer.key,
+            &bounding_curve_pda,
+            rent_lamports,
+            BOUNDING_CURVE_INFO_SIZE.try_into().unwrap(),
+            program_id,
+        ),
+        &[
+            accounts.payer.clone(),
+            accounts.bounding_curve.clone(),
+            accounts.system_program.clone(),
+        ],
+        &[&[
+            b"hashfund",
+            accounts.token_a_mint.key.to_bytes().as_ref(),
+            &[bounding_curve_bump],
+        ]],
+    )?;
+
+    let mut bounding_curve_state =
+        try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
+    bounding_curve_state.can_trade = true;
+    bounding_curve_state.initial_price = initial_price;
+    bounding_curve_state.maximum_market_cap = payload.maximum_market_cap;
+    bounding_curve_state.mint = accounts.token_a_mint.key.clone();
+    bounding_curve_state.serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
+
+    Ok(())
+}
+
+pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> ProgramResult {
+    let Context {
+        payload, accounts, ..
+    } = context;
+
+    let bounding_curve_bump = context.find_bounding_curve(&accounts.mint.key).1;
+
+    let mut bounding_curve_info =
+        try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
+
+    if bounding_curve_info.mint != accounts.mint.key.clone() {
+        msg!(
+            "Invalid bounding curve for mint expected={}, got={}",
+            bounding_curve_info.mint.to_string(),
+            accounts.mint.key.to_string()
+        );
+        return Err(error::TokenMintError::IncorrectBoundingCurveAccount.into());
+    }
+
+    if !bounding_curve_info.can_trade {
+        msg!("Bounding curve is untradable");
+        return Err(error::TokenMintError::NotTradable.into());
+    }
+
+    let signers_seeds: &[&[&[u8]]] = &[&[
+        b"hashfund",
+        bounding_curve_info.mint.as_ref(),
+        &[bounding_curve_bump],
+    ]];
+
+    match payload.direction {
+        0 => {
+            bounding_curve_info = bounding_curve_info.swap_in::<ConstantPriceCurve>(
+                accounts.deref(),
+                payload.amount,
+                signers_seeds,
+            )?;
+
+            bounding_curve_info
+                .serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
+
+            Ok(())
+        }
+        1 => {
+            bounding_curve_info.swap_out::<ConstantPriceCurve>(
+                &accounts.deref(),
+                payload.amount,
+                signers_seeds,
+            )?;
+            bounding_curve_info
+                .serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
+            Ok(())
+        }
+        _ => Err(error::TokenMintError::InvalidTradeDirection.into()),
+    }
 }

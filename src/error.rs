@@ -8,4 +8,12 @@ pub enum TokenMintError {
     IncorrectTokenMintAccount,
     #[error("Incorrect Mint Reserve Associate Token Account")]
     IncorrectMintReserveATA,
+    #[error("Invalid bounding curve account")]
+    IncorrectBoundingCurveAccount,
+    #[error("Mint not tradable")]
+    NotTradable,
+    #[error("Invalid trade direction")]
+    InvalidTradeDirection,
+    #[error("Insufficient token mint reserve")]
+    InsufficientTokenInReserve,
 }
