@@ -269,11 +269,7 @@ pub fn process_initialize_curve<'a>(
             BOUNDING_CURVE_INFO_SIZE.try_into().unwrap(),
             program_id,
         ),
-        &[
-            accounts.payer.clone(),
-            accounts.bounding_curve.clone(),
-            accounts.system_program.clone(),
-        ],
+        &[accounts.payer.clone(), accounts.bounding_curve.clone()],
         &[&[
             b"hashfund",
             accounts.token_a_mint.key.to_bytes().as_ref(),
@@ -293,20 +289,21 @@ pub fn process_initialize_curve<'a>(
 }
 
 pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> ProgramResult {
+    msg!("processing...");
     let Context {
         payload, accounts, ..
     } = context;
 
-    let bounding_curve_bump = context.find_bounding_curve(&accounts.mint.key).1;
+    let bounding_curve_bump = context.find_bounding_curve(&accounts.token_a_mint.key).1;
 
     let mut bounding_curve_info =
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
 
-    if bounding_curve_info.mint != accounts.mint.key.clone() {
+    if bounding_curve_info.mint != accounts.token_a_mint.key.clone() {
         msg!(
             "Invalid bounding curve for mint expected={}, got={}",
             bounding_curve_info.mint.to_string(),
-            accounts.mint.key.to_string()
+            accounts.token_a_mint.key.to_string()
         );
         return Err(error::TokenMintError::IncorrectBoundingCurveAccount.into());
     }

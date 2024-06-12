@@ -1,6 +1,11 @@
 import { readFileSync } from "fs";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
+import {
+  createAssociatedTokenAccount,
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 
 export function loadWallet(path: string): any {
   return Keypair.fromSecretKey(
@@ -41,4 +46,34 @@ export function findBoundingCurvePda(mint: PublicKey, programId: PublicKey) {
     [Buffer.from("hashfund"), mint.toBuffer()],
     programId
   );
+}
+
+export async function getOrCreateAssociatedTokenAccountInstructions(
+  connection: Connection,
+  mint: PublicKey,
+  payer: PublicKey,
+  owner: PublicKey,
+  allowOwnerOffCurve?: boolean,
+  programId?: PublicKey,
+  associatedTokenProgramId?: PublicKey
+) {
+  const tokenAccount = getAssociatedTokenAddressSync(
+    mint,
+    owner,
+    allowOwnerOffCurve
+  );
+
+  const account = await connection.getAccountInfo(tokenAccount);
+  if (account) return [];
+
+  return [
+    createAssociatedTokenAccountInstruction(
+      payer,
+      tokenAccount,
+      owner,
+      mint,
+      programId,
+      associatedTokenProgramId
+    ),
+  ];
 }

@@ -47,10 +47,10 @@ impl CurveCalculator for ConstantPriceCurve {
         )
     }
 
-    fn calculate_token_out(initial_price: u128, amount: u128, trade_direction: TradeDirection) -> u128 {
+    fn calculate_token_out(_initial_price: u128, _amount: u128, trade_direction: TradeDirection) -> u128 {
         match trade_direction {
-            TradeDirection::AtoB => amount.mul(initial_price),
-            TradeDirection::BtoA => amount.div(initial_price),
+            TradeDirection::AtoB => 10_000_000_000,
+            TradeDirection::BtoA => 1_000_000_000,
         }
     }
 }

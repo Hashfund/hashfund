@@ -1,7 +1,7 @@
 
 use context::Context;
 use instruction::{Instruction, ProgramInstruction};
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
+use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, msg, pubkey::Pubkey};
 
 pub mod account;
 pub mod context;
@@ -33,6 +33,7 @@ pub fn process_instruction<'a>(
         }
 
         ProgramInstruction::Swap(payload) => {
+            msg!("arm swap_in");
             processor::process_swap(&Context::new(program_id, account_infos, payload)?)
         }
     }

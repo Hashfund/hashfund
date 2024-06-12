@@ -18,16 +18,14 @@ describe("mint token to a reserve", () => {
   });
 
   test("Should mint a permissionless token", async () => {
-    const [mint, instructions] = await createMintInstruction(
-      {
-        name: "hashfund #2",
-        ticker: "Hash",
-        uri: "https://hashfund.io/public.json",
-        decimals: 9,
-        totalSupply: new BN(1_000_000),
-      },
-      wallet
-    );
+    const [mint, instructions] = await createMintInstruction({
+      name: "hashfund #4",
+      ticker: "Hash",
+      uri: "https://hashfund.io/public.json",
+      decimals: 9,
+      totalSupply: new BN(1_000_000),
+      payer: wallet.publicKey,
+    });
 
     console.log("mint={}", mint.toBase58());
     const transaction = new Transaction().add(...instructions);
