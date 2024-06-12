@@ -5,7 +5,6 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import {
-  Connection,
   Keypair,
   PublicKey,
   SystemProgram,
@@ -16,8 +15,17 @@ import {
 import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
 import { PROGRAM_ID } from "./config";
-import { findMetadataPda, findMasterEditionPda } from "./utils";
-import { InitializeMintTokenSchema, MintTokenSchema } from "./state";
+import {
+  findMetadataPda,
+  findMasterEditionPda,
+  findBoundingCurvePda,
+} from "./utils";
+import {
+  InitializeCurveSchema,
+  InitializeMintTokenSchema,
+  MintTokenSchema,
+  SwapSchema,
+} from "./schema";
 
 type InitializeMintTokenInstructionArgs = {
   programId?: PublicKey;
@@ -143,12 +151,18 @@ export async function createMintInstruction(
     totalSupply.mul(new BN(10).pow(new BN(decimals)))
   );
 
-  let mintReserveAta = await getAssociatedTokenAddress(mint, PROGRAM_ID, true);
+  let [boundingCurve] = findBoundingCurvePda(mint, PROGRAM_ID);
+
+  let mintReserveAta = await getAssociatedTokenAddress(
+    mint,
+    boundingCurve,
+    true
+  );
 
   let createMintReserveAtaInstruction = createAssociatedTokenAccountInstruction(
     payer.publicKey,
     mintReserveAta,
-    PROGRAM_ID,
+    boundingCurve,
     mint
   );
 
@@ -163,4 +177,74 @@ export async function createMintInstruction(
     mint,
     [initializeInstruction, createMintReserveAtaInstruction, mintInstruction],
   ] as const;
+}
+
+type InitializeCurveArgs = {
+  programId?: PublicKey;
+  systemProgram?: PublicKey;
+  tokenAMint: PublicKey;
+  tokenBMint: PublicKey;
+  boundingCurve: PublicKey;
+  payer: PublicKey;
+  data: InitializeCurveSchema;
+};
+
+export function createInitializeCurveInstruction({
+  programId = PROGRAM_ID,
+  systemProgram = SystemProgram.programId,
+  tokenAMint,
+  tokenBMint,
+  boundingCurve,
+  payer,
+  data,
+}: InitializeCurveArgs) {
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: systemProgram, isSigner: false, isWritable: false },
+      { pubkey: tokenAMint, isSigner: false, isWritable: false },
+      { pubkey: tokenBMint, isSigner: false, isWritable: false },
+      { pubkey: boundingCurve, isSigner: false, isWritable: true },
+      { pubkey: payer, isSigner: false, isWritable: true },
+    ],
+    data: data.serialize(),
+  });
+}
+
+type SwapInstructionArgs = {
+  programId?: PublicKey;
+  systemProgram?: PublicKey;
+  tokenProgram?: PublicKey;
+  mint: PublicKey;
+  boundingCurve: PublicKey;
+  source: PublicKey;
+  destination: PublicKey;
+  payer: PublicKey;
+  data: SwapSchema;
+};
+
+export function createSwapInstruction({
+  programId = PROGRAM_ID,
+  systemProgram = SystemProgram.programId,
+  tokenProgram = TOKEN_PROGRAM_ID,
+  mint,
+  boundingCurve,
+  payer,
+  source,
+  destination,
+  data,
+}: SwapInstructionArgs) {
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: systemProgram, isSigner: false, isWritable: false },
+      { pubkey: tokenProgram, isSigner: false, isWritable: false },
+      { pubkey: mint, isSigner: false, isWritable: false },
+      { pubkey: boundingCurve, isSigner: false, isWritable: true },
+      { pubkey: source, isSigner: false, isWritable: true },
+      { pubkey: destination, isSigner: false, isWritable: true },
+      { pubkey: payer, isSigner: true, isWritable: false },
+    ],
+    data: data.serialize(),
+  });
 }

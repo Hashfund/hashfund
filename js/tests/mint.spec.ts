@@ -20,7 +20,7 @@ describe("mint token to a reserve", () => {
   test("Should mint a permissionless token", async () => {
     const [mint, instructions] = await createMintInstruction(
       {
-        name: "hashfund #5",
+        name: "hashfund #2",
         ticker: "Hash",
         uri: "https://hashfund.io/public.json",
         decimals: 9,

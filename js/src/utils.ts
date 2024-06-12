@@ -35,3 +35,10 @@ export function findMasterEditionPda(
     _programId
   );
 }
+
+export function findBoundingCurvePda(mint: PublicKey, programId: PublicKey) {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("hashfund"), mint.toBuffer()],
+    programId
+  );
+}
