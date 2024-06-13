@@ -9,6 +9,7 @@ import { loadWallet } from "./utils";
 import {
   createInitializeCurveInstruction,
   createMintInstruction,
+  createSwapInInstruction,
 } from "../src";
 import { NATIVE_MINT } from "@solana/spl-token";
 
@@ -18,7 +19,7 @@ const main = async () => {
 
   const [mint, instructions] = await createMintInstruction({
     data: {
-      name: "Goku #1",
+      name: "Goku #2",
       ticker: "goku",
       uri: "https://ik.imagekit.io/hashfund/dev/goku.json",
     },
@@ -36,7 +37,14 @@ const main = async () => {
         initialBuyAmount: new BN(1).mul(new BN(10).pow(new BN(9))),
         maximumMarkeyCap: new BN(4).mul(new BN(10).pow(new BN(9))),
       },
-    }))
+    })),
+    createSwapInInstruction({
+      tokenAMint: mint,
+      payer: wallet.publicKey,
+      data: {
+        amount: new BN(1).mul(new BN(10).pow(new BN(9))),
+      },
+    })
   );
   const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
 
