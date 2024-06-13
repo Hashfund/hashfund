@@ -1,7 +1,6 @@
 import BN from "bn.js";
 import {
   createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddress,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
@@ -16,7 +15,7 @@ import {
 } from "@solana/web3.js";
 import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
-import { PROGRAM_ID } from "./config";
+import { HASHFUND_PROGRAM_ID } from "./config";
 import {
   findMetadataPda,
   findMasterEditionPda,
@@ -30,39 +29,34 @@ import {
   SwapSchema,
 } from "./schema";
 
-type InitializeMintTokenInstructionArgs = {
-  programId?: PublicKey;
-  sysvarRent?: PublicKey;
-  sysVarInstructions?: PublicKey;
-  systemProgram?: PublicKey;
-  tokenProgram?: PublicKey;
-  metadataProgram?: string;
+type InitializeMintInstructionArgs = {
+  programId: PublicKey;
+  sysvarRent: PublicKey;
+  sysVarInstructions: PublicKey;
+  systemProgram: PublicKey;
+  tokenProgram: PublicKey;
+  metadataProgram: string;
   payer: PublicKey;
   data: InitializeMintTokenSchema;
 };
 
-function initializeMintTokenInstruction({
-  programId = PROGRAM_ID,
-  sysvarRent = SYSVAR_RENT_PUBKEY,
-  sysVarInstructions = SYSVAR_INSTRUCTIONS_PUBKEY,
-  systemProgram = SystemProgram.programId,
-  tokenProgram = TOKEN_PROGRAM_ID,
-  metadataProgram = MPL_TOKEN_METADATA_PROGRAM_ID,
+function initializeMintInstruction({
+  programId,
+  sysvarRent,
+  sysVarInstructions,
+  systemProgram,
+  tokenProgram,
+  metadataProgram,
   payer,
   data,
-}: InitializeMintTokenInstructionArgs) {
+}: InitializeMintInstructionArgs) {
   const [mintAuthority] = PublicKey.findProgramAddressSync(
     [Buffer.from("mint_authority"), payer.toBuffer()],
     programId
   );
 
   const [mint] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from(data.name),
-      Buffer.from(data.ticker),
-      Buffer.from(data.uri),
-      payer.toBuffer(),
-    ],
+    [Buffer.from(data.name), Buffer.from(data.ticker), payer.toBuffer()],
     programId
   );
 
@@ -99,8 +93,8 @@ function initializeMintTokenInstruction({
 }
 
 type MintTokenInstructionArgs = {
-  programId?: PublicKey;
-  tokenProgram?: PublicKey;
+  programId: PublicKey;
+  tokenProgram: PublicKey;
   mint: PublicKey;
   mintReserveAta: PublicKey;
   payer: PublicKey;
@@ -108,8 +102,8 @@ type MintTokenInstructionArgs = {
 };
 
 function mintTokenInstruction({
-  programId = PROGRAM_ID,
-  tokenProgram = TOKEN_PROGRAM_ID,
+  programId,
+  tokenProgram,
   payer,
   mint,
   mintReserveAta,
@@ -134,8 +128,8 @@ function mintTokenInstruction({
 }
 
 type InitializeCurveArgs = {
-  programId?: PublicKey;
-  systemProgram?: PublicKey;
+  programId: PublicKey;
+  systemProgram: PublicKey;
   tokenAMint: PublicKey;
   tokenBMint: PublicKey;
   boundingCurve: PublicKey;
@@ -144,8 +138,8 @@ type InitializeCurveArgs = {
 };
 
 function initializeCurveInstruction({
-  programId = PROGRAM_ID,
-  systemProgram = SystemProgram.programId,
+  programId,
+  systemProgram,
   tokenAMint,
   tokenBMint,
   boundingCurve,
@@ -166,11 +160,11 @@ function initializeCurveInstruction({
 }
 
 type SwapInstructionArgs = {
-  programId?: PublicKey;
-  systemProgram?: PublicKey;
-  tokenProgram?: PublicKey;
+  programId: PublicKey;
+  systemProgram: PublicKey;
+  tokenProgram: PublicKey;
   tokenAMint: PublicKey;
-  tokenBMint?: PublicKey;
+  tokenBMint: PublicKey;
   boundingCurve: PublicKey;
   tokenASource: PublicKey;
   tokenADestination: PublicKey;
@@ -181,11 +175,11 @@ type SwapInstructionArgs = {
 };
 
 function swapInstruction({
-  programId = PROGRAM_ID,
-  systemProgram = SystemProgram.programId,
-  tokenProgram = TOKEN_PROGRAM_ID,
+  programId,
+  systemProgram,
+  tokenProgram,
   tokenAMint,
-  tokenBMint = NATIVE_MINT,
+  tokenBMint,
   boundingCurve,
   payer,
   tokenASource,
@@ -213,38 +207,56 @@ function swapInstruction({
 }
 
 type CreateMintInstructionArgs = {
-  name: string;
-  ticker: string;
-  uri: string;
-  decimals: number;
-  totalSupply: BN;
   payer: PublicKey;
-};
+  data: {
+    name: string;
+    ticker: string;
+    uri: string;
+    decimals?: number;
+    totalSupply?: BN;
+  };
+} & Partial<
+  Pick<
+    InitializeMintInstructionArgs,
+    | "programId"
+    | "systemProgram"
+    | "sysVarInstructions"
+    | "sysvarRent"
+    | "tokenProgram"
+    | "metadataProgram"
+  >
+>;
 
-export async function createMintInstruction({
-  name,
-  ticker,
-  uri,
-  decimals,
-  totalSupply,
+export function createMintInstruction({
+  programId = HASHFUND_PROGRAM_ID,
+  systemProgram = SystemProgram.programId,
+  sysVarInstructions = SYSVAR_INSTRUCTIONS_PUBKEY,
+  sysvarRent = SYSVAR_RENT_PUBKEY,
+  tokenProgram = TOKEN_PROGRAM_ID,
+  metadataProgram = MPL_TOKEN_METADATA_PROGRAM_ID,
   payer,
+  data: {
+    name,
+    ticker,
+    uri,
+    decimals = 6,
+    totalSupply = new BN(1_000_000_000).mul(new BN(10).pow(new BN(decimals))),
+  },
 }: CreateMintInstructionArgs) {
-  let [mint, initializeInstruction] = initializeMintTokenInstruction({
+  let [mint, initializeInstruction] = initializeMintInstruction({
     payer,
+    programId,
+    systemProgram,
+    tokenProgram,
+    sysVarInstructions,
+    sysvarRent,
+    metadataProgram,
     data: new InitializeMintTokenSchema(name, ticker, uri, decimals),
   });
 
-  let data = new MintTokenSchema(
-    totalSupply.mul(new BN(10).pow(new BN(decimals)))
-  );
+  let [boundingCurve] = findBoundingCurvePda(mint, programId);
 
-  let [boundingCurve] = findBoundingCurvePda(mint, PROGRAM_ID);
-
-  let mintReserveAta = await getAssociatedTokenAddress(
-    mint,
-    boundingCurve,
-    true
-  );
+  let mintReserveAta = getAssociatedTokenAddressSync(mint, boundingCurve, true);
 
   let createMintReserveAtaInstruction = createAssociatedTokenAccountInstruction(
     payer,
@@ -254,10 +266,12 @@ export async function createMintInstruction({
   );
 
   let mintInstruction = mintTokenInstruction({
-    data,
     payer,
     mint,
+    programId,
     mintReserveAta,
+    tokenProgram,
+    data: new MintTokenSchema(totalSupply),
   });
 
   return [
@@ -268,29 +282,28 @@ export async function createMintInstruction({
 
 type CreateInitializeCurveArgs = {
   connection: Connection;
+  programId?: PublicKey;
+  systemProgram?: PublicKey;
   tokenAMint: PublicKey;
-  tokenBMint: PublicKey;
+  tokenBMint?: PublicKey;
   payer: PublicKey;
-  data: InitializeCurveSchema;
+  data: {
+    initialBuyAmount: BN;
+    maximumMarkeyCap: BN;
+  };
 };
 
 export async function createInitializeCurveInstruction({
   connection,
+  programId = HASHFUND_PROGRAM_ID,
+  systemProgram = SystemProgram.programId,
   tokenAMint,
-  tokenBMint,
+  tokenBMint = NATIVE_MINT,
   payer,
   data,
 }: CreateInitializeCurveArgs) {
-  const [boundingCurve] = findBoundingCurvePda(tokenAMint, PROGRAM_ID);
+  const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
 
-  const boundingCurveTokenAAccountIx =
-    await getOrCreateAssociatedTokenAccountInstructions(
-      connection,
-      tokenAMint,
-      payer,
-      boundingCurve,
-      true
-    );
   const boundingCurveTokenBAccountIx =
     await getOrCreateAssociatedTokenAccountInstructions(
       connection,
@@ -318,31 +331,20 @@ export async function createInitializeCurveInstruction({
       false
     );
 
-  // console.log("payer=", payer.toBase58());
-  // console.log("tokenA=", tokenAMint.toBase58());
-  // console.log("tokenB=", tokenBMint.toBase58());
-  // console.log("boundingCurve=", boundingCurve.toBase58());
-  // console.log(
-  //   "boundingCurveTokenAAccount",
-  //   boundingCurveTokenAAccount.toBase58()
-  // );
-  // console.log(
-  //   "boundingCurveTokenBAccount=",
-  //   boundingCurveTokenBAccount.toBase58()
-  // );
-  // console.log("payerTokenAAccount=", payerTokenAAccount.toBase58());
-  // console.log("payerTokenBAccount=", payerTokenBAccount.toBase58());
-
   const initializeCurveIx = initializeCurveInstruction({
+    programId,
+    systemProgram,
     boundingCurve,
     tokenAMint,
     tokenBMint,
     payer,
-    data,
+    data: new InitializeCurveSchema(
+      data.initialBuyAmount,
+      data.maximumMarkeyCap
+    ),
   });
 
   return [
-    ...boundingCurveTokenAAccountIx,
     ...boundingCurveTokenBAccountIx,
     ...payerTokenAAccountIx,
     ...payerTokenBAccountIx,
@@ -352,18 +354,27 @@ export async function createInitializeCurveInstruction({
 
 type CreateSwapArgs = {
   tokenAMint: PublicKey;
-  tokenBMint: PublicKey;
   payer: PublicKey;
-  data: SwapSchema;
-};
+  data: {
+    amount: BN;
+  };
+} & Partial<
+  Pick<
+    SwapInstructionArgs,
+    "programId" | "systemProgram" | "tokenProgram" | "tokenBMint"
+  >
+>;
 
 export function createSwapInInstruction({
+  programId = HASHFUND_PROGRAM_ID,
+  systemProgram = SystemProgram.programId,
+  tokenProgram = TOKEN_PROGRAM_ID,
   tokenAMint,
-  tokenBMint,
+  tokenBMint = NATIVE_MINT,
   payer,
   data,
 }: CreateSwapArgs) {
-  const [boundingCurve] = findBoundingCurvePda(tokenAMint, PROGRAM_ID);
+  const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
   const tokenASource = getAssociatedTokenAddressSync(
     tokenAMint,
     boundingCurve,
@@ -384,6 +395,9 @@ export function createSwapInInstruction({
   );
 
   return swapInstruction({
+    programId,
+    systemProgram,
+    tokenProgram,
     tokenAMint,
     tokenBMint,
     boundingCurve,
@@ -392,17 +406,20 @@ export function createSwapInInstruction({
     tokenBSource,
     tokenBDestination,
     payer,
-    data,
+    data: new SwapSchema(data.amount, 0),
   });
 }
 
 export function createSwapOutInstruction({
+  programId = HASHFUND_PROGRAM_ID,
+  systemProgram = SystemProgram.programId,
+  tokenProgram = TOKEN_PROGRAM_ID,
   tokenAMint,
-  tokenBMint,
+  tokenBMint = NATIVE_MINT,
   payer,
   data,
 }: CreateSwapArgs) {
-  const [boundingCurve] = findBoundingCurvePda(tokenAMint, PROGRAM_ID);
+  const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
 
   const tokenASource = getAssociatedTokenAddressSync(tokenAMint, payer, false);
   const tokenADestination = getAssociatedTokenAddressSync(
@@ -424,13 +441,17 @@ export function createSwapOutInstruction({
   );
 
   return swapInstruction({
+    programId,
+    systemProgram,
+    tokenProgram,
     tokenAMint,
-    data,
+    tokenBMint,
     boundingCurve,
     tokenASource,
     tokenADestination,
     tokenBSource,
     tokenBDestination,
     payer,
+    data: new SwapSchema(data.amount, 1),
   });
 }

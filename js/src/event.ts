@@ -1,8 +1,52 @@
+import type BN from "bn.js";
 import Borsh from "@project-serum/borsh";
+
+import type { PublicKey } from "@solana/web3.js";
 
 import { Schema } from "./schema";
 
-export class Event extends Schema {
+type MintEvent = {
+  mint: PublicKey;
+  timestamp: BN;
+  name: string;
+  ticker: string;
+  uri: string;
+  creator: PublicKey;
+};
+
+type MintToEvent = {
+  mint: PublicKey;
+  reserve: PublicKey;
+  amount: BN;
+  timestamp: BN;
+};
+
+type InitializeCurveEvent = {
+  mint: PublicKey;
+  bounding_curve: PublicKey;
+  initial_price: BN;
+  maximum_market_cap: BN;
+  timestamp: BN;
+};
+
+type SwapEvent = {
+  mint: PublicKey;
+  amount_in: BN;
+  amount_out: BN;
+  trade_direction: number;
+  market_cap: BN;
+  timestamp: BN;
+  payer: PublicKey;
+};
+
+export type Event = {
+  Mint?: MintEvent;
+  MintTo?: MintToEvent;
+  InitializeCurve?: InitializeCurveEvent;
+  Swap?: SwapEvent;
+};
+
+export class EventSchema extends Schema {
   static schema = Borsh.rustEnum([
     Borsh.struct(
       [
@@ -42,6 +86,7 @@ export class Event extends Schema {
         Borsh.u8("trade_direction"),
         Borsh.u64("market_cap"),
         Borsh.i64("timestamp"),
+        Borsh.publicKey("payer"),
       ],
       "Swap"
     ),

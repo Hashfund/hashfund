@@ -1,17 +1,9 @@
-import { readFileSync } from "fs";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import {
-  createAssociatedTokenAccount,
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-
-export function loadWallet(path: string): any {
-  return Keypair.fromSecretKey(
-    new Uint8Array(JSON.parse(readFileSync(path, "utf-8")))
-  );
-}
 
 export function findMetadataPda(
   mint: PublicKey,

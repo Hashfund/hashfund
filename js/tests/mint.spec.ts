@@ -1,29 +1,43 @@
 import { BN } from "bn.js";
-import { test, describe, beforeAll } from "bun:test";
 import {
   clusterApiUrl,
   Connection,
   sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
-import { loadWallet } from "../src/utils";
-import { createMintInstruction } from "../src";
+import { loadWallet } from "./utils";
+import {
+  createInitializeCurveInstruction,
+  createMintInstruction,
+} from "../src";
+import { NATIVE_MINT } from "@solana/spl-token";
 
 const main = async () => {
   const connection: Connection = new Connection(clusterApiUrl("devnet"));
   const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 
   const [mint, instructions] = await createMintInstruction({
-    name: "hashfund #1",
-    ticker: "Hash",
-    uri: "https://hashfund.io/public.json",
-    decimals: 9,
-    totalSupply: new BN(1_000_000),
+    data: {
+      name: "Goku #1",
+      ticker: "goku",
+      uri: "https://ik.imagekit.io/hashfund/dev/goku.json",
+    },
     payer: wallet.publicKey,
   });
 
   console.log("mint={}", mint.toBase58());
-  const transaction = new Transaction().add(...instructions);
+  const transaction = new Transaction().add(...instructions).add(
+    ...(await createInitializeCurveInstruction({
+      connection,
+      tokenAMint: mint,
+      tokenBMint: NATIVE_MINT,
+      payer: wallet.publicKey,
+      data: {
+        initialBuyAmount: new BN(1).mul(new BN(10).pow(new BN(9))),
+        maximumMarkeyCap: new BN(4).mul(new BN(10).pow(new BN(9))),
+      },
+    }))
+  );
   const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
 
   console.log("tx={}", tx);

@@ -56,9 +56,9 @@ impl BoundingCurveInfo {
             return Err(error::TokenMintError::InsufficientTokenInReserve.into());
         }
 
-        if bounding_curve_token_account.amount.add(native_amount) >= self.maximum_market_cap {
-            state.can_trade = false;
-        }
+        // if bounding_curve_token_account.amount.add(native_amount) >= self.maximum_market_cap {
+        //     state.can_trade = false;
+        // }
 
         invoke(
             &transfer(
@@ -107,6 +107,7 @@ impl BoundingCurveInfo {
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
             market_cap: token_b_source_info.amount,
+            payer: accounts.payer.key.clone(),
         });
 
         Ok(state)
@@ -172,6 +173,7 @@ impl BoundingCurveInfo {
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
             market_cap: token_b_source_info.amount,
+            payer: accounts.payer.key.clone(),
         });
 
         Ok(())

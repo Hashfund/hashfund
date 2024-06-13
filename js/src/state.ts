@@ -1,7 +1,8 @@
-import Borsh from "@project-serum/borsh";
-import { Schema } from "./schema";
 import type BN from "bn.js";
+import Borsh from "@project-serum/borsh";
 import type { PublicKey } from "@solana/web3.js";
+
+import { Schema } from "./schema";
 
 export class BoundingCurveInfo extends Schema {
   static schema = Borsh.struct([

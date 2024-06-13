@@ -1,15 +1,12 @@
-# js
+# hashfund 
 
-To install dependencies:
+Hashfund program instructions interface and utils. Mint and Create bounding curve with constant pricing with swapIn and swapOut interface.
 
-```bash
-bun install
-```
 
-To run:
+# Examples 
 
-```bash
-bun run src/index.ts
-```
+Check the unit `/tests` folder for examples 
 
-This project was created using `bun init` in bun v1.0.35. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+
+# Build
+bun tsc

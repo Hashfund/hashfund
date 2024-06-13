@@ -44,7 +44,6 @@ pub fn process_initialize_mint<'a>(
     let seeds = &[
         payload.name.as_bytes().as_ref(),
         payload.ticker.as_bytes().as_ref(),
-        payload.uri.as_bytes().as_ref(),
         accounts.payer.key.as_ref(),
     ];
 
@@ -65,7 +64,6 @@ pub fn process_initialize_mint<'a>(
     let token_mint_signer_seeds: &[&[u8]] = &[
         payload.name.as_bytes().as_ref(),
         payload.ticker.as_bytes().as_ref(),
-        payload.uri.as_bytes().as_ref(),
         accounts.payer.key.as_ref(),
         &[token_mint_bump],
     ];

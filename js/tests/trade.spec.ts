@@ -7,8 +7,7 @@ import {
   Transaction,
 } from "@solana/web3.js";
 
-import { InitializeCurveSchema, SwapSchema } from "../src/schema";
-import { loadWallet } from "../src/utils";
+import { loadWallet } from "./utils";
 import {
   createInitializeCurveInstruction,
   createSwapInInstruction,
@@ -18,7 +17,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 
 let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 const tokenAMint = new PublicKey(
-  "G7xfyXafiVXj7V2zRrRntnPEepV3oYXjbjmBGVwji72k"
+  "2rWzF9qrKRvB6HNo11xe811N7i2PWVqCgGD5ZcbQ2zhk"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -30,14 +29,16 @@ async function initializeCurve(connection: Connection) {
       tokenAMint,
       tokenBMint,
       payer: wallet.publicKey,
-      data: new InitializeCurveSchema(
-        new BN(1).mul(new BN(10).pow(new BN(9))),
-        new BN(4).mul(new BN(10).pow(new BN(9)))
-      ),
+      data: {
+        initialBuyAmount: new BN(1).mul(new BN(10).pow(new BN(9))),
+        maximumMarkeyCap: new BN(4).mul(new BN(10).pow(new BN(9))),
+      },
     }))
   );
 
-  return sendAndConfirmTransaction(connection, transaction, [wallet]);
+  return sendAndConfirmTransaction(connection, transaction, [wallet], {
+    commitment: "finalized",
+  });
 }
 
 async function buySwap(connection: Connection) {
@@ -47,11 +48,13 @@ async function buySwap(connection: Connection) {
       tokenAMint,
       tokenBMint,
       payer: wallet.publicKey,
-      data: new SwapSchema(new BN(1).mul(new BN(10).pow(new BN(9))), 0),
+      data: {
+        amount: new BN(1).mul(new BN(10).pow(new BN(9))),
+      },
     })
   );
 
-  return sendAndConfirmTransaction(connection, transaction, [wallet]);
+  return sendAndConfirmTransaction(connection, transaction, [wallet], {commitment: "finalized"});
 }
 
 async function sellSwap(connection: Connection) {
@@ -61,7 +64,9 @@ async function sellSwap(connection: Connection) {
       tokenAMint,
       tokenBMint,
       payer: wallet.publicKey,
-      data: new SwapSchema(new BN(1).mul(new BN(10).pow(new BN(9))), 1),
+      data: {
+        amount: new BN(1).mul(new BN(10).pow(new BN(9))),
+      },
     })
   );
 
@@ -70,11 +75,11 @@ async function sellSwap(connection: Connection) {
 
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
-  const tx = await initializeCurve(connection);
+  const tx = await buySwap(connection);
   console.log("tx=", tx);
 }
 
-// main().catch(async (error) => {
-//   console.log(error);
-//   console.log(await error.getLogs());
-// });
+main().catch(async (error) => {
+  console.log(error);
+  console.log(await error.getLogs());
+});
