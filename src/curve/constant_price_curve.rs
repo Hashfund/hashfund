@@ -37,20 +37,21 @@ impl ConstantPriceCurve {
 impl CurveCalculator for ConstantPriceCurve {
     fn calculate_initial_price(&self) -> u128 {
         let offset = 1;
-        let adjustment_factor = self.token_b_denominator.div(10);
-        let base_price = self.token_b_initial_deposit.div(self.token_a_total_supply);
+        let adjustment_factor = self.token_b_initial_deposit.div(self.token_b_denominator);
 
-        base_price.add(
-            offset.add(
-                adjustment_factor.mul(offset.add(self.token_b_initial_deposit).ilog10() as u128),
-            ),
-        )
+        adjustment_factor
+            .add(self.token_b_initial_deposit.ilog10() as u128)
+            .add(1.mul(offset.add(self.token_a_total_supply).ilog10() as u128))
     }
 
-    fn calculate_token_out(_initial_price: u128, _amount: u128, trade_direction: TradeDirection) -> u128 {
+    fn calculate_token_out(
+        initial_price: u128,
+        amount: u128,
+        trade_direction: TradeDirection,
+    ) -> u128 {
         match trade_direction {
-            TradeDirection::AtoB => 10_000_000_000,
-            TradeDirection::BtoA => 1_000_000_000,
+            TradeDirection::AtoB => amount.mul(initial_price),
+            TradeDirection::BtoA => amount.div(initial_price),
         }
     }
 }

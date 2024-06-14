@@ -1,5 +1,5 @@
 import type BN from "bn.js";
-import * as Borsh from "@project-serum/borsh";
+import Borsh from "@project-serum/borsh";
 
 export enum SchemaVariant {
   CREATE = 0,
@@ -44,15 +44,17 @@ export class InitializeMintTokenSchema extends Schema {
     Borsh.str("uri"),
   ]);
 
+  public readonly name;
   public readonly variant = SchemaVariant.CREATE;
 
   constructor(
-    public readonly name: string,
+    name: string,
     public readonly ticker: string,
     public readonly uri: string,
     public readonly decimals: number
   ) {
     super();
+    this.name = name.toUpperCase();
   }
 }
 

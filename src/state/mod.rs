@@ -4,6 +4,7 @@ use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     clock::Clock,
     entrypoint::ProgramResult,
+    msg,
     program::{invoke, invoke_signed},
     program_error::ProgramError,
     program_pack::Pack,
@@ -49,16 +50,29 @@ impl BoundingCurveInfo {
         .try_into()
         .unwrap();
 
-        let bounding_curve_token_account =
+        let bounding_curve_token_a_account =
             spl_token::state::Account::unpack(&accounts.token_a_source.data.try_borrow().unwrap())?;
 
-        if token_amount > bounding_curve_token_account.amount {
+        let bounding_curve_token_b_account = spl_token::state::Account::unpack(
+            &accounts.token_b_destination.data.try_borrow().unwrap(),
+        )?;
+
+        if token_amount > bounding_curve_token_a_account.amount {
             return Err(error::TokenMintError::InsufficientTokenInReserve.into());
         }
 
-        // if bounding_curve_token_account.amount.add(native_amount) >= self.maximum_market_cap {
-        //     state.can_trade = false;
-        // }
+        let market_cap = bounding_curve_token_b_account.amount;
+
+        msg!(
+            "market_cap={}, \n maximum_market_cap={}, \n new_marketcap={}",
+            market_cap,
+            self.maximum_market_cap,
+            market_cap.add(native_amount)
+        );
+
+        if market_cap > self.maximum_market_cap {
+            state.can_trade = false;
+        }
 
         invoke(
             &transfer(
@@ -97,8 +111,6 @@ impl BoundingCurveInfo {
         )?;
 
         let clock = Clock::get()?;
-        let token_b_source_info =
-            spl_token::state::Account::unpack(&accounts.token_b_destination.data.borrow())?;
 
         emit(Event::Swap {
             amount_in: native_amount,
@@ -106,7 +118,7 @@ impl BoundingCurveInfo {
             trade_direction: 0,
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
-            market_cap: token_b_source_info.amount,
+            market_cap: market_cap.add(native_amount),
             payer: accounts.payer.key.clone(),
         });
 
@@ -119,6 +131,9 @@ impl BoundingCurveInfo {
         amount: u64,
         signers_seeds: &[&[&[u8]]],
     ) -> ProgramResult {
+        let token_b_source_info =
+            spl_token::state::Account::unpack(&accounts.token_b_source.data.borrow())?;
+
         let price = T::calculate_token_out(
             self.initial_price.into(),
             amount.into(),
@@ -163,8 +178,6 @@ impl BoundingCurveInfo {
         )?;
 
         let clock = Clock::get()?;
-        let token_b_source_info =
-            spl_token::state::Account::unpack(&accounts.token_b_source.data.borrow())?;
 
         emit(Event::Swap {
             amount_in: amount,
@@ -172,7 +185,7 @@ impl BoundingCurveInfo {
             trade_direction: 1,
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
-            market_cap: token_b_source_info.amount,
+            market_cap: token_b_source_info.amount.add(price),
             payer: accounts.payer.key.clone(),
         });
 

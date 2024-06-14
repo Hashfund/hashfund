@@ -289,7 +289,7 @@ type CreateInitializeCurveArgs = {
   payer: PublicKey;
   data: {
     initialBuyAmount: BN;
-    maximumMarkeyCap: BN;
+    maximumMarketCap: BN;
   };
 };
 
@@ -340,7 +340,7 @@ export async function createInitializeCurveInstruction({
     payer,
     data: new InitializeCurveSchema(
       data.initialBuyAmount,
-      data.maximumMarkeyCap
+      data.maximumMarketCap
     ),
   });
 

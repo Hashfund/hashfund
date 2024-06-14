@@ -17,7 +17,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 
 let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 const tokenAMint = new PublicKey(
-  "2rWzF9qrKRvB6HNo11xe811N7i2PWVqCgGD5ZcbQ2zhk"
+  "9inqo1RqhX4QioTmfYiWvTp1Vxw88J98GkuBMryYgTqy"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -31,7 +31,7 @@ async function initializeCurve(connection: Connection) {
       payer: wallet.publicKey,
       data: {
         initialBuyAmount: new BN(1).mul(new BN(10).pow(new BN(9))),
-        maximumMarkeyCap: new BN(4).mul(new BN(10).pow(new BN(9))),
+        maximumMarketCap: new BN(4).mul(new BN(10).pow(new BN(9))),
       },
     }))
   );

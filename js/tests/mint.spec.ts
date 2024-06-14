@@ -19,9 +19,9 @@ const main = async () => {
 
   const [mint, instructions] = await createMintInstruction({
     data: {
-      name: "Goku #2",
-      ticker: "goku",
-      uri: "https://ik.imagekit.io/hashfund/dev/goku.json",
+      name: "Pepe",
+      ticker: "Pepe",
+      uri: "https://ik.imagekit.io/hashfund/dev/pepe.json",
     },
     payer: wallet.publicKey,
   });
@@ -35,7 +35,7 @@ const main = async () => {
       payer: wallet.publicKey,
       data: {
         initialBuyAmount: new BN(1).mul(new BN(10).pow(new BN(9))),
-        maximumMarkeyCap: new BN(4).mul(new BN(10).pow(new BN(9))),
+        maximumMarketCap: new BN(4).mul(new BN(10).pow(new BN(9))),
       },
     })),
     createSwapInInstruction({
