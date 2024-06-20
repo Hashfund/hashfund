@@ -353,6 +353,7 @@ export async function createInitializeCurveInstruction({
 }
 
 type CreateSwapArgs = {
+  connection?: Connection;
   tokenAMint: PublicKey;
   payer: PublicKey;
   data: {
@@ -410,7 +411,8 @@ export function createSwapInInstruction({
   });
 }
 
-export function createSwapOutInstruction({
+export async function createSwapOutInstruction({
+  connection,
   programId = HASHFUND_PROGRAM_ID,
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
@@ -418,7 +420,7 @@ export function createSwapOutInstruction({
   tokenBMint = NATIVE_MINT,
   payer,
   data,
-}: CreateSwapArgs) {
+}: CreateSwapArgs & { connection: Connection }) {
   const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
 
   const tokenASource = getAssociatedTokenAddressSync(tokenAMint, payer, false);
@@ -440,18 +442,30 @@ export function createSwapOutInstruction({
     false
   );
 
-  return swapInstruction({
-    programId,
-    systemProgram,
-    tokenProgram,
-    tokenAMint,
-    tokenBMint,
-    boundingCurve,
-    tokenASource,
-    tokenADestination,
-    tokenBSource,
-    tokenBDestination,
-    payer,
-    data: new SwapSchema(data.amount, 1),
-  });
+  const tokenBDestinationAccountIx =
+    await getOrCreateAssociatedTokenAccountInstructions(
+      connection,
+      tokenBMint,
+      payer,
+      payer,
+      false
+    );
+
+  return [
+    ...tokenBDestinationAccountIx,
+    swapInstruction({
+      programId,
+      systemProgram,
+      tokenProgram,
+      tokenAMint,
+      tokenBMint,
+      boundingCurve,
+      tokenASource,
+      tokenADestination,
+      tokenBSource,
+      tokenBDestination,
+      payer,
+      data: new SwapSchema(data.amount, 1),
+    }),
+  ];
 }

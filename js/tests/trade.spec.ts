@@ -1,3 +1,4 @@
+import "dotenv/config";
 import BN from "bn.js";
 import {
   clusterApiUrl,
@@ -7,7 +8,7 @@ import {
   Transaction,
 } from "@solana/web3.js";
 
-import { loadWallet } from "./utils";
+import { loadWallet, loadWalletFromPriv } from "./utils";
 import {
   createInitializeCurveInstruction,
   createSwapInInstruction,
@@ -17,7 +18,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 
 let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 const tokenAMint = new PublicKey(
-  "9inqo1RqhX4QioTmfYiWvTp1Vxw88J98GkuBMryYgTqy"
+  "CwQHh94564GpUt3WXj8prnP6E6ARPC5JCpEcf6TEosdu"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -45,29 +46,33 @@ async function buySwap(connection: Connection) {
   const transaction = new Transaction();
   transaction.add(
     createSwapInInstruction({
+      connection,
       tokenAMint,
       tokenBMint,
       payer: wallet.publicKey,
       data: {
-        amount: new BN(1).mul(new BN(10).pow(new BN(9))),
+        amount: new BN(5).mul(new BN(10).pow(new BN(8))),
       },
     })
   );
 
-  return sendAndConfirmTransaction(connection, transaction, [wallet], {commitment: "finalized"});
+  return sendAndConfirmTransaction(connection, transaction, [wallet], {
+    commitment: "finalized",
+  });
 }
 
 async function sellSwap(connection: Connection) {
   const transaction = new Transaction();
   transaction.add(
-    createSwapOutInstruction({
+    ...(await createSwapOutInstruction({
+      connection,
       tokenAMint,
       tokenBMint,
       payer: wallet.publicKey,
       data: {
-        amount: new BN(1).mul(new BN(10).pow(new BN(9))),
+        amount: new BN(10_361_000).mul(new BN(10).pow(new BN(6))),
       },
-    })
+    }))
   );
 
   return sendAndConfirmTransaction(connection, transaction, [wallet]);

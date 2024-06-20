@@ -10,6 +10,7 @@ import {
   createInitializeCurveInstruction,
   createMintInstruction,
   createSwapInInstruction,
+  createSwapOutInstruction,
 } from "../src";
 import { NATIVE_MINT } from "@solana/spl-token";
 
@@ -17,9 +18,9 @@ const main = async () => {
   const connection: Connection = new Connection(clusterApiUrl("devnet"));
   const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 
-  const [mint, instructions] = await createMintInstruction({
+  const [mint, instructions] = createMintInstruction({
     data: {
-      name: "Pepe",
+      name: "Pepe #3",
       ticker: "Pepe",
       uri: "https://ik.imagekit.io/hashfund/dev/pepe.json",
     },
@@ -38,13 +39,14 @@ const main = async () => {
         maximumMarketCap: new BN(4).mul(new BN(10).pow(new BN(9))),
       },
     })),
-    createSwapInInstruction({
-      tokenAMint: mint,
-      payer: wallet.publicKey,
-      data: {
-        amount: new BN(1).mul(new BN(10).pow(new BN(9))),
-      },
-    })
+    // createSwapInInstruction({
+    //   connection,
+    //   tokenAMint: mint,
+    //   payer: wallet.publicKey,
+    //   data: {
+    //     amount: new BN(1).mul(new BN(10).pow(new BN(9))),
+    //   },
+    // })
   );
   const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
 
