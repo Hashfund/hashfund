@@ -6,7 +6,7 @@ use mpl_token_metadata::{
     types::{PrintSupply, TokenStandard},
 };
 use solana_program::{
-    borsh1::try_from_slice_unchecked, clock::Clock, entrypoint::ProgramResult,
+    borsh1::try_from_slice_unchecked, clock::Clock, entrypoint::ProgramResult, msg,
     program::invoke_signed, program_pack::Pack, pubkey::Pubkey, rent::Rent,
     system_instruction::create_account, sysvar::Sysvar,
 };
@@ -244,6 +244,8 @@ pub fn process_initialize_curve<'a>(
     );
 
     let initial_price: u64 = curve.calculate_initial_price().try_into().unwrap();
+
+    msg!("initial_price={}", initial_price);
 
     invoke_signed(
         &create_account(

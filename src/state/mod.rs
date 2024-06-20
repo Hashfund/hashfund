@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
@@ -45,10 +45,21 @@ impl BoundingCurveInfo {
         let token_amount: u64 = T::calculate_token_out(
             self.initial_price.into(),
             native_amount.into(),
+            TradeDirection::BtoA,
+        )
+        .try_into()
+        .unwrap();
+
+        let native_amount: u64 = T::calculate_token_out(
+            self.initial_price.into(),
+            token_amount.into(),
             TradeDirection::AtoB,
         )
         .try_into()
         .unwrap();
+
+        msg!("token_amount={}", token_amount);
+        msg!("native_amount={}", native_amount);
 
         let bounding_curve_token_a_account =
             spl_token::state::Account::unpack(&accounts.token_a_source.data.try_borrow().unwrap())?;
@@ -99,7 +110,7 @@ impl BoundingCurveInfo {
                 &accounts.token_a_destination.key,
                 &accounts.bounding_curve.key,
                 &[],
-                native_amount,
+                token_amount,
             )?,
             &[
                 accounts.token_a_source.clone(),
@@ -134,13 +145,24 @@ impl BoundingCurveInfo {
         let token_b_source_info =
             spl_token::state::Account::unpack(&accounts.token_b_source.data.borrow())?;
 
-        let price = T::calculate_token_out(
+        msg!("initial_price={}\n", self.initial_price);
+        msg!("amount={}\n", amount);
+
+        let native_amount = T::calculate_token_out(
             self.initial_price.into(),
             amount.into(),
+            TradeDirection::AtoB,
+        );
+
+        let amount = T::calculate_token_out(
+            self.initial_price.into(),
+            native_amount,
             TradeDirection::BtoA,
         );
 
-        let price: u64 = price.try_into().unwrap();
+        let amount: u64 = amount.try_into().unwrap();
+        let native_amount: u64 = native_amount.try_into().unwrap();
+        msg!("native_amount={}\n", native_amount);
 
         invoke(
             &spl_token::instruction::transfer(
@@ -166,7 +188,7 @@ impl BoundingCurveInfo {
                 accounts.token_b_destination.key,
                 accounts.bounding_curve.key,
                 &[],
-                price.try_into().unwrap(),
+                native_amount.try_into().unwrap(),
             )?,
             &[
                 accounts.token_b_source.clone(),
@@ -181,11 +203,11 @@ impl BoundingCurveInfo {
 
         emit(Event::Swap {
             amount_in: amount,
-            amount_out: price,
+            amount_out: native_amount,
             trade_direction: 1,
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
-            market_cap: token_b_source_info.amount.add(price),
+            market_cap: token_b_source_info.amount.sub(native_amount),
             payer: accounts.payer.key.clone(),
         });
 

@@ -1,4 +1,4 @@
-use std::ops::{Add, Div, Mul};
+use std::ops::{Div, Mul};
 
 use super::calculator::{CurveCalculator, TradeDirection};
 
@@ -34,14 +34,28 @@ impl ConstantPriceCurve {
     }
 }
 
-impl CurveCalculator for ConstantPriceCurve {
-    fn calculate_initial_price(&self) -> u128 {
-        let offset = 1;
-        let adjustment_factor = self.token_b_initial_deposit.div(self.token_b_denominator);
+pub const C: f64 = 500_f64;
+pub const W: f64 = 1_f64;
 
-        adjustment_factor
-            .add(self.token_b_initial_deposit.ilog10() as u128)
-            .add(1.mul(offset.add(self.token_a_total_supply).ilog10() as u128))
+impl CurveCalculator for ConstantPriceCurve {
+    fn calculate_initial_price_f64(p0: f64, c: f64, t: f64, w: f64) -> f64 {
+        p0.ln().mul(c.mul(w)).div(t)
+    }
+
+    fn calculate_initial_price(&self) -> u128 {
+        let total_supply_f64 = self.token_a_total_supply as f64;
+        let initial_price_f64 = self.token_b_initial_deposit as f64;
+
+        // constants
+        let weight_f64 = W.mul(self.token_a_denominator as f64);
+        let base_collateral_f64 = C.mul(self.token_b_denominator as f64);
+
+        Self::calculate_initial_price_f64(
+            initial_price_f64,
+            base_collateral_f64,
+            total_supply_f64,
+            weight_f64,
+        ) as u128
     }
 
     fn calculate_token_out(
@@ -50,8 +64,8 @@ impl CurveCalculator for ConstantPriceCurve {
         trade_direction: TradeDirection,
     ) -> u128 {
         match trade_direction {
-            TradeDirection::AtoB => amount.mul(initial_price),
-            TradeDirection::BtoA => amount.div(initial_price),
+            TradeDirection::BtoA => (amount).mul(initial_price),
+            TradeDirection::AtoB => (amount).div(initial_price),
         }
     }
 }

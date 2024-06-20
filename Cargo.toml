@@ -15,8 +15,11 @@ spl-associated-token-account = { version = "3.0.2", features = [
     "no-entrypoint",
 ] }
 spl-program-error = { version = "0.4.1" }
-spl-token = { version = "4.0.1", features = ["no-entrypoint"] }
+spl-token = { version = "4.0.0", features = ["no-entrypoint"] }
 thiserror = "1.0.61"
+raydium-library = { version = "0.3.0", path = "../raydium-library", features = [
+    "no-entrypoint"
+] }
 
 [lib]
 name = "hashfund"
