@@ -3,7 +3,7 @@ import Borsh from "@project-serum/borsh";
 
 import type { PublicKey } from "@solana/web3.js";
 
-import { Schema } from "./schema";
+import { SafeMath, Schema } from "./schema";
 
 type MintEvent = {
   mint: PublicKey;
@@ -72,7 +72,7 @@ export class EventSchema extends Schema {
       [
         Borsh.publicKey("mint"),
         Borsh.publicKey("bounding_curve"),
-        Borsh.u64("initial_price"),
+        SafeMath.schema,
         Borsh.u64("maximum_market_cap"),
         Borsh.i64("timestamp"),
       ],

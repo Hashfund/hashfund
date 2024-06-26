@@ -2,11 +2,11 @@ import type BN from "bn.js";
 import Borsh from "@project-serum/borsh";
 import type { PublicKey } from "@solana/web3.js";
 
-import { Schema } from "./schema";
+import { Schema, SwapSchema } from "./schema";
 
 export class BoundingCurveInfo extends Schema {
   static schema = Borsh.struct([
-    Borsh.u64("initial_price"),
+    SwapSchema.schema,
     Borsh.u64("maximum_market_cap"),
     Borsh.publicKey("mint_address"),
     Borsh.bool("can_trade"),

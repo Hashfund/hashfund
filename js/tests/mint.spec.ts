@@ -2,6 +2,7 @@ import { BN } from "bn.js";
 import {
   clusterApiUrl,
   Connection,
+  PublicKey,
   sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
@@ -10,9 +11,11 @@ import {
   createInitializeCurveInstruction,
   createMintInstruction,
   createSwapInInstruction,
-  createSwapOutInstruction,
+  HASHFUND_PROGRAM_ID,
+  SOL_USD_FEED,
 } from "../src";
 import { NATIVE_MINT } from "@solana/spl-token";
+import { findMintAuthorityPda } from "../src/utils";
 
 const main = async () => {
   const connection: Connection = new Connection(clusterApiUrl("devnet"));
@@ -20,12 +23,13 @@ const main = async () => {
 
   const [mint, instructions] = createMintInstruction({
     data: {
-      name: "Pepe #3",
-      ticker: "Pepe",
-      uri: "https://ik.imagekit.io/hashfund/dev/pepe.json",
+      name: "FriedLice",
+      ticker: "LICE #3",
+      uri: "https://ik.imagekit.io/hashfund/tokens_metadata_BNvUnF4moZ4arrPYYdrEhjS64LUBHuABgrRJaXvLrLPe.json",
     },
     payer: wallet.publicKey,
   });
+
 
   console.log("mint={}", mint.toBase58());
   const transaction = new Transaction().add(...instructions).add(
@@ -34,19 +38,20 @@ const main = async () => {
       tokenAMint: mint,
       tokenBMint: NATIVE_MINT,
       payer: wallet.publicKey,
+      solUsdFeed: SOL_USD_FEED,
       data: {
-        initialBuyAmount: new BN(1).mul(new BN(10).pow(new BN(9))),
-        maximumMarketCap: new BN(4).mul(new BN(10).pow(new BN(9))),
+        supplyFraction: new BN(10),
+        maximumMarketCap: new BN(10).mul(new BN(10).pow(new BN(9))),
       },
     })),
-    // createSwapInInstruction({
-    //   connection,
-    //   tokenAMint: mint,
-    //   payer: wallet.publicKey,
-    //   data: {
-    //     amount: new BN(1).mul(new BN(10).pow(new BN(9))),
-    //   },
-    // })
+    createSwapInInstruction({
+      connection,
+      tokenAMint: mint,
+      payer: wallet.publicKey,
+      data: {
+        amount: new BN(5).mul(new BN(10).pow(new BN(8))),
+      },
+    })
   );
   const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
 

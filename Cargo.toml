@@ -18,8 +18,17 @@ spl-program-error = { version = "0.4.1" }
 spl-token = { version = "4.0.0", features = ["no-entrypoint"] }
 thiserror = "1.0.61"
 raydium-library = { version = "0.3.0", path = "../raydium-library", features = [
-    "no-entrypoint"
+    "no-entrypoint",
 ] }
+raydium_amm = { version = "0.3.0", path = "../raydium-amm/program", features = [
+    "no-entrypoint",
+] }
+bounding_curve = { path = "../../../rust/bounding_curve" }
+serum_dex = { version = "0.5.6", git = "https://github.com/project-serum/serum-dex", features = [
+    "no-entrypoint",
+] }
+pyth-sdk-solana = "0.10.1"
+spl-program-error-derive = "0.4.1"
 
 [lib]
 name = "hashfund"

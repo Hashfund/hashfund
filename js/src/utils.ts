@@ -1,9 +1,12 @@
-import { Connection, PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
+import { sha256 } from "@noble/hashes/sha256";
+import { Connection, PublicKey, Keypair } from "@solana/web3.js";
 import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 export function findMetadataPda(
   mint: PublicKey,
@@ -30,6 +33,17 @@ export function findMasterEditionPda(
       Buffer.from("edition"),
     ],
     _programId
+  );
+}
+
+export function findMintAuthorityPda(
+  owner: PublicKey,
+  mint: PublicKey,
+  programId: PublicKey
+) {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("mint_authority"), owner.toBuffer(), mint.toBuffer()],
+    programId
   );
 }
 
@@ -68,4 +82,58 @@ export async function getOrCreateAssociatedTokenAccountInstructions(
       associatedTokenProgramId
     ),
   ];
+}
+
+function generateVaultSignerPda(
+  nonce: BN,
+  market: PublicKey,
+  programId: PublicKey
+) {
+  return PublicKey.createProgramAddressSync(
+    [market.toBuffer(), nonce.toArrayLike(Buffer, "le", 8)],
+    programId
+  );
+}
+
+export function findVaultSignerPda(market: PublicKey, programId: PublicKey) {
+  let nonce = new BN(0);
+
+  while (true) {
+    try {
+      return [generateVaultSignerPda(nonce, market, programId), nonce] as const;
+    } catch {
+      nonce.iaddn(1);
+    }
+  }
+}
+
+function createWithSeed(
+  fromPublicKey: PublicKey,
+  seed: string,
+  programId: PublicKey
+) {
+  const buffer = Buffer.concat([
+    fromPublicKey.toBuffer(),
+    Buffer.from(seed),
+    programId.toBuffer(),
+  ]);
+  const publicKeyBytes = sha256(buffer);
+  return new PublicKey(publicKeyBytes);
+}
+
+export type PublicKeyWithSeed = {
+  seed: string;
+  publicKey: PublicKey;
+};
+
+export function generatePublicKey({
+  fromPublicKey,
+  programId = TOKEN_PROGRAM_ID,
+}: {
+  fromPublicKey: PublicKey;
+  programId: PublicKey;
+}): PublicKeyWithSeed {
+  const seed = Keypair.generate().publicKey.toBase58().slice(0, 32);
+  const publicKey = createWithSeed(fromPublicKey, seed, programId);
+  return { publicKey, seed };
 }

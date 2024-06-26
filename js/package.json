@@ -17,10 +17,12 @@
   },
   "license": "MIT",
   "scripts": {
-    "prepublishOnly": "bun tsc"
+    "prepublishOnly": "bun tsc",
+    "gen:keypair": "bun run scripts/generate-random-keypair.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "commander": "^12.1.0",
     "fs": "^0.0.1-security"
   },
   "peerDependencies": {
@@ -30,7 +32,11 @@
     "@metaplex-foundation/mpl-token-metadata": "^3.2.1",
     "@metaplex-foundation/umi": "^0.9.1",
     "@metaplex-foundation/umi-bundle-defaults": "^0.9.1",
+    "@noble/hashes": "^1.4.0",
+    "@project-serum/associated-token": "^0.1.1",
     "@project-serum/borsh": "^0.2.5",
+    "@project-serum/serum": "^0.13.65",
+    "@raydium-io/raydium-sdk": "^1.3.1-beta.57",
     "@solana/spl-token": "^0.4.6",
     "@solana/web3.js": "^1.92.3",
     "@types/bn.js": "^5.1.5",

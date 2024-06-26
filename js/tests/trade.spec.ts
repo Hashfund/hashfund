@@ -8,17 +8,18 @@ import {
   Transaction,
 } from "@solana/web3.js";
 
-import { loadWallet, loadWalletFromPriv } from "./utils";
+import { loadWallet} from "./utils";
 import {
   createInitializeCurveInstruction,
   createSwapInInstruction,
   createSwapOutInstruction,
+  SOL_USD_FEED,
 } from "../src";
 import { NATIVE_MINT } from "@solana/spl-token";
 
 let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 const tokenAMint = new PublicKey(
-  "CwQHh94564GpUt3WXj8prnP6E6ARPC5JCpEcf6TEosdu"
+  "6NhJrUgeRoioePsguisrvfahuAxUMtXD2or1uhiGDPqv"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -30,8 +31,9 @@ async function initializeCurve(connection: Connection) {
       tokenAMint,
       tokenBMint,
       payer: wallet.publicKey,
+      solUsdFeed: SOL_USD_FEED,
       data: {
-        initialBuyAmount: new BN(1).mul(new BN(10).pow(new BN(9))),
+        supplyFraction: new BN(10),
         maximumMarketCap: new BN(4).mul(new BN(10).pow(new BN(9))),
       },
     }))
@@ -70,7 +72,7 @@ async function sellSwap(connection: Connection) {
       tokenBMint,
       payer: wallet.publicKey,
       data: {
-        amount: new BN(10_361_000).mul(new BN(10).pow(new BN(6))),
+        amount: new BN(5_000_000).mul(new BN(10).pow(new BN(6))),
       },
     }))
   );
@@ -80,7 +82,7 @@ async function sellSwap(connection: Connection) {
 
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
-  const tx = await buySwap(connection);
+  const tx = await sellSwap(connection);
   console.log("tx=", tx);
 }
 

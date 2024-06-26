@@ -1,8 +1,9 @@
 use borsh::BorshDeserialize;
-use solana_program::program_error::ProgramError;
+use solana_program::{msg, program_error::ProgramError};
 
 use crate::state::payload::{
-    InitializeCurvePayload, InitializeMintPayload, MintToPayload, SwapPayload,
+    InitializeCurvePayload, InitializeMintPayload, InitializeRaydiumPayload,
+    InitializeSerumMarketPayload, MintToPayload, SwapPayload,
 };
 
 pub trait Instruction {
@@ -18,6 +19,8 @@ pub enum ProgramInstruction {
     MintTo(MintToPayload),
     InitializeCurve(InitializeCurvePayload),
     Swap(SwapPayload),
+    InitializeSerumMarket(InitializeSerumMarketPayload),
+    InitializeRaydium(InitializeRaydiumPayload),
 }
 
 impl Instruction for ProgramInstruction {
@@ -26,19 +29,23 @@ impl Instruction for ProgramInstruction {
             .split_first()
             .ok_or(ProgramError::InvalidInstructionData)?;
 
+        msg!("variant={}", variant);
+
         match variant {
-            0 => Ok(ProgramInstruction::InitializeMint(
+            0 => Ok(Self::InitializeMint(
                 InitializeMintPayload::try_from_slice(rest).unwrap(),
             )),
-            1 => Ok(ProgramInstruction::MintTo(
-                MintToPayload::try_from_slice(rest).unwrap(),
-            )),
-            2 => Ok(ProgramInstruction::InitializeCurve(
+            1 => Ok(Self::MintTo(MintToPayload::try_from_slice(rest).unwrap())),
+            2 => Ok(Self::InitializeCurve(
                 InitializeCurvePayload::try_from_slice(rest).unwrap(),
             )),
-            3 => Ok(ProgramInstruction::Swap(
-                SwapPayload::try_from_slice(rest).unwrap(),
+            3 => Ok(Self::InitializeSerumMarket(
+                InitializeSerumMarketPayload::try_from_slice(rest).unwrap(),
             )),
+            4 => Ok(Self::InitializeRaydium(
+                InitializeRaydiumPayload::try_from_slice(rest).unwrap(),
+            )),
+            5 => Ok(Self::Swap(SwapPayload::try_from_slice(rest).unwrap())),
             _ => Err(ProgramError::InvalidInstructionData),
         }
     }

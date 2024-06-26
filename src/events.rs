@@ -1,5 +1,6 @@
 use base64::{display::Base64Display, engine::general_purpose::STANDARD};
 use borsh::BorshSerialize;
+use bounding_curve::safe_number::SafeNumber;
 use solana_program::{msg, pubkey::Pubkey};
 
 #[derive(BorshSerialize)]
@@ -21,7 +22,7 @@ pub enum Event {
     InitializeCurve {
         mint: Pubkey,
         bounding_curve: Pubkey,
-        initial_price: u64,
+        initial_price: SafeNumber,
         maximum_market_cap: u64,
         timestamp: i64,
     },

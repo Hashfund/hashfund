@@ -22,7 +22,7 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
   },
-  "include": ["src"],
+  "include": ["src", "tests/test.spec.ts"],
   "ts-node": {
     "files": true,
     "compilerOptions": {

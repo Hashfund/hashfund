@@ -4,12 +4,12 @@ use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubke
 
 pub mod account;
 pub mod context;
-pub mod curve;
-pub mod error;
+pub mod errors;
 pub mod events;
 pub mod instruction;
 pub mod processor;
 pub mod state;
+pub mod utils;
 
 solana_program::entrypoint!(process_instruction);
 
@@ -31,7 +31,16 @@ pub fn process_instruction<'a>(
         ProgramInstruction::InitializeCurve(payload) => {
             processor::process_initialize_curve(&Context::new(program_id, account_infos, payload)?)
         }
-
+        ProgramInstruction::InitializeSerumMarket(payload) => {
+            processor::process_initialize_serum_market(&Context::new(
+                program_id,
+                account_infos,
+                payload,
+            )?)
+        }
+        ProgramInstruction::InitializeRaydium(payload) => processor::process_initialize_raydium(
+            &Context::new(program_id, account_infos, payload)?,
+        ),
         ProgramInstruction::Swap(payload) => {
             processor::process_swap(&Context::new(program_id, account_infos, payload)?)
         }

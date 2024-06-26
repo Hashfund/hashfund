@@ -1,34 +1,57 @@
-use std::ops::Deref;
+use std::ops::Div;
 
 use borsh::BorshSerialize;
+use bounding_curve::{
+    curve::{
+        calculator::{CurveCalculator, TradeDirection},
+        constant_curve::ConstantCurve,
+    },
+    safe_number::Math,
+};
 use mpl_token_metadata::{
     instructions::CreateV1Builder,
     types::{PrintSupply, TokenStandard},
 };
+use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
-    borsh1::try_from_slice_unchecked, clock::Clock, entrypoint::ProgramResult, msg,
-    program::invoke_signed, program_pack::Pack, pubkey::Pubkey, rent::Rent,
-    system_instruction::create_account, sysvar::Sysvar,
+    borsh1::try_from_slice_unchecked,
+    clock::Clock,
+    entrypoint::ProgramResult,
+    msg,
+    program::{invoke, invoke_signed},
+    program_pack::Pack,
+    pubkey::Pubkey,
+    rent::Rent,
+    system_instruction::create_account,
+    sysvar::Sysvar,
 };
 use spl_token::{
-    instruction::{initialize_mint, mint_to},
+    instruction::{burn, initialize_mint, mint_to},
     state::Mint,
 };
 
 use crate::{
     account::{
         initialize_curve_account::InitializeCurveAccount,
-        initialize_mint_account::InitializeMintAccount, mint_to_account::MintToAccount,
-        swap_account::SwapAccount,
+        initialize_mint_account::InitializeMintAccount,
+        initialize_raydium_account::InitializeRaydiumAccount,
+        initialize_serum_market_account::InitializeSerumMarketAccount,
+        mint_to_account::MintToAccount, swap_account::SwapAccount,
     },
     context::Context,
-    curve::{calculator::CurveCalculator, constant_price_curve::ConstantPriceCurve},
-    error::{self, TokenMintError},
+    errors::{
+        initialize_curve_error::InitializeCurveError, swap_error::SwapError,
+        token_mint_error::TokenMintError,
+    },
     events::{emit, Event},
     state::{
-        payload::{InitializeCurvePayload, InitializeMintPayload, MintToPayload, SwapPayload},
+        payload::{
+            InitializeCurvePayload, InitializeMintPayload, InitializeRaydiumPayload,
+            InitializeSerumMarketPayload, MintToPayload, SwapPayload,
+        },
         BoundingCurveInfo, BOUNDING_CURVE_INFO_SIZE,
     },
+    utils::pyth::price_to_number,
 };
 
 pub fn process_initialize_mint<'a>(
@@ -48,7 +71,9 @@ pub fn process_initialize_mint<'a>(
     ];
 
     let (token_mint_pda, token_mint_bump) = Pubkey::find_program_address(seeds, program_id);
-    let (mint_authority_pda, mint_authority_bump) = context.find_authority_id(accounts.payer.key);
+
+    let (mint_authority_pda, mint_authority_bump) =
+        context.find_authority_id(&accounts.payer.key, &token_mint_pda);
 
     if token_mint_pda != accounts.mint.key.clone() {
         return Err(TokenMintError::IncorrectTokenMintAccount.into());
@@ -71,6 +96,7 @@ pub fn process_initialize_mint<'a>(
     let mint_authority_signer_seeds: &[&[u8]] = &[
         b"mint_authority",
         accounts.payer.key.as_ref(),
+        accounts.mint.key.as_ref(),
         &[mint_authority_bump],
     ];
 
@@ -168,14 +194,15 @@ pub fn process_mint_to<'a>(
     let bounding_curve = context.find_bounding_curve(accounts.mint.key).0;
     let mint_reserve_ata = context.get_bounding_curve_ata(&bounding_curve, accounts.mint.key);
 
-    let (mint_authority_pda, mint_authority_bump) = context.find_authority_id(accounts.payer.key);
+    let (mint_authority_pda, mint_authority_bump) =
+        context.find_authority_id(&accounts.payer.key, &accounts.mint.key);
 
     if mint_reserve_ata != accounts.reserve.key.clone() {
-        return Err(error::TokenMintError::IncorrectMintReserveATA.into());
+        return Err(TokenMintError::IncorrectMintReserveATA.into());
     }
 
     if mint_authority_pda != accounts.authority.key.clone() {
-        return Err(error::TokenMintError::IncorrectMintAuthority.into());
+        return Err(TokenMintError::IncorrectMintAuthority.into());
     }
 
     invoke_signed(
@@ -193,8 +220,9 @@ pub fn process_mint_to<'a>(
             accounts.authority.clone(),
         ],
         &[&[
-            "mint_authority".as_bytes().as_ref(),
+            b"mint_authority",
             accounts.payer.key.as_ref(),
+            accounts.mint.key.as_ref(),
             &[mint_authority_bump],
         ]],
     )?;
@@ -218,34 +246,37 @@ pub fn process_initialize_curve<'a>(
         program_id,
         payload,
         accounts,
-    } = context;
+    } = &context;
 
     let (bounding_curve_pda, bounding_curve_bump) =
         context.find_bounding_curve(&accounts.token_a_mint.key);
 
     if bounding_curve_pda != accounts.bounding_curve.key.clone() {
-        return Err(error::TokenMintError::IncorrectBoundingCurveAccount.into());
+        return Err(InitializeCurveError::IncorrectBoundingCurveAccount.into());
     }
 
     let rent = Rent::get()?;
     let rent_lamports = rent.minimum_balance(BOUNDING_CURVE_INFO_SIZE);
 
     let token_a_mint = Mint::unpack(&accounts.token_a_mint.data.borrow())?;
-    let token_b_mint = Mint::unpack(&accounts.token_b_mint.data.borrow())?;
 
-    let token_a_denominator = 10u128.pow(token_a_mint.decimals.into());
-    let token_b_denominator = 10u128.pow(token_b_mint.decimals.into());
-
-    let curve = ConstantPriceCurve::new(
-        token_a_mint.supply.into(),
-        payload.initial_buy_amount.into(),
-        token_a_denominator,
-        token_b_denominator,
+    let curve = ConstantCurve::new(
+        token_a_mint
+            .supply
+            .div(payload.supply_fraction as u64)
+            .into(),
+        payload.maximum_market_cap.into(),
     );
 
-    let initial_price: u64 = curve.calculate_initial_price().try_into().unwrap();
+    let initial_price = curve.calculate_initial_price();
 
-    msg!("initial_price={}", initial_price);
+    msg!("initial_price={:?}", initial_price);
+
+    let signers_seeds: &[&[&[u8]]] = &[&[
+        b"hashfund",
+        accounts.token_a_mint.key.as_ref(),
+        &[bounding_curve_bump],
+    ]];
 
     invoke_signed(
         &create_account(
@@ -256,11 +287,7 @@ pub fn process_initialize_curve<'a>(
             program_id,
         ),
         &[accounts.payer.clone(), accounts.bounding_curve.clone()],
-        &[&[
-            b"hashfund",
-            accounts.token_a_mint.key.to_bytes().as_ref(),
-            &[bounding_curve_bump],
-        ]],
+        signers_seeds,
     )?;
 
     let mut bounding_curve_state =
@@ -281,6 +308,46 @@ pub fn process_initialize_curve<'a>(
         bounding_curve: accounts.bounding_curve.key.clone(),
     });
 
+    let feed = SolanaPriceAccount::account_info_to_feed(&accounts.sol_usd_feed)?;
+    let price = price_to_number(feed.get_price_unchecked());
+
+    msg!("1 SOL={:?}", price);
+
+    let sol_to_burn = price.inverse_div(5000).mul(10_u128.pow(9));
+    let sol_to_burn = sol_to_burn.unwrap::<u64>();
+
+    let token_to_burn =
+        ConstantCurve::calculate_token_out(initial_price, sol_to_burn, TradeDirection::BtoA);
+
+    invoke_signed(
+        &burn(
+            accounts.token_program.key,
+            &accounts.bounding_curve_ata.key,
+            accounts.token_a_mint.key,
+            &accounts.bounding_curve.key,
+            &[],
+            token_to_burn,
+        )?,
+        &[
+            accounts.bounding_curve_ata.clone(),
+            accounts.token_a_mint.clone(),
+            accounts.bounding_curve.clone(),
+        ],
+        signers_seeds,
+    )?;
+
+    let clock = Clock::get()?;
+
+    emit(Event::Swap {
+        amount_in: sol_to_burn,
+        amount_out: token_to_burn,
+        trade_direction: 0,
+        market_cap: sol_to_burn,
+        timestamp: clock.unix_timestamp,
+        mint: accounts.bounding_curve.key.clone(),
+        payer: accounts.bounding_curve_ata.key.clone(),
+    });
+
     Ok(())
 }
 
@@ -295,11 +362,11 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
 
     if bounding_curve_info.mint != accounts.token_a_mint.key.clone() {
-        return Err(error::TokenMintError::IncorrectBoundingCurveAccount.into());
+        return Err(InitializeCurveError::IncorrectBoundingCurveAccount.into());
     }
 
     if !bounding_curve_info.can_trade {
-        return Err(error::TokenMintError::NotTradable.into());
+        return Err(SwapError::NotTradable.into());
     }
 
     let signers_seeds: &[&[&[u8]]] = &[&[
@@ -310,8 +377,8 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
 
     match payload.direction {
         0 => {
-            bounding_curve_info = bounding_curve_info.swap_in::<ConstantPriceCurve>(
-                accounts.deref(),
+            bounding_curve_info = bounding_curve_info.swap_in::<ConstantCurve>(
+                accounts,
                 payload.amount,
                 signers_seeds,
             )?;
@@ -322,14 +389,126 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
             Ok(())
         }
         1 => {
-            bounding_curve_info.swap_out::<ConstantPriceCurve>(
-                &accounts.deref(),
+            bounding_curve_info.swap_out::<ConstantCurve>(
+                &accounts,
                 payload.amount,
                 signers_seeds,
             )?;
 
             Ok(())
         }
-        _ => Err(error::TokenMintError::InvalidTradeDirection.into()),
+        _ => Err(SwapError::InvalidTradeDirection.into()),
     }
+}
+
+pub fn process_initialize_serum_market<'a>(
+    context: &Context<'a, InitializeSerumMarketPayload, InitializeSerumMarketAccount<'a>>,
+) -> ProgramResult {
+    let Context {
+        accounts, payload, ..
+    } = context;
+
+    invoke(
+        &serum_dex::instruction::initialize_market(
+            &accounts.market.key,
+            &accounts.serum_program.key,
+            &accounts.token_a_mint.key,
+            &accounts.token_b_mint.key,
+            &accounts.token_a_vault.key,
+            &accounts.token_b_vault.key,
+            None,
+            None,
+            None,
+            &accounts.bids.key,
+            &accounts.asks.key,
+            &accounts.req_q.key,
+            &accounts.event_q.key,
+            payload.coin_lot_size,
+            payload.pc_lot_size,
+            payload.vault_signer_nonce,
+            payload.pc_dust_threshold,
+        )?,
+        &[
+            accounts.market.clone(),
+            accounts.bids.clone(),
+            accounts.asks.clone(),
+            accounts.req_q.clone(),
+            accounts.event_q.clone(),
+            accounts.token_a_vault.clone(),
+            accounts.token_b_vault.clone(),
+            accounts.token_a_mint.clone(),
+            accounts.token_b_mint.clone(),
+            accounts.rent_sysvar.clone(),
+        ],
+    )
+}
+
+pub fn process_initialize_raydium<'a>(
+    context: &Context<'a, InitializeRaydiumPayload, InitializeRaydiumAccount<'a>>,
+) -> ProgramResult {
+    let Context {
+        payload, accounts, ..
+    } = context;
+
+    let (bounding_curve_pda, bounding_curve_bump) =
+        context.find_bounding_curve(&accounts.token_a_mint.key);
+
+    if bounding_curve_pda != accounts.bounding_curve.key.clone() {
+        return Err(InitializeCurveError::IncorrectBoundingCurveAccount.into());
+    }
+
+    invoke_signed(
+        &raydium_amm::instruction::initialize2(
+            &accounts.amm_program.key,
+            accounts.amm_pool.key,
+            &accounts.amm_authority.key,
+            &accounts.amm_open_orders.key,
+            &accounts.amm_lp_mint.key.clone(),
+            &accounts.token_a_mint.key,
+            &accounts.token_b_mint.key,
+            &accounts.amm_token_a_vault.key,
+            &accounts.amm_token_b_vault.key,
+            &accounts.amm_target_orders.key,
+            &accounts.amm_config.key,
+            &accounts.amm_create_fee_destination.key,
+            &accounts.market_program.key,
+            &accounts.market.key,
+            &accounts.bounding_curve.key,
+            &accounts.bounding_curve_token_a_reserve.key,
+            &accounts.bounding_curve_token_b_reserve.key,
+            &accounts.bounding_curve_lp_reserve.key,
+            payload.nonce,
+            payload.open_time,
+            payload.pc_amount,
+            payload.coin_amount,
+        )?,
+        &[
+            accounts.token_program.clone(),
+            accounts.associate_token_program.clone(),
+            accounts.system_program.clone(),
+            accounts.sysrent_var.clone(),
+            accounts.amm_pool.clone(),
+            accounts.amm_authority.clone(),
+            accounts.amm_open_orders.clone(),
+            accounts.amm_lp_mint.clone(),
+            accounts.token_a_mint.clone(),
+            accounts.token_b_mint.clone(),
+            accounts.amm_token_a_vault.clone(),
+            accounts.amm_token_b_vault.clone(),
+            accounts.amm_target_orders.clone(),
+            accounts.amm_config.clone(),
+            accounts.amm_create_fee_destination.clone(),
+            accounts.market_program.clone(),
+            accounts.market.clone(),
+            accounts.bounding_curve.clone(),
+            accounts.bounding_curve_token_a_reserve.clone(),
+            accounts.bounding_curve_token_b_reserve.clone(),
+            accounts.bounding_curve_lp_reserve.clone(),
+        ],
+        &[&[
+            b"hashfund",
+            accounts.token_a_mint.key.as_ref(),
+            &[bounding_curve_bump],
+        ]],
+    )
 }

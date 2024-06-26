@@ -1,6 +1,10 @@
 use std::ops::{Add, Sub};
 
 use borsh::{BorshDeserialize, BorshSerialize};
+use bounding_curve::{
+    curve::calculator::{CurveCalculator, TradeDirection},
+    safe_number::{SafeNumber, SAFE_MATH_SIZE},
+};
 use solana_program::{
     clock::Clock,
     entrypoint::ProgramResult,
@@ -16,18 +20,17 @@ use spl_token::instruction::sync_native;
 
 use crate::{
     account::swap_account::SwapAccount,
-    curve::calculator::{CurveCalculator, TradeDirection},
-    error,
+    errors::swap_error::SwapError,
     events::{emit, Event},
 };
 
 pub mod payload;
 
-pub const BOUNDING_CURVE_INFO_SIZE: usize = 8 + 8 + 32 + 1;
+pub const BOUNDING_CURVE_INFO_SIZE: usize = 8 + 8 + 32 + 1 + SAFE_MATH_SIZE;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Copy)]
 pub struct BoundingCurveInfo {
-    pub initial_price: u64,
+    pub initial_price: SafeNumber,
     pub maximum_market_cap: u64,
     pub mint: Pubkey,
     pub can_trade: bool,
@@ -69,7 +72,7 @@ impl BoundingCurveInfo {
         )?;
 
         if token_amount > bounding_curve_token_a_account.amount {
-            return Err(error::TokenMintError::InsufficientTokenInReserve.into());
+            return Err(SwapError::InsufficientTokenInReserve.into());
         }
 
         let market_cap = bounding_curve_token_b_account.amount;
@@ -145,7 +148,7 @@ impl BoundingCurveInfo {
         let token_b_source_info =
             spl_token::state::Account::unpack(&accounts.token_b_source.data.borrow())?;
 
-        msg!("initial_price={}\n", self.initial_price);
+        msg!("initial_price={:?}\n", self.initial_price);
         msg!("amount={}\n", amount);
 
         let native_amount = T::calculate_token_out(

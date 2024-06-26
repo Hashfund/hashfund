@@ -3,10 +3,11 @@ use spl_associated_token_account::get_associated_token_address;
 
 use crate::account::Account;
 
+#[derive(Clone, Copy)]
 pub struct Context<'a, T, U: Account<'a>> {
     pub program_id: &'a Pubkey,
-    pub payload: Box<T>,
-    pub accounts: Box<U>,
+    pub payload: T,
+    pub accounts: U,
 }
 
 impl<'a, T, U: Account<'a>> Context<'a, T, U> {
@@ -15,17 +16,17 @@ impl<'a, T, U: Account<'a>> Context<'a, T, U> {
         account_infos: &'a [AccountInfo<'a>],
         payload: T,
     ) -> Result<Self, ProgramError> {
-        let accounts = Box::new(U::new(account_infos)?);
+        //   let accounts = Box::new();
         Ok(Self {
             program_id,
-            accounts,
-            payload: Box::new(payload),
+            accounts: U::new(account_infos)?,
+            payload,
         })
     }
 
-    pub fn find_authority_id(&self, owner: &Pubkey) -> (Pubkey, u8) {
+    pub fn find_authority_id(&self, owner: &Pubkey, mint: &Pubkey) -> (Pubkey, u8) {
         Pubkey::find_program_address(
-            &[b"mint_authority", owner.to_bytes().as_ref()],
+            &[b"mint_authority", owner.as_ref(), mint.as_ref()],
             &self.program_id,
         )
     }
