@@ -14,10 +14,20 @@ use mpl_token_metadata::{
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
-    account_info::AccountInfo, borsh1::try_from_slice_unchecked, clock::Clock, entrypoint::ProgramResult, msg, program::{invoke, invoke_signed}, program_pack::Pack, pubkey::Pubkey, rent::Rent, system_instruction::create_account, sysvar::Sysvar
+    borsh1::try_from_slice_unchecked,
+    clock::Clock,
+    entrypoint::ProgramResult,
+    msg,
+    program::{invoke, invoke_signed},
+    program_pack::Pack,
+    pubkey::Pubkey,
+    rent::Rent,
+    stake::instruction::create_account_with_seed,
+    system_instruction::{create_account, transfer},
+    sysvar::Sysvar,
 };
 use spl_token::{
-    instruction::{burn, initialize_mint, mint_to},
+    instruction::{burn, initialize_mint, mint_to, sync_native},
     state::Mint,
 };
 
@@ -446,29 +456,13 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
     }
 }
 
+
 pub fn process_initialize_serum_market<'a>(
     context: &Context<'a, InitializeSerumMarketPayload, InitializeSerumMarketAccount<'a>>,
 ) -> ProgramResult {
     let Context {
         accounts, payload, ..
     } = context;
-
-    let account_infos: &[AccountInfo<'a>] = &[
-        accounts.market.clone(),
-        accounts.bids.clone(),
-        accounts.asks.clone(),
-        accounts.req_q.clone(),
-        accounts.event_q.clone(),
-        accounts.token_a_vault.clone(),
-        accounts.token_b_vault.clone(),
-        accounts.token_a_mint.clone(),
-        accounts.token_b_mint.clone(),
-        accounts.rent_sysvar.clone(),
-    ];
-
-    for account in account_infos {
-        msg!("account={}", account.key.to_string());
-    }
 
     invoke(
         &serum_dex::instruction::initialize_market(
@@ -490,7 +484,18 @@ pub fn process_initialize_serum_market<'a>(
             payload.vault_signer_nonce,
             payload.pc_dust_threshold,
         )?,
-        &account_infos,
+        &[
+            accounts.market.clone(),
+            accounts.req_q.clone(),
+            accounts.event_q.clone(),
+            accounts.bids.clone(),
+            accounts.asks.clone(),
+            accounts.token_a_vault.clone(),
+            accounts.token_b_vault.clone(),
+            accounts.token_a_mint.clone(),
+            accounts.token_b_mint.clone(),
+            accounts.rent_sysvar.clone(),
+        ],
     )
 }
 
@@ -501,9 +506,8 @@ pub fn process_initialize_raydium<'a>(
         payload, accounts, ..
     } = context;
 
-    let bounding_curve_pda =
-        context.find_bounding_curve(&accounts.token_a_mint.key).0;
-        let (bounding_curve_reserve_pda, bounding_curve_reserve_bump) =
+    let bounding_curve_pda = context.find_bounding_curve(&accounts.token_a_mint.key).0;
+    let (bounding_curve_reserve_pda, bounding_curve_reserve_bump) =
         context.find_bounding_curve(&bounding_curve_pda);
 
     if bounding_curve_pda != accounts.bounding_curve.key.clone() {
@@ -513,6 +517,37 @@ pub fn process_initialize_raydium<'a>(
     if bounding_curve_reserve_pda != accounts.bounding_curve_reserve.key.clone() {
         return Err(InitializeCurveError::IncorrectBoundingCurveReserveAccount.into());
     }
+
+    let signers_seeds: &[&[&[u8]]] = &[&[
+        b"hashfund",
+        bounding_curve_pda.as_ref(),
+        &[bounding_curve_reserve_bump],
+    ]];
+
+    msg!("convert to wSOL");
+
+    invoke_signed(
+        &transfer(
+            &accounts.bounding_curve_reserve.key,
+            &accounts.bounding_curve_token_b_reserve.key,
+            payload.pc_amount,
+        ),
+        &[
+            accounts.bounding_curve_reserve.clone(),
+            accounts.bounding_curve_token_b_reserve.clone(),
+        ],
+        signers_seeds,
+    )?;
+
+    msg!("Sync");
+    invoke_signed(
+        &sync_native(
+            &accounts.token_program.key,
+            &accounts.bounding_curve_token_b_reserve.key,
+        )?,
+        &[accounts.bounding_curve_token_b_reserve.clone()],
+        signers_seeds,
+    )?;
 
     invoke_signed(
         &raydium_amm::instruction::initialize2(
@@ -562,10 +597,6 @@ pub fn process_initialize_raydium<'a>(
             accounts.bounding_curve_token_b_reserve.clone(),
             accounts.bounding_curve_lp_reserve.clone(),
         ],
-        &[&[
-            b"hashfund",
-            bounding_curve_pda.as_ref(),
-            &[bounding_curve_reserve_bump],
-        ]],
+        signers_seeds,
     )
 }

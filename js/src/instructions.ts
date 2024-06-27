@@ -1,12 +1,13 @@
 import BN from "bn.js";
+import { Market } from "@project-serum/serum";
+import { initializeAccount } from "@project-serum/serum/lib/token-instructions";
 import {
-  DexInstructions,
-  Market,
-  MARKET_STATE_LAYOUT_V2,
-} from "@project-serum/serum";
+  getCreatePoolKeys,
+  jsonInfo2PoolKeys,
+  getAssociatedPoolKeys,
+} from "@raydium-io/raydium-sdk-v2";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  createAssociatedTokenAccountIdempotentInstruction,
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync,
   NATIVE_MINT,
@@ -51,7 +52,6 @@ import {
   InitializeRaydiumSchema,
   SwapSchema,
 } from "./schema";
-import { initializeAccount } from "@project-serum/serum/lib/token-instructions";
 import { Liquidity } from "@raydium-io/raydium-sdk";
 
 type InitializeMintInstructionArgs = {
@@ -774,22 +774,27 @@ export async function createInitializeSerumMarketInstructions({
   });
 
   const instructions2 = [
-    DexInstructions.initializeMarket({
-      programId: serumProgram,
-      baseMint: tokenAMint,
-      quoteMint: tokenBMint,
-      baseVault: tokenAVault.publicKey,
-      quoteVault: tokenBVault.publicKey,
+    initializeSerumMarketInstruction({
+      programId,
+      rentSysVar,
+      serumProgram,
+      systemProgram,
+      tokenAMint,
+      tokenBMint,
+      tokenAVault: tokenAVault.publicKey,
+      tokenBVault: tokenBVault.publicKey,
       market: market.publicKey,
       asks: asks.publicKey,
       bids: bids.publicKey,
       eventQueue: eventQueue.publicKey,
       requestQueue: requestQueue.publicKey,
-      quoteLotSize: data.pcLotSize,
-      baseLotSize: data.coinLotSize,
-      vaultSignerNonce: nonce,
-      feeRateBps: 100,
-      quoteDustThreshold: data.pcDustThreshhold,
+      payer,
+      data: new InitializeSerumMarketSchema(
+        data.coinLotSize,
+        data.pcLotSize,
+        nonce,
+        data.pcDustThreshhold
+      ),
     }),
   ];
 
@@ -827,7 +832,7 @@ export function createInitializeRaydiumInstructions({
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
   associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
-  marketProgram = RAYDIUM_OPEN_BOOK_PROGRAM_ID,
+  marketProgram = RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
   ammProgram = RAYDIUM_DEVNET_PROGRAM_ID,
   ammCreateFeeDestination = RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
   tokenAMint,
@@ -856,23 +861,27 @@ export function createInitializeRaydiumInstructions({
     true
   );
 
-  const poolInfo = Liquidity.getAssociatedPoolKeys({
-    version: 5,
+  const poolInfo = getAssociatedPoolKeys({
+    version: 4,
     marketVersion: 3,
+    programId: ammProgram,
     marketId: market,
+    marketProgramId: marketProgram,
     baseMint: tokenAMint,
     quoteMint: tokenBMint,
     baseDecimals: tokenAMintInfo.decimals,
     quoteDecimals: tokenBMintInfo.decimals,
-    programId: ammProgram,
-    marketProgramId: marketProgram,
   });
+
+  console.log(poolInfo.id.toBase58())
 
   let boundingCurveLpReserve = getAssociatedTokenAddressSync(
     poolInfo.lpMint,
     boundingCurveReserve,
     true
   );
+
+  
 
   return initializeRaydiumInstruction({
     programId,
@@ -890,12 +899,12 @@ export function createInitializeRaydiumInstructions({
     boundingCurve,
     boundingCurveReserve,
     boundingCurveTokenAReserve,
-    boundingCurveTokenBReserve: boundingCurve,
+    boundingCurveTokenBReserve,
     boundingCurveLpReserve,
     lpMint: poolInfo.lpMint,
     ammPool: poolInfo.id,
     ammTokenAVault: poolInfo.baseVault,
-    ammTokenBVault: poolInfo.lpVault,
+    ammTokenBVault: poolInfo.quoteVault,
     ammAuthority: poolInfo.authority,
     ammTargetOrders: poolInfo.targetOrders,
     ammConfig: poolInfo.configId,

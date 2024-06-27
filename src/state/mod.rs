@@ -83,8 +83,6 @@ impl BoundingCurveInfo {
             state.can_trade = false;
         }
 
-        msg!("transfer={} TOKEN B", native_amount);
-
         invoke(
             &transfer(
                 accounts.payer.key,

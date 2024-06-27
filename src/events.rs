@@ -35,6 +35,11 @@ pub enum Event {
         timestamp: i64,
         payer: Pubkey,
     },
+    InitializeMarket {
+        market: Pubkey,
+        mint: Pubkey,
+    },
+    InitializeRaydium {}
 }
 
 pub fn emit(data: Event) {
