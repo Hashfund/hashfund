@@ -891,7 +891,7 @@ export function createSwapInInstruction({
     boundingCurve,
     boundingCurveReserve,
     payer,
-    data: new SwapSchema(data.amount, 0),
+    data: new SwapSchema(data.amount, new BN(0)),
   });
 }
 
@@ -954,7 +954,7 @@ export async function createSwapOutInstruction({
       boundingCurve,
       boundingCurveReserve,
       payer,
-      data: new SwapSchema(data.amount, 1),
+      data: new SwapSchema(data.amount, new BN(1)),
     }),
   ];
 }

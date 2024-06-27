@@ -123,7 +123,7 @@ export class SwapSchema extends Schema {
 
   public readonly variant = SchemaVariant.SWAP;
 
-  constructor(public readonly amount: BN, public readonly direction: 0 | 1) {
+  constructor(public readonly amount: BN, public readonly direction: BN) {
     super();
   }
 }

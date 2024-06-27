@@ -26,13 +26,12 @@ export const RAYDIUM_OPEN_BOOK_PROGRAM_ID = new PublicKey(
   "srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX"
 );
 export const RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID = new PublicKey(
-  "HQrkEwY4V76p32HZHEanRpdqe7xfdq6yFcFpbJbLefFn"
+  "EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj"
 );
 
 export const RAYDIUM_CREATE_POOL_FEE_ADDRESS = new PublicKey(
   "7YttLkHDoNj9wyDur5pM1ejNaAvT9X4eqaYcHQqtj2G5"
 );
-
 
 export const RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS = new PublicKey(
   "3XMrhbv989VxAMi3DErLV9eJht1pHppW5LbKxe9fkEFR"

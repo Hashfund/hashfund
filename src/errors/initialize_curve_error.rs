@@ -6,4 +6,6 @@ pub enum InitializeCurveError {
     IncorrectBoundingCurveAccount,
     #[error("Invalid bounding curve reserve account")]
     IncorrectBoundingCurveReserveAccount,
+    #[error("Invalid bounding curve reserve ata account")]
+    IncorrectBoundingCurveReserveATAAccount,
 }

@@ -26,6 +26,11 @@ pub enum Event {
         maximum_market_cap: u64,
         timestamp: i64,
     },
+    HashMature {
+        mint: Pubkey,
+        bounding_curve: Pubkey,
+        timestamp: i64,
+    },
     Swap {
         mint: Pubkey,
         amount_in: u64,
@@ -35,11 +40,14 @@ pub enum Event {
         timestamp: i64,
         payer: Pubkey,
     },
-    InitializeMarket {
-        market: Pubkey,
+    HashToken {
         mint: Pubkey,
+        market: Pubkey,
+        amm: Pubkey,
+        coin_amount: u64,
+        pc_amount: u64,
+        timestamp: i64,
     },
-    InitializeRaydium {}
 }
 
 pub fn emit(data: Event) {

@@ -31,16 +31,13 @@ pub fn process_instruction<'a>(
         ProgramInstruction::InitializeCurve(payload) => {
             processor::process_initialize_curve(&Context::new(program_id, account_infos, payload)?)
         }
-        ProgramInstruction::InitializeSerumMarket(payload) => {
-            processor::process_initialize_serum_market(&Context::new(
+        ProgramInstruction::HashToken(payload) => {
+            processor::process_hash_token(&Context::new(
                 program_id,
                 account_infos,
                 payload,
             )?)
         }
-        ProgramInstruction::InitializeRaydium(payload) => processor::process_initialize_raydium(
-            &Context::new(program_id, account_infos, payload)?,
-        ),
         ProgramInstruction::Swap(payload) => {
             processor::process_swap(&Context::new(program_id, account_infos, payload)?)
         }

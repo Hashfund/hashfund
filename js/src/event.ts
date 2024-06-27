@@ -39,11 +39,28 @@ type SwapEvent = {
   payer: PublicKey;
 };
 
+export type HashMatureEvent = {
+  mint: PublicKey;
+  boundingCurve: PublicKey;
+  timestamp: BN;
+};
+
+export type HashTokenEvent = {
+  market: PublicKey;
+  amm: PublicKey;
+  coinAmount: BN;
+  pcAmount: BN;
+  mint: PublicKey;
+  timestamp: BN;
+};
+
 export type Event = {
   Mint?: MintEvent;
   MintTo?: MintToEvent;
   InitializeCurve?: InitializeCurveEvent;
   Swap?: SwapEvent;
+  HashToken: HashTokenEvent;
+  HashMature: HashMatureEvent;
 };
 
 export class EventSchema extends Schema {
@@ -81,6 +98,15 @@ export class EventSchema extends Schema {
     Borsh.struct(
       [
         Borsh.publicKey("mint"),
+        Borsh.publicKey("bounding_curve"),
+        Borsh.i64("timestamp"),
+      ],
+      "HashMature"
+    ),
+
+    Borsh.struct(
+      [
+        Borsh.publicKey("mint"),
         Borsh.u64("amount_in"),
         Borsh.u64("amount_out"),
         Borsh.u8("trade_direction"),
@@ -89,6 +115,17 @@ export class EventSchema extends Schema {
         Borsh.publicKey("payer"),
       ],
       "Swap"
+    ),
+    Borsh.struct(
+      [
+        Borsh.publicKey("mint"),
+        Borsh.publicKey("market"),
+        Borsh.publicKey("amm"),
+        Borsh.u64("coin_amount"),
+        Borsh.u64("pc_amount"),
+        Borsh.i64("market"),
+      ],
+      "HashToken"
     ),
   ]);
 }

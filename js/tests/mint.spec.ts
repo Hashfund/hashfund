@@ -27,7 +27,7 @@ const main = async () => {
   const [mint, instructions] = createMintInstruction({
     data: {
       name: "Test",
-      ticker: "TEST #1",
+      ticker: "TEST #2",
       uri: "https://ik.imagekit.io/hashfund/tokens_metadata_BNvUnF4moZ4arrPYYdrEhjS64LUBHuABgrRJaXvLrLPe.json",
     },
     payer: wallet.publicKey,
@@ -43,7 +43,7 @@ const main = async () => {
       solUsdFeed: SOL_USD_FEED,
       data: {
         supplyFraction: new BN(10),
-        maximumMarketCap: new BN(10).mul(new BN(10).pow(new BN(9))),
+        maximumMarketCap: new BN(2).mul(new BN(10).pow(new BN(9))),
       },
     })),
     createSwapInInstruction({
@@ -51,17 +51,17 @@ const main = async () => {
       tokenAMint: mint,
       payer: wallet.publicKey,
       data: {
-        amount: new BN(5).mul(new BN(10).pow(new BN(8))),
+        amount: new BN(2).mul(new BN(10).pow(new BN(9))),
       },
     })
   );
   transaction.feePayer = wallet.publicKey;
-//  const tx = await simulateTransaction(connection, [transaction]);
-const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
-  console.log("tx={}", tx);
+  //  const tx = await simulateTransaction(connection, [transaction]);
+  //const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
+  // console.log("tx={}", tx);
 };
 
 main().catch(async (e) => {
   console.log(e);
-  console.log(await e.getLogs());
+  if (e.getLogs) console.log(await e.getLogs());
 });

@@ -20,7 +20,7 @@ use solana_program::{
 use crate::{
     account::swap_account::SwapAccount,
     errors::swap_error::SwapError,
-    events::{emit, Event},
+    events::{self, emit, Event},
 };
 
 pub mod payload;
@@ -81,6 +81,13 @@ impl BoundingCurveInfo {
 
         if market_cap > self.maximum_market_cap {
             state.can_trade = false;
+            let clock = Clock::get()?;
+
+            emit(events::Event::HashMature {
+                mint: accounts.token_a_mint.key.clone(),
+                bounding_curve: accounts.bounding_curve.key.clone(),
+                timestamp: clock.unix_timestamp,
+            });
         }
 
         invoke(

@@ -26,24 +26,11 @@ pub struct SwapPayload {
 }
 
 #[derive(BorshDeserialize)]
-pub struct CreateSerumAccount {
-    
-}
-
-#[derive(BorshDeserialize)]
-pub struct InitializeSerumMarketPayload {
+pub struct HashTokenPayload {
     pub coin_lot_size: u64,
     pub pc_lot_size: u64,
     pub vault_signer_nonce: u64,
     pub pc_dust_threshold: u64,
-}
-
-
-#[derive(BorshDeserialize)]
-pub struct  InitializeRaydiumPayload {
-    pub pc_amount: u64,
-    pub coin_amount: u64,
     pub open_time: u64,
-    pub nonce: u8
+    pub nonce: u8,
 }
-

@@ -2,8 +2,7 @@ use borsh::BorshDeserialize;
 use solana_program::{msg, program_error::ProgramError};
 
 use crate::state::payload::{
-    InitializeCurvePayload, InitializeMintPayload, InitializeRaydiumPayload,
-    InitializeSerumMarketPayload, MintToPayload, SwapPayload,
+    HashTokenPayload, InitializeCurvePayload, InitializeMintPayload, MintToPayload, SwapPayload,
 };
 
 pub trait Instruction {
@@ -19,8 +18,7 @@ pub enum ProgramInstruction {
     MintTo(MintToPayload),
     InitializeCurve(InitializeCurvePayload),
     Swap(SwapPayload),
-    InitializeSerumMarket(InitializeSerumMarketPayload),
-    InitializeRaydium(InitializeRaydiumPayload),
+    HashToken(HashTokenPayload),
 }
 
 impl Instruction for ProgramInstruction {
@@ -39,13 +37,10 @@ impl Instruction for ProgramInstruction {
             2 => Ok(Self::InitializeCurve(
                 InitializeCurvePayload::try_from_slice(rest).unwrap(),
             )),
-            3 => Ok(Self::InitializeSerumMarket(
-                InitializeSerumMarketPayload::try_from_slice(rest).unwrap(),
+            3 => Ok(Self::HashToken(
+                HashTokenPayload::try_from_slice(rest).unwrap(),
             )),
-            4 => Ok(Self::InitializeRaydium(
-                InitializeRaydiumPayload::try_from_slice(rest).unwrap(),
-            )),
-            5 => Ok(Self::Swap(SwapPayload::try_from_slice(rest).unwrap())),
+            4 => Ok(Self::Swap(SwapPayload::try_from_slice(rest).unwrap())),
             _ => Err(ProgramError::InvalidInstructionData),
         }
     }

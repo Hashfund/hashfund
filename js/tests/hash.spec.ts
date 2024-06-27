@@ -6,7 +6,6 @@ import {
   Keypair,
   PublicKey,
   sendAndConfirmTransaction,
-  SystemInstruction,
   Transaction,
 } from "@solana/web3.js";
 
@@ -14,6 +13,7 @@ import { loadWallet } from "./utils";
 import {
   createHashTokenInstructions,
   RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
+  RAYDIUM_DEVNET_PROGRAM_ID,
 } from "../src";
 import { generatePublicKey } from "../src/utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -21,70 +21,34 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 const mint = new PublicKey("64VnzwzgMxLBnnWwWQapeRV2C6y63okxdDqU97NCK6gG");
 
 async function hashToken(connection: Connection, wallet: Keypair) {
-  // const market = generatePublicKey({
-  //   fromPublicKey: wallet.publicKey,
-  //   programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
-  // });
-  // const asks = generatePublicKey({
-  //   fromPublicKey: wallet.publicKey,
-  //   programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
-  // });
-  // const bids = generatePublicKey({
-  //   fromPublicKey: wallet.publicKey,
-  //   programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
-  // });
-  // const eventQueue = generatePublicKey({
-  //   fromPublicKey: wallet.publicKey,
-  //   programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
-  // });
-  // const requestQueue = generatePublicKey({
-  //   fromPublicKey: wallet.publicKey,
-  //   programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
-  // });
-  // const tokenAVault = generatePublicKey({
-  //   fromPublicKey: wallet.publicKey,
-  //   programId: TOKEN_PROGRAM_ID,
-  // });
-  // const tokenBVault = generatePublicKey({
-  //   fromPublicKey: wallet.publicKey,
-  //   programId: TOKEN_PROGRAM_ID,
-  // });
-
-  let market = {
-    publicKey: new PublicKey("EJWnZNu4LUTjTt9N56JKCr2PpV6pmnwiHbn8CQdTqdxi"),
-    seed: ""
-  };
-  
-  let asks = {
-    publicKey: new PublicKey("E7vEFqtmV9okpK9KGdoxCBrGnxUijRCDojZGxuG2WjTg"),
-    seed: ""
-  };
-  
-  let bids = {
-    publicKey: new PublicKey("HXGAY1VBbEWhzPmzWu6tM5QdkmRsnw9yCrrhE6PAo5vq"),
-    seed: ""
-  };
-  
-  let eventQueue = {
-    publicKey: new PublicKey("3nF6HRAseBV3qPSRWMLo3raYThP4FRzW2W3WHTzqqgis"),
-    seed: ""
-  };
-  
-  let requestQueue = {
-    publicKey: new PublicKey("669eL6Lnz8yczDmiRckC5nx32jDCLMAiibZB5QJYXDFT"),
-    seed: ""
-  };
-  
-  let tokenAVault = {
-    publicKey: new PublicKey("Ac4b5DAHgHQYz9Ud1aXyE9G6FyBunsK86e6qmmFaMkKZ"),
-    seed: ""
-  };
-  
-  let tokenBVault = {
-    publicKey: new PublicKey("8q3N4rtDatHha6pKsrYcWW2SNMrRw7DKoKwYXpeeos6v"),
-    seed: ""
-  };
-  
+  const market = generatePublicKey({
+    fromPublicKey: wallet.publicKey,
+    programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
+  });
+  const asks = generatePublicKey({
+    fromPublicKey: wallet.publicKey,
+    programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
+  });
+  const bids = generatePublicKey({
+    fromPublicKey: wallet.publicKey,
+    programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
+  });
+  const eventQueue = generatePublicKey({
+    fromPublicKey: wallet.publicKey,
+    programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
+  });
+  const requestQueue = generatePublicKey({
+    fromPublicKey: wallet.publicKey,
+    programId: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
+  });
+  const tokenAVault = generatePublicKey({
+    fromPublicKey: wallet.publicKey,
+    programId: TOKEN_PROGRAM_ID,
+  });
+  const tokenBVault = generatePublicKey({
+    fromPublicKey: wallet.publicKey,
+    programId: TOKEN_PROGRAM_ID,
+  });
 
   console.log("market=", market.publicKey.toBase58());
   console.log("asks=", asks.publicKey.toBase58());
@@ -101,6 +65,8 @@ async function hashToken(connection: Connection, wallet: Keypair) {
     bids,
     eventQueue,
     requestQueue,
+    serumProgram: RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
+    ammProgram: RAYDIUM_DEVNET_PROGRAM_ID,
     serumTokenAVault: tokenAVault,
     serumTokenBVault: tokenBVault,
     tokenAMint: mint,
@@ -130,22 +96,22 @@ async function hashToken(connection: Connection, wallet: Keypair) {
   tx1.feePayer = wallet.publicKey;
   tx2.feePayer = wallet.publicKey;
 
-  // const sig0 = await sendAndConfirmTransaction(connection, tx0, [wallet], {
-  //   commitment: "finalized",
-  // });
-  // console.log("first tx done ✅");
-  // const sig1 = await sendAndConfirmTransaction(connection, tx1, [wallet], {
-  //   commitment: "finalized",
-  // });
-  // console.log("second tx done ✅");
+  const sig0 = await sendAndConfirmTransaction(connection, tx0, [wallet], {
+    commitment: "finalized",
+  });
+  console.log("first tx done ✅");
+  const sig1 = await sendAndConfirmTransaction(connection, tx1, [wallet], {
+    commitment: "finalized",
+  });
+  console.log("second tx done ✅");
 
   const sig2 = await sendAndConfirmTransaction(connection, tx2, [wallet], {
     commitment: "finalized",
   });
   console.log("last tx done ✅");
 
-  // console.log(sig0);
-  // console.log(sig1);
+  console.log(sig0);
+  console.log(sig1);
   console.log(sig2);
 }
 
