@@ -113,7 +113,7 @@ export class InitializeRaydiumSchema extends Schema {
     Borsh.u64("token_a_amount"),
     Borsh.u64("token_b_amount"),
     Borsh.u64("open_time"),
-    Borsh.u64("nonce"),
+    Borsh.u8("nonce"),
   ]);
 
   public readonly variant = SchemaVariant.INITIALIZE_RAYDIUM;

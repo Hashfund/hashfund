@@ -27,9 +27,12 @@ pub struct InitializeRaydiumAccount<'a> {
     pub amm_create_fee_destination: AccountInfo<'a>,
     // bounding_curve
     pub bounding_curve: AccountInfo<'a>,
+    pub bounding_curve_reserve: AccountInfo<'a>,
     pub bounding_curve_token_a_reserve: AccountInfo<'a>,
     pub bounding_curve_token_b_reserve: AccountInfo<'a>,
     pub bounding_curve_lp_reserve: AccountInfo<'a>,
+
+    pub payer: AccountInfo<'a>,
 }
 
 impl<'a> Account<'a> for InitializeRaydiumAccount<'a> {
@@ -59,9 +62,12 @@ impl<'a> Account<'a> for InitializeRaydiumAccount<'a> {
         let amm_create_fee_destination = next_account_info(accounts)?;
 
         let bounding_curve = next_account_info(accounts)?;
+        let bounding_curve_reserve = next_account_info(accounts)?;
         let bounding_curve_token_a_reserve = next_account_info(accounts)?;
         let bounding_curve_token_b_reserve = next_account_info(accounts)?;
         let bounding_curve_lp_reserve = next_account_info(accounts)?;
+        
+        let payer = next_account_info(accounts)?;
 
         Ok(Self {
             sysrent_var: sysrent_var.clone(),
@@ -83,9 +89,11 @@ impl<'a> Account<'a> for InitializeRaydiumAccount<'a> {
             amm_open_orders: amm_open_orders.clone(),
             amm_create_fee_destination: amm_create_fee_destination.clone(),
             bounding_curve: bounding_curve.clone(),
+            bounding_curve_reserve: bounding_curve_reserve.clone(),
             bounding_curve_token_a_reserve: bounding_curve_token_a_reserve.clone(),
             bounding_curve_token_b_reserve: bounding_curve_token_b_reserve.clone(),
             bounding_curve_lp_reserve: bounding_curve_lp_reserve.clone(),
+            payer: payer.clone(),
         })
     }
 }

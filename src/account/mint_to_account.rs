@@ -8,8 +8,12 @@ use super::Account;
 pub struct MintToAccount<'a> {
     pub token_program: AccountInfo<'a>,
     pub mint: AccountInfo<'a>,
-    pub reserve: AccountInfo<'a>,
-    pub authority: AccountInfo<'a>,
+    pub mint_reserve: AccountInfo<'a>,
+    pub mint_authority: AccountInfo<'a>,
+
+    pub bounding_curve: AccountInfo<'a>,
+    pub bounding_curve_reserve: AccountInfo<'a>,
+
     pub payer: AccountInfo<'a>,
 }
 
@@ -19,16 +23,20 @@ impl<'a> Account<'a> for MintToAccount<'a> {
         let token_program = next_account_info(accounts)?;
         let mint = next_account_info(accounts)?;
 
-        let reserve = next_account_info(accounts)?;
-        let authority = next_account_info(accounts)?;
+        let mint_reserve = next_account_info(accounts)?;
+        let mint_authority = next_account_info(accounts)?;
 
+        let bounding_curve = next_account_info(accounts)?;
+        let bounding_curve_reserve = next_account_info(accounts)?;
         let payer = next_account_info(accounts)?;
 
         Ok(Self {
             token_program: token_program.clone(),
             mint: mint.clone(),
-            reserve: reserve.clone(),
-            authority: authority.clone(),
+            mint_reserve: mint_reserve.clone(),
+            mint_authority: mint_authority.clone(),
+            bounding_curve: bounding_curve.clone(),
+            bounding_curve_reserve: bounding_curve_reserve.clone(),
             payer: payer.clone(),
         })
     }

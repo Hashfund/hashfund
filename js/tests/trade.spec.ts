@@ -19,7 +19,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 
 let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 const tokenAMint = new PublicKey(
-  "6NhJrUgeRoioePsguisrvfahuAxUMtXD2or1uhiGDPqv"
+  "64VnzwzgMxLBnnWwWQapeRV2C6y63okxdDqU97NCK6gG"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -44,7 +44,7 @@ async function initializeCurve(connection: Connection) {
   });
 }
 
-async function buySwap(connection: Connection) {
+async function buySwap(connection: Connection, amount: number) {
   const transaction = new Transaction();
   transaction.add(
     createSwapInInstruction({
@@ -53,7 +53,7 @@ async function buySwap(connection: Connection) {
       tokenBMint,
       payer: wallet.publicKey,
       data: {
-        amount: new BN(5).mul(new BN(10).pow(new BN(8))),
+        amount: new BN(amount).mul(new BN(10).pow(new BN(9))),
       },
     })
   );
@@ -82,7 +82,7 @@ async function sellSwap(connection: Connection) {
 
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
-  const tx = await sellSwap(connection);
+  const tx = await buySwap(connection, 1);
   console.log("tx=", tx);
 }
 

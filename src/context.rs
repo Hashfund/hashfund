@@ -32,7 +32,11 @@ impl<'a, T, U: Account<'a>> Context<'a, T, U> {
     }
 
     pub fn find_bounding_curve(&self, mint: &Pubkey) -> (Pubkey, u8) {
-        Pubkey::find_program_address(&[b"hashfund", mint.to_bytes().as_ref()], &self.program_id)
+        Pubkey::find_program_address(&[b"hashfund", mint.as_ref()], &self.program_id)
+    }
+
+    pub fn find_bounding_curve_reserve(&self, bounding_curve: &Pubkey) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[b"hashfund", bounding_curve.as_ref()], &self.program_id)
     }
 
     pub fn get_bounding_curve_ata(&self, bounding_curve: &Pubkey, mint: &Pubkey) -> Pubkey {

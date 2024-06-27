@@ -1,4 +1,4 @@
-import { BN } from "bn.js";
+import { BN, min } from "bn.js";
 import {
   clusterApiUrl,
   Connection,
@@ -6,11 +6,14 @@ import {
   sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
+import { simulateTransaction } from "@raydium-io/raydium-sdk";
+
 import { loadWallet } from "./utils";
 import {
   createInitializeCurveInstruction,
   createMintInstruction,
   createSwapInInstruction,
+  createSwapOutInstruction,
   HASHFUND_PROGRAM_ID,
   SOL_USD_FEED,
 } from "../src";
@@ -23,13 +26,12 @@ const main = async () => {
 
   const [mint, instructions] = createMintInstruction({
     data: {
-      name: "FriedLice",
-      ticker: "LICE #3",
+      name: "Test",
+      ticker: "TEST #1",
       uri: "https://ik.imagekit.io/hashfund/tokens_metadata_BNvUnF4moZ4arrPYYdrEhjS64LUBHuABgrRJaXvLrLPe.json",
     },
     payer: wallet.publicKey,
   });
-
 
   console.log("mint={}", mint.toBase58());
   const transaction = new Transaction().add(...instructions).add(
@@ -53,8 +55,9 @@ const main = async () => {
       },
     })
   );
-  const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
-
+  transaction.feePayer = wallet.publicKey;
+//  const tx = await simulateTransaction(connection, [transaction]);
+const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
   console.log("tx={}", tx);
 };
 

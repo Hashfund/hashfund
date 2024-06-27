@@ -54,6 +54,13 @@ export function findBoundingCurvePda(mint: PublicKey, programId: PublicKey) {
   );
 }
 
+export function findBoundingCurveReservePda(boundingCurve: PublicKey, programId: PublicKey) {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("hashfund"), boundingCurve.toBuffer()],
+    programId
+  );
+}
+
 export async function getOrCreateAssociatedTokenAccountInstructions(
   connection: Connection,
   mint: PublicKey,

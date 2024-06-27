@@ -10,11 +10,12 @@ pub struct SwapAccount<'a> {
     pub token_program: AccountInfo<'a>,
     pub token_a_mint: AccountInfo<'a>,
     pub token_b_mint: AccountInfo<'a>,
-    pub bounding_curve: AccountInfo<'a>,
     pub token_a_source: AccountInfo<'a>,
-    pub token_a_destination: AccountInfo<'a>,
     pub token_b_source: AccountInfo<'a>,
+    pub token_a_destination: AccountInfo<'a>,
     pub token_b_destination: AccountInfo<'a>,
+    pub bounding_curve: AccountInfo<'a>,
+    pub bounding_curve_reserve: AccountInfo<'a>,
     pub payer: AccountInfo<'a>,
 }
 
@@ -27,13 +28,16 @@ impl<'a> Account<'a> for SwapAccount<'a> {
 
         let token_a_mint = next_account_info(accounts)?;
         let token_b_mint = next_account_info(accounts)?;
-        let bounding_curve = next_account_info(accounts)?;
 
         let token_a_source = next_account_info(accounts)?;
-        let token_a_destination = next_account_info(accounts)?;
         let token_b_source = next_account_info(accounts)?;
 
+        let token_a_destination = next_account_info(accounts)?;
         let token_b_destination = next_account_info(accounts)?;
+
+        let bounding_curve = next_account_info(accounts)?;
+        let bounding_curve_reserve = next_account_info(accounts)?;
+
         let payer = next_account_info(accounts)?;
 
         Ok(Self {
@@ -42,6 +46,7 @@ impl<'a> Account<'a> for SwapAccount<'a> {
             token_a_mint: token_a_mint.clone(),
             token_b_mint: token_b_mint.clone(),
             bounding_curve: bounding_curve.clone(),
+            bounding_curve_reserve: bounding_curve_reserve.clone(),
             token_a_source: token_a_source.clone(),
             token_a_destination: token_a_destination.clone(),
             token_b_source: token_b_source.clone(),

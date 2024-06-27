@@ -16,7 +16,6 @@ use solana_program::{
     system_instruction::transfer,
     sysvar::Sysvar,
 };
-use spl_token::instruction::sync_native;
 
 use crate::{
     account::swap_account::SwapAccount,
@@ -67,15 +66,11 @@ impl BoundingCurveInfo {
         let bounding_curve_token_a_account =
             spl_token::state::Account::unpack(&accounts.token_a_source.data.try_borrow().unwrap())?;
 
-        let bounding_curve_token_b_account = spl_token::state::Account::unpack(
-            &accounts.token_b_destination.data.try_borrow().unwrap(),
-        )?;
-
         if token_amount > bounding_curve_token_a_account.amount {
             return Err(SwapError::InsufficientTokenInReserve.into());
         }
 
-        let market_cap = bounding_curve_token_b_account.amount;
+        let market_cap = accounts.bounding_curve_reserve.lamports();
 
         msg!(
             "market_cap={}, \n maximum_market_cap={}, \n new_marketcap={}",
@@ -88,37 +83,35 @@ impl BoundingCurveInfo {
             state.can_trade = false;
         }
 
+        msg!("transfer={} TOKEN B", native_amount);
+
         invoke(
             &transfer(
                 accounts.payer.key,
-                accounts.token_b_destination.key,
+                accounts.bounding_curve_reserve.key,
                 native_amount,
             ),
             &[
                 accounts.payer.clone(),
-                accounts.token_b_destination.clone(),
-                accounts.system_program.clone(),
+                accounts.bounding_curve_reserve.clone(),
             ],
         )?;
 
-        invoke(
-            &sync_native(accounts.token_program.key, accounts.token_b_destination.key)?,
-            &[accounts.token_b_destination.clone()],
-        )?;
+        msg!("transfer={}TOKEN A", token_amount);
 
         invoke_signed(
             &spl_token::instruction::transfer(
                 accounts.token_program.key,
                 &accounts.token_a_source.key,
                 &accounts.token_a_destination.key,
-                &accounts.bounding_curve.key,
+                &accounts.bounding_curve_reserve.key,
                 &[],
                 token_amount,
             )?,
             &[
                 accounts.token_a_source.clone(),
                 accounts.token_a_destination.clone(),
-                accounts.bounding_curve.clone(),
+                accounts.bounding_curve_reserve.clone(),
                 accounts.token_program.clone(),
             ],
             signers_seeds,
@@ -167,6 +160,9 @@ impl BoundingCurveInfo {
         let native_amount: u64 = native_amount.try_into().unwrap();
         msg!("native_amount={}\n", native_amount);
 
+        msg!("Fuck first");
+        msg!("to{}", accounts.token_a_destination.key.to_string());
+
         invoke(
             &spl_token::instruction::transfer(
                 accounts.token_program.key,
@@ -184,20 +180,18 @@ impl BoundingCurveInfo {
             ],
         )?;
 
+        msg!("Fuck second");
+        msg!("from={}", accounts.bounding_curve_reserve.key.to_string());
+
         invoke_signed(
-            &spl_token::instruction::transfer(
-                accounts.token_program.key,
-                accounts.token_b_source.key,
-                accounts.token_b_destination.key,
-                accounts.bounding_curve.key,
-                &[],
+            &transfer(
+                accounts.bounding_curve_reserve.key,
+                accounts.payer.key,
                 native_amount.try_into().unwrap(),
-            )?,
+            ),
             &[
-                accounts.token_b_source.clone(),
-                accounts.token_b_destination.clone(),
-                accounts.bounding_curve.clone(),
-                accounts.token_program.clone(),
+                accounts.bounding_curve_reserve.clone(),
+                accounts.payer.clone(),
             ],
             signers_seeds,
         )?;

@@ -1,5 +1,9 @@
 import BN from "bn.js";
-import { Market, MARKET_STATE_LAYOUT_V2 } from "@project-serum/serum";
+import {
+  DexInstructions,
+  Market,
+  MARKET_STATE_LAYOUT_V2,
+} from "@project-serum/serum";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountIdempotentInstruction,
@@ -20,6 +24,12 @@ import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-me
 
 import {
   HASHFUND_PROGRAM_ID,
+  RAYDIUM_CREATE_POOL_FEE_ADDRESS,
+  RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
+  RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
+  RAYDIUM_DEVNET_PROGRAM_ID,
+  RAYDIUM_OPEN_BOOK_PROGRAM_ID,
+  RAYDIUM_PROGRAM_ID,
   SERUM_DEVNET_PROGRAM_ID,
   SERUM_PROGRAM_ID,
 } from "./config";
@@ -31,6 +41,7 @@ import {
   findMintAuthorityPda,
   findVaultSignerPda,
   type PublicKeyWithSeed,
+  findBoundingCurveReservePda,
 } from "./utils";
 import {
   InitializeCurveSchema,
@@ -108,6 +119,8 @@ type MintTokenInstructionArgs = {
   tokenProgram: PublicKey;
   mint: PublicKey;
   mintReserveAta: PublicKey;
+  boundingCurve: PublicKey;
+  boundingCurveReserve: PublicKey;
   payer: PublicKey;
   data: MintTokenSchema;
 };
@@ -118,6 +131,8 @@ function mintTokenInstruction({
   payer,
   mint,
   mintReserveAta,
+  boundingCurve,
+  boundingCurveReserve,
   data,
 }: MintTokenInstructionArgs) {
   const [mintAuthority] = findMintAuthorityPda(payer, mint, programId);
@@ -129,6 +144,8 @@ function mintTokenInstruction({
       { pubkey: mint, isSigner: false, isWritable: true },
       { pubkey: mintReserveAta, isSigner: false, isWritable: true },
       { pubkey: mintAuthority, isSigner: false, isWritable: true },
+      { pubkey: boundingCurve, isSigner: false, isWritable: true },
+      { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
       { pubkey: payer, isSigner: true, isWritable: false },
     ],
     data: data.serialize(),
@@ -140,10 +157,11 @@ type InitializeCurveArgs = {
   systemProgram: PublicKey;
   tokenProgram: PublicKey;
   tokenAMint: PublicKey;
-  tokenAMintAuthority: PublicKey;
   tokenBMint: PublicKey;
+  tokenAMintAuthority: PublicKey;
+  tokenAReserveAta: PublicKey;
   boundingCurve: PublicKey;
-  boundingCurveAta: PublicKey;
+  boundingCurveReserve: PublicKey;
   payer: PublicKey;
   solUsdFeed: PublicKey;
   data: InitializeCurveSchema;
@@ -154,10 +172,11 @@ function initializeCurveInstruction({
   systemProgram,
   tokenProgram,
   tokenAMint,
-  tokenAMintAuthority,
   tokenBMint,
+  tokenAMintAuthority,
+  tokenAReserveAta,
   boundingCurve,
-  boundingCurveAta,
+  boundingCurveReserve,
   solUsdFeed,
   payer,
   data,
@@ -168,10 +187,11 @@ function initializeCurveInstruction({
       { pubkey: systemProgram, isSigner: false, isWritable: false },
       { pubkey: tokenProgram, isSigner: false, isWritable: false },
       { pubkey: tokenAMint, isSigner: false, isWritable: false },
-      { pubkey: tokenAMintAuthority, isSigner: false, isWritable: false },
       { pubkey: tokenBMint, isSigner: false, isWritable: false },
+      { pubkey: tokenAMintAuthority, isSigner: false, isWritable: false },
+      { pubkey: tokenAReserveAta, isSigner: false, isWritable: false },
       { pubkey: boundingCurve, isSigner: false, isWritable: true },
-      { pubkey: boundingCurveAta, isSigner: false, isWritable: false },
+      { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
       { pubkey: payer, isSigner: true, isWritable: true },
       { pubkey: solUsdFeed, isSigner: false, isWritable: false },
     ],
@@ -227,7 +247,6 @@ function initializeSerumMarketInstruction({
       { pubkey: asks, isSigner: false, isWritable: true },
       { pubkey: requestQueue, isSigner: false, isWritable: true },
       { pubkey: eventQueue, isSigner: false, isWritable: true },
-      { pubkey: payer, isSigner: true, isWritable: false },
     ],
     data: data.serialize(),
   });
@@ -254,9 +273,11 @@ type InitializeRaydiumInstructionArgs = {
   ammOpenOrders: PublicKey;
   ammCreateFeeDestination: PublicKey;
   boundingCurve: PublicKey;
+  boundingCurveReserve: PublicKey;
   boundingCurveTokenAReserve: PublicKey;
   boundingCurveTokenBReserve: PublicKey;
   boundingCurveLpReserve: PublicKey;
+  payer: PublicKey;
   data: InitializeRaydiumSchema;
 };
 
@@ -281,9 +302,11 @@ function initializeRaydiumInstruction({
   ammOpenOrders,
   ammCreateFeeDestination,
   boundingCurve,
+  boundingCurveReserve,
   boundingCurveTokenAReserve,
   boundingCurveTokenBReserve,
   boundingCurveLpReserve,
+  payer,
   data,
 }: InitializeRaydiumInstructionArgs) {
   return new TransactionInstruction({
@@ -293,32 +316,38 @@ function initializeRaydiumInstruction({
       { pubkey: systemProgram, isSigner: false, isWritable: false },
       { pubkey: tokenProgram, isSigner: false, isWritable: false },
       { pubkey: associateTokenProgram, isSigner: false, isWritable: false },
-      { pubkey: ammProgram, isSigner: false, isWritable: false },
-      { pubkey: marketProgram, isSigner: false, isWritable: false },
-      { pubkey: tokenAMint, isSigner: false, isWritable: false },
-      { pubkey: tokenBMint, isSigner: false, isWritable: false },
-      { pubkey: lpMint, isSigner: false, isWritable: false },
-      { pubkey: market, isSigner: false, isWritable: false },
+      { pubkey: ammProgram, isSigner: false, isWritable: true },
+      { pubkey: marketProgram, isSigner: false, isWritable: true },
+
+      { pubkey: tokenAMint, isSigner: false, isWritable: true },
+      { pubkey: tokenBMint, isSigner: false, isWritable: true },
+      { pubkey: lpMint, isSigner: false, isWritable: true },
+
+      { pubkey: market, isSigner: false, isWritable: true },
+
       { pubkey: ammPool, isSigner: false, isWritable: true },
-      { pubkey: ammAuthority, isSigner: false, isWritable: true },
+      { pubkey: ammAuthority, isSigner: false, isWritable: false },
       { pubkey: ammTokenAVault, isSigner: false, isWritable: true },
       { pubkey: ammTokenBVault, isSigner: false, isWritable: true },
       { pubkey: ammTargetOrders, isSigner: false, isWritable: true },
-      { pubkey: ammConfig, isSigner: false, isWritable: true },
+      { pubkey: ammConfig, isSigner: false, isWritable: false },
       { pubkey: ammOpenOrders, isSigner: false, isWritable: true },
-      { pubkey: ammCreateFeeDestination, isSigner: false, isWritable: false },
-      { pubkey: boundingCurve, isSigner: false, isWritable: false },
+      { pubkey: ammCreateFeeDestination, isSigner: false, isWritable: true },
+
+      { pubkey: boundingCurve, isSigner: false, isWritable: true },
+      { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
       {
         pubkey: boundingCurveTokenAReserve,
         isSigner: false,
-        isWritable: false,
+        isWritable: true,
       },
       {
         pubkey: boundingCurveTokenBReserve,
         isSigner: false,
-        isWritable: false,
+        isWritable: true,
       },
-      { pubkey: boundingCurveLpReserve, isSigner: false, isWritable: false },
+      { pubkey: boundingCurveLpReserve, isSigner: false, isWritable: true },
+      { pubkey: payer, isSigner: true, isWritable: true },
     ],
     data: data.serialize(),
   });
@@ -330,11 +359,13 @@ type SwapInstructionArgs = {
   tokenProgram: PublicKey;
   tokenAMint: PublicKey;
   tokenBMint: PublicKey;
-  boundingCurve: PublicKey;
   tokenASource: PublicKey;
-  tokenADestination: PublicKey;
   tokenBSource: PublicKey;
+  tokenADestination: PublicKey;
   tokenBDestination: PublicKey;
+  boundingCurve: PublicKey;
+  boundingCurveReserve: PublicKey;
+
   payer: PublicKey;
   data: SwapSchema;
 };
@@ -345,12 +376,13 @@ function swapInstruction({
   tokenProgram,
   tokenAMint,
   tokenBMint,
-  boundingCurve,
-  payer,
   tokenASource,
-  tokenADestination,
   tokenBSource,
+  tokenADestination,
   tokenBDestination,
+  boundingCurve,
+  boundingCurveReserve,
+  payer,
   data,
 }: SwapInstructionArgs) {
   return new TransactionInstruction({
@@ -360,12 +392,13 @@ function swapInstruction({
       { pubkey: tokenProgram, isSigner: false, isWritable: false },
       { pubkey: tokenAMint, isSigner: false, isWritable: false },
       { pubkey: tokenBMint, isSigner: false, isWritable: false },
-      { pubkey: boundingCurve, isSigner: false, isWritable: true },
       { pubkey: tokenASource, isSigner: false, isWritable: true },
-      { pubkey: tokenADestination, isSigner: false, isWritable: true },
       { pubkey: tokenBSource, isSigner: false, isWritable: true },
+      { pubkey: tokenADestination, isSigner: false, isWritable: true },
       { pubkey: tokenBDestination, isSigner: false, isWritable: true },
-      { pubkey: payer, isSigner: true, isWritable: false },
+      { pubkey: boundingCurve, isSigner: false, isWritable: true },
+      { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
+      { pubkey: payer, isSigner: true, isWritable: true },
     ],
     data: data.serialize(),
   });
@@ -419,16 +452,25 @@ export function createMintInstruction({
     data: new InitializeMintTokenSchema(name, ticker, uri, decimals),
   });
 
-  let [boundingCurve] = findBoundingCurvePda(mint, programId);
-
-  let mintReserveAta = getAssociatedTokenAddressSync(mint, boundingCurve, true);
-
-  let createMintReserveAtaInstruction = createAssociatedTokenAccountInstruction(
-    payer,
-    mintReserveAta,
+  const [boundingCurve] = findBoundingCurvePda(mint, programId);
+  const [boundingCurveReserve] = findBoundingCurveReservePda(
     boundingCurve,
-    mint
+    programId
   );
+
+  const mintReserveAta = getAssociatedTokenAddressSync(
+    mint,
+    boundingCurveReserve,
+    true
+  );
+
+  const createMintReserveAtaInstruction =
+    createAssociatedTokenAccountInstruction(
+      payer,
+      mintReserveAta,
+      boundingCurveReserve,
+      mint
+    );
 
   let mintInstruction = mintTokenInstruction({
     payer,
@@ -436,6 +478,8 @@ export function createMintInstruction({
     programId,
     mintReserveAta,
     tokenProgram,
+    boundingCurve,
+    boundingCurveReserve,
     data: new MintTokenSchema(totalSupply),
   });
 
@@ -472,6 +516,10 @@ export async function createInitializeCurveInstruction({
   data,
 }: CreateInitializeCurveArgs) {
   const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
+  const [boundingCurveReserve] = findBoundingCurveReservePda(
+    boundingCurve,
+    programId
+  );
   const [tokenAMintAuthority] = findMintAuthorityPda(
     payer,
     tokenAMint,
@@ -483,7 +531,7 @@ export async function createInitializeCurveInstruction({
       connection,
       tokenBMint,
       payer,
-      boundingCurve,
+      boundingCurveReserve,
       true
     );
 
@@ -507,7 +555,7 @@ export async function createInitializeCurveInstruction({
 
   const boundingCurveAta = getAssociatedTokenAddressSync(
     tokenAMint,
-    boundingCurve,
+    boundingCurveReserve,
     true,
     tokenProgram
   );
@@ -517,7 +565,8 @@ export async function createInitializeCurveInstruction({
     systemProgram,
     tokenProgram,
     boundingCurve,
-    boundingCurveAta,
+    boundingCurveReserve,
+    tokenAReserveAta: boundingCurveAta,
     tokenAMint,
     tokenAMintAuthority,
     tokenBMint,
@@ -610,9 +659,9 @@ export async function createSerumAccountInstructions({
       seed: market.seed,
       basePubkey: payer,
       lamports: await connection.getMinimumBalanceForRentExemption(
-        MARKET_STATE_LAYOUT_V2.span
+        Market.getLayout(serumProgram).span
       ),
-      space: MARKET_STATE_LAYOUT_V2.span,
+      space: Market.getLayout(serumProgram).span,
       programId: serumProgram,
     }),
     SystemProgram.createAccountWithSeed({
@@ -684,7 +733,7 @@ export async function createInitializeSerumMarketInstructions({
   rentSysVar = SYSVAR_RENT_PUBKEY,
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
-  serumProgram = SERUM_PROGRAM_ID,
+  serumProgram = RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
   tokenAMint,
   tokenBMint = NATIVE_MINT,
   tokenAVault,
@@ -701,7 +750,6 @@ export async function createInitializeSerumMarketInstructions({
     market.publicKey,
     serumProgram
   );
-  const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
 
   const instructions0 = await createSerumTokenAccountInstructions({
     connection,
@@ -726,27 +774,22 @@ export async function createInitializeSerumMarketInstructions({
   });
 
   const instructions2 = [
-    initializeSerumMarketInstruction({
-      programId,
-      rentSysVar,
-      serumProgram,
-      systemProgram,
-      tokenAMint,
-      tokenBMint,
-      tokenAVault: tokenAVault.publicKey,
-      tokenBVault: tokenBVault.publicKey,
+    DexInstructions.initializeMarket({
+      programId: serumProgram,
+      baseMint: tokenAMint,
+      quoteMint: tokenBMint,
+      baseVault: tokenAVault.publicKey,
+      quoteVault: tokenBVault.publicKey,
       market: market.publicKey,
       asks: asks.publicKey,
       bids: bids.publicKey,
       eventQueue: eventQueue.publicKey,
       requestQueue: requestQueue.publicKey,
-      payer,
-      data: new InitializeSerumMarketSchema(
-        data.coinLotSize,
-        data.pcLotSize,
-        nonce,
-        data.pcDustThreshhold
-      ),
+      quoteLotSize: data.pcLotSize,
+      baseLotSize: data.coinLotSize,
+      vaultSignerNonce: nonce,
+      feeRateBps: 100,
+      quoteDustThreshold: data.pcDustThreshhold,
     }),
   ];
 
@@ -760,7 +803,7 @@ type MintInfo = {
 type CreateRaydiumInitializeInstructionArgs = {
   payer: PublicKey;
   tokenAMintInfo: MintInfo;
-  tokenBMintInfo: MintInfo;
+  tokenBMintInfo?: MintInfo;
   data: { openTime: BN; tokenAAmount: BN; tokenBAmount: BN };
 } & Pick<InitializeRaydiumInstructionArgs, "tokenAMint" | "market"> &
   Partial<
@@ -773,6 +816,7 @@ type CreateRaydiumInitializeInstructionArgs = {
       | "associateTokenProgram"
       | "ammProgram"
       | "marketProgram"
+      | "ammCreateFeeDestination"
       | "tokenBMint"
     >
   >;
@@ -783,25 +827,32 @@ export function createInitializeRaydiumInstructions({
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
   associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
-  marketProgram = SERUM_DEVNET_PROGRAM_ID,
-  ammProgram = PublicKey.default,
+  marketProgram = RAYDIUM_OPEN_BOOK_PROGRAM_ID,
+  ammProgram = RAYDIUM_DEVNET_PROGRAM_ID,
+  ammCreateFeeDestination = RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
   tokenAMint,
   tokenBMint = NATIVE_MINT,
   tokenAMintInfo,
-  tokenBMintInfo,
+  tokenBMintInfo = {
+    decimals: 9,
+  },
   market,
   payer,
   data,
 }: CreateRaydiumInitializeInstructionArgs) {
   const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
+  const [boundingCurveReserve] = findBoundingCurveReservePda(
+    boundingCurve,
+    programId
+  );
   const boundingCurveTokenAReserve = getAssociatedTokenAddressSync(
     tokenAMint,
-    boundingCurve,
+    boundingCurveReserve,
     true
   );
   const boundingCurveTokenBReserve = getAssociatedTokenAddressSync(
-    tokenAMint,
-    boundingCurve,
+    tokenBMint,
+    boundingCurveReserve,
     true
   );
 
@@ -819,51 +870,43 @@ export function createInitializeRaydiumInstructions({
 
   let boundingCurveLpReserve = getAssociatedTokenAddressSync(
     poolInfo.lpMint,
-    boundingCurve,
+    boundingCurveReserve,
     true
   );
-  const boundingCurveLpReserveInstruction =
-    createAssociatedTokenAccountIdempotentInstruction(
-      payer,
-      boundingCurveLpReserve,
-      boundingCurve,
-      poolInfo.lpMint
-    );
 
-  return [
-    boundingCurveLpReserveInstruction,
-    initializeRaydiumInstruction({
-      programId,
-      sysRentVar,
-      systemProgram,
-      tokenProgram,
-      associateTokenProgram,
-      marketProgram,
-      ammProgram,
-      tokenAMint,
-      tokenBMint,
-      lpMint: poolInfo.lpMint,
-      market,
-      ammPool: poolInfo.id,
-      ammTokenAVault: poolInfo.baseVault,
-      ammTokenBVault: poolInfo.lpVault,
-      ammAuthority: poolInfo.authority,
-      ammTargetOrders: poolInfo.targetOrders,
-      ammConfig: poolInfo.configId,
-      ammOpenOrders: poolInfo.openOrders,
-      ammCreateFeeDestination: new PublicKey(""),
-      boundingCurve,
-      boundingCurveTokenAReserve,
-      boundingCurveTokenBReserve,
-      boundingCurveLpReserve,
-      data: new InitializeRaydiumSchema(
-        data.tokenAAmount,
-        data.tokenBAmount,
-        data.openTime,
-        new BN(poolInfo.nonce)
-      ),
-    }),
-  ];
+  return initializeRaydiumInstruction({
+    programId,
+    sysRentVar,
+    systemProgram,
+    tokenProgram,
+    associateTokenProgram,
+    marketProgram,
+    ammProgram,
+    tokenAMint,
+    tokenBMint,
+    market,
+    ammCreateFeeDestination,
+    payer,
+    boundingCurve,
+    boundingCurveReserve,
+    boundingCurveTokenAReserve,
+    boundingCurveTokenBReserve: boundingCurve,
+    boundingCurveLpReserve,
+    lpMint: poolInfo.lpMint,
+    ammPool: poolInfo.id,
+    ammTokenAVault: poolInfo.baseVault,
+    ammTokenBVault: poolInfo.lpVault,
+    ammAuthority: poolInfo.authority,
+    ammTargetOrders: poolInfo.targetOrders,
+    ammConfig: poolInfo.configId,
+    ammOpenOrders: poolInfo.openOrders,
+    data: new InitializeRaydiumSchema(
+      data.tokenAAmount,
+      data.tokenBAmount,
+      data.openTime,
+      new BN(poolInfo.nonce)
+    ),
+  });
 }
 
 type CreateSwapInstructionArgs = {
@@ -890,9 +933,14 @@ export function createSwapInInstruction({
   data,
 }: CreateSwapInstructionArgs) {
   const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
+  const [boundingCurveReserve] = findBoundingCurveReservePda(
+    boundingCurve,
+    programId
+  );
+
   const tokenASource = getAssociatedTokenAddressSync(
     tokenAMint,
-    boundingCurve,
+    boundingCurveReserve,
     true
   );
   const tokenADestination = getAssociatedTokenAddressSync(
@@ -905,7 +953,7 @@ export function createSwapInInstruction({
 
   const tokenBDestination = getAssociatedTokenAddressSync(
     tokenBMint,
-    boundingCurve,
+    boundingCurveReserve,
     true
   );
 
@@ -915,11 +963,12 @@ export function createSwapInInstruction({
     tokenProgram,
     tokenAMint,
     tokenBMint,
-    boundingCurve,
     tokenASource,
-    tokenADestination,
     tokenBSource,
+    tokenADestination,
     tokenBDestination,
+    boundingCurve,
+    boundingCurveReserve,
     payer,
     data: new SwapSchema(data.amount, 0),
   });
@@ -936,17 +985,21 @@ export async function createSwapOutInstruction({
   data,
 }: CreateSwapInstructionArgs & { connection: Connection }) {
   const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
+  const [boundingCurveReserve] = findBoundingCurveReservePda(
+    boundingCurve,
+    programId
+  );
 
   const tokenASource = getAssociatedTokenAddressSync(tokenAMint, payer, false);
   const tokenADestination = getAssociatedTokenAddressSync(
     tokenAMint,
-    boundingCurve,
+    boundingCurveReserve,
     true
   );
 
   const tokenBSource = getAssociatedTokenAddressSync(
     tokenBMint,
-    boundingCurve,
+    boundingCurveReserve,
     true
   );
 
@@ -973,11 +1026,12 @@ export async function createSwapOutInstruction({
       tokenProgram,
       tokenAMint,
       tokenBMint,
-      boundingCurve,
       tokenASource,
-      tokenADestination,
       tokenBSource,
+      tokenADestination,
       tokenBDestination,
+      boundingCurve,
+      boundingCurveReserve,
       payer,
       data: new SwapSchema(data.amount, 1),
     }),
