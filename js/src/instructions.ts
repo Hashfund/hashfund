@@ -1,11 +1,7 @@
 import BN from "bn.js";
 import { Market } from "@project-serum/serum";
 import { initializeAccount } from "@project-serum/serum/lib/token-instructions";
-import {
-  getCreatePoolKeys,
-  jsonInfo2PoolKeys,
-  getAssociatedPoolKeys,
-} from "@raydium-io/raydium-sdk-v2";
+import { getAssociatedPoolKeys } from "@raydium-io/raydium-sdk-v2";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
@@ -25,14 +21,8 @@ import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-me
 
 import {
   HASHFUND_PROGRAM_ID,
-  RAYDIUM_CREATE_POOL_FEE_ADDRESS,
-  RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
   RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
   RAYDIUM_DEVNET_PROGRAM_ID,
-  RAYDIUM_OPEN_BOOK_PROGRAM_ID,
-  RAYDIUM_PROGRAM_ID,
-  SERUM_DEVNET_PROGRAM_ID,
-  SERUM_PROGRAM_ID,
 } from "./config";
 import {
   findMetadataPda,
@@ -47,12 +37,10 @@ import {
 import {
   InitializeCurveSchema,
   InitializeMintTokenSchema,
-  InitializeSerumMarketSchema,
   MintTokenSchema,
-  InitializeRaydiumSchema,
   SwapSchema,
+  HashTokenSchema,
 } from "./schema";
-import { Liquidity } from "@raydium-io/raydium-sdk";
 
 type InitializeMintInstructionArgs = {
   programId: PublicKey;
@@ -199,71 +187,24 @@ function initializeCurveInstruction({
   });
 }
 
-type InitializeSerumMarketArgs = {
+type HashTokenInstructionArgs = {
   programId: PublicKey;
-  rentSysVar: PublicKey;
+  sysVarRent: PublicKey;
   systemProgram: PublicKey;
+  tokenProgram: PublicKey;
+  associateTokenProgram: PublicKey;
   serumProgram: PublicKey;
+  ammProgram: PublicKey;
   tokenAMint: PublicKey;
   tokenBMint: PublicKey;
-  tokenAVault: PublicKey;
-  tokenBVault: PublicKey;
+  serumTokenAVault: PublicKey;
+  serumTokenBVault: PublicKey;
   market: PublicKey;
   bids: PublicKey;
   asks: PublicKey;
   requestQueue: PublicKey;
   eventQueue: PublicKey;
-  payer: PublicKey;
-  data: InitializeSerumMarketSchema;
-};
-
-function initializeSerumMarketInstruction({
-  programId,
-  rentSysVar,
-  serumProgram,
-  tokenAMint,
-  tokenBMint,
-  tokenAVault,
-  tokenBVault,
-  market,
-  bids,
-  asks,
-  requestQueue,
-  eventQueue,
-  payer,
-  data,
-}: InitializeSerumMarketArgs) {
-  return new TransactionInstruction({
-    programId,
-    keys: [
-      { pubkey: rentSysVar, isSigner: false, isWritable: false },
-      { pubkey: serumProgram, isSigner: false, isWritable: false },
-      { pubkey: tokenAMint, isSigner: false, isWritable: false },
-      { pubkey: tokenBMint, isSigner: false, isWritable: false },
-      { pubkey: tokenAVault, isSigner: false, isWritable: true },
-      { pubkey: tokenBVault, isSigner: false, isWritable: true },
-      { pubkey: market, isSigner: false, isWritable: true },
-      { pubkey: bids, isSigner: false, isWritable: true },
-      { pubkey: asks, isSigner: false, isWritable: true },
-      { pubkey: requestQueue, isSigner: false, isWritable: true },
-      { pubkey: eventQueue, isSigner: false, isWritable: true },
-    ],
-    data: data.serialize(),
-  });
-}
-
-type InitializeRaydiumInstructionArgs = {
-  programId: PublicKey;
-  sysRentVar: PublicKey;
-  systemProgram: PublicKey;
-  tokenProgram: PublicKey;
-  associateTokenProgram: PublicKey;
-  ammProgram: PublicKey;
-  marketProgram: PublicKey;
-  tokenAMint: PublicKey;
-  tokenBMint: PublicKey;
-  lpMint: PublicKey;
-  market: PublicKey;
+  ammLpMint: PublicKey;
   ammPool: PublicKey;
   ammAuthority: PublicKey;
   ammTokenAVault: PublicKey;
@@ -278,21 +219,27 @@ type InitializeRaydiumInstructionArgs = {
   boundingCurveTokenBReserve: PublicKey;
   boundingCurveLpReserve: PublicKey;
   payer: PublicKey;
-  data: InitializeRaydiumSchema;
+  data: HashTokenSchema;
 };
 
-function initializeRaydiumInstruction({
+function hashTokenInstruction({
   programId,
-  sysRentVar,
+  sysVarRent,
   systemProgram,
   tokenProgram,
   associateTokenProgram,
+  serumProgram,
   ammProgram,
-  marketProgram,
   tokenAMint,
   tokenBMint,
-  lpMint,
+  serumTokenAVault,
+  serumTokenBVault,
   market,
+  bids,
+  asks,
+  requestQueue,
+  eventQueue,
+  ammLpMint,
   ammPool,
   ammAuthority,
   ammTokenAVault,
@@ -308,23 +255,28 @@ function initializeRaydiumInstruction({
   boundingCurveLpReserve,
   payer,
   data,
-}: InitializeRaydiumInstructionArgs) {
+}: HashTokenInstructionArgs) {
+   console.log("bids=", bids.toBase58())
+  console.log("bc", boundingCurveReserve.toBase58())
   return new TransactionInstruction({
     programId,
     keys: [
-      { pubkey: sysRentVar, isSigner: false, isWritable: false },
+      { pubkey: sysVarRent, isSigner: false, isWritable: false },
       { pubkey: systemProgram, isSigner: false, isWritable: false },
       { pubkey: tokenProgram, isSigner: false, isWritable: false },
       { pubkey: associateTokenProgram, isSigner: false, isWritable: false },
+      { pubkey: serumProgram, isSigner: false, isWritable: true },
       { pubkey: ammProgram, isSigner: false, isWritable: true },
-      { pubkey: marketProgram, isSigner: false, isWritable: true },
-
       { pubkey: tokenAMint, isSigner: false, isWritable: true },
       { pubkey: tokenBMint, isSigner: false, isWritable: true },
-      { pubkey: lpMint, isSigner: false, isWritable: true },
-
+      { pubkey: serumTokenAVault, isSigner: false, isWritable: true },
+      { pubkey: serumTokenBVault, isSigner: false, isWritable: true },
       { pubkey: market, isSigner: false, isWritable: true },
-
+      { pubkey: bids, isSigner: false, isWritable: true },
+      { pubkey: asks, isSigner: false, isWritable: true },
+      { pubkey: requestQueue, isSigner: false, isWritable: true },
+      { pubkey: eventQueue, isSigner: false, isWritable: true },
+      { pubkey: ammLpMint, isSigner: false, isWritable: true },
       { pubkey: ammPool, isSigner: false, isWritable: true },
       { pubkey: ammAuthority, isSigner: false, isWritable: false },
       { pubkey: ammTokenAVault, isSigner: false, isWritable: true },
@@ -333,7 +285,6 @@ function initializeRaydiumInstruction({
       { pubkey: ammConfig, isSigner: false, isWritable: false },
       { pubkey: ammOpenOrders, isSigner: false, isWritable: true },
       { pubkey: ammCreateFeeDestination, isSigner: false, isWritable: true },
-
       { pubkey: boundingCurve, isSigner: false, isWritable: true },
       { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
       {
@@ -589,7 +540,7 @@ type CreateSerumTokenAccountInstructionsArgs = {
   tokenAVault: PublicKeyWithSeed;
   tokenBVault: PublicKeyWithSeed;
   vaultOwner: PublicKey;
-} & Pick<InitializeSerumMarketArgs, "tokenAMint" | "tokenBMint" | "payer">;
+} & Pick<HashTokenInstructionArgs, "tokenAMint" | "tokenBMint" | "payer">;
 
 export async function createSerumTokenAccountInstructions({
   connection,
@@ -640,7 +591,7 @@ type CreateSerumAccountInstructionsArgs = {
   bids: PublicKeyWithSeed;
   eventQueue: PublicKeyWithSeed;
   requestQueue: PublicKeyWithSeed;
-} & Pick<InitializeSerumMarketArgs, "serumProgram" | "payer">;
+} & Pick<HashTokenInstructionArgs, "serumProgram" | "payer">;
 
 export async function createSerumAccountInstructions({
   connection,
@@ -703,41 +654,63 @@ export async function createSerumAccountInstructions({
   ];
 }
 
-type CreateInitializeSerumMarketInstructionArgs = {
+type MintInfo = {
+  decimals: number;
+};
+
+type CreateHashTokenInstructionArgs = {
   connection: Connection;
   tokenProgram?: PublicKey;
   tokenAMint: PublicKey;
-  tokenAVault: PublicKeyWithSeed;
-  tokenBVault: PublicKeyWithSeed;
+  tokenAMintInfo: MintInfo;
+  tokenBMintInfo?: MintInfo;
+  serumTokenAVault: PublicKeyWithSeed;
+  serumTokenBVault: PublicKeyWithSeed;
   market: PublicKeyWithSeed;
   asks: PublicKeyWithSeed;
   bids: PublicKeyWithSeed;
   eventQueue: PublicKeyWithSeed;
   requestQueue: PublicKeyWithSeed;
-  payer: PublicKey;
   data: {
+    tokenAAmount: BN;
+    tokenBAmount: BN;
+    openTime: BN;
     coinLotSize: BN;
     pcLotSize: BN;
     pcDustThreshhold: BN;
   };
-} & Partial<
-  Pick<
-    InitializeSerumMarketArgs,
-    "rentSysVar" | "systemProgram" | "serumProgram" | "programId" | "tokenBMint"
-  >
->;
+} & Pick<HashTokenInstructionArgs, "payer"> &
+  Partial<
+    Pick<
+      HashTokenInstructionArgs,
+      | "sysVarRent"
+      | "systemProgram"
+      | "tokenProgram"
+      | "associateTokenProgram"
+      | "ammProgram"
+      | "serumProgram"
+      | "programId"
+      | "tokenBMint"
+      | "ammCreateFeeDestination"
+    >
+  >;
 
-export async function createInitializeSerumMarketInstructions({
+export async function createHashTokenInstructions({
   connection,
   programId = HASHFUND_PROGRAM_ID,
-  rentSysVar = SYSVAR_RENT_PUBKEY,
+  sysVarRent = SYSVAR_RENT_PUBKEY,
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
+  associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
   serumProgram = RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
-  tokenAMint,
+  serumTokenAVault,
+  serumTokenBVault,
+  ammProgram = RAYDIUM_DEVNET_PROGRAM_ID,
+  ammCreateFeeDestination = RAYDIUM_DEVNET_PROGRAM_ID,
   tokenBMint = NATIVE_MINT,
-  tokenAVault,
-  tokenBVault,
+  tokenBMintInfo = { decimals: 9 },
+  tokenAMint,
+  tokenAMintInfo,
   market,
   asks,
   bids,
@@ -745,106 +718,15 @@ export async function createInitializeSerumMarketInstructions({
   eventQueue,
   requestQueue,
   data,
-}: CreateInitializeSerumMarketInstructionArgs) {
-  const [vaultOwner, nonce] = findVaultSignerPda(
+}: CreateHashTokenInstructionArgs) {
+  const [vaultOwner, vaultOwnerNonce] = findVaultSignerPda(
     market.publicKey,
     serumProgram
   );
 
-  const instructions0 = await createSerumTokenAccountInstructions({
-    connection,
-    tokenProgram,
-    tokenBMint,
-    tokenAMint,
-    tokenAVault,
-    tokenBVault,
-    vaultOwner,
-    payer,
-  });
+  console.log(serumTokenAVault.publicKey.toBase58())
+  console.log(serumTokenBVault.publicKey.toBase58())
 
-  const instructions1 = await createSerumAccountInstructions({
-    connection,
-    serumProgram,
-    market,
-    asks,
-    bids,
-    eventQueue,
-    requestQueue,
-    payer,
-  });
-
-  const instructions2 = [
-    initializeSerumMarketInstruction({
-      programId,
-      rentSysVar,
-      serumProgram,
-      systemProgram,
-      tokenAMint,
-      tokenBMint,
-      tokenAVault: tokenAVault.publicKey,
-      tokenBVault: tokenBVault.publicKey,
-      market: market.publicKey,
-      asks: asks.publicKey,
-      bids: bids.publicKey,
-      eventQueue: eventQueue.publicKey,
-      requestQueue: requestQueue.publicKey,
-      payer,
-      data: new InitializeSerumMarketSchema(
-        data.coinLotSize,
-        data.pcLotSize,
-        nonce,
-        data.pcDustThreshhold
-      ),
-    }),
-  ];
-
-  return [instructions0, instructions1, instructions2];
-}
-
-type MintInfo = {
-  decimals: number;
-};
-
-type CreateRaydiumInitializeInstructionArgs = {
-  payer: PublicKey;
-  tokenAMintInfo: MintInfo;
-  tokenBMintInfo?: MintInfo;
-  data: { openTime: BN; tokenAAmount: BN; tokenBAmount: BN };
-} & Pick<InitializeRaydiumInstructionArgs, "tokenAMint" | "market"> &
-  Partial<
-    Pick<
-      InitializeRaydiumInstructionArgs,
-      | "programId"
-      | "sysRentVar"
-      | "systemProgram"
-      | "tokenProgram"
-      | "associateTokenProgram"
-      | "ammProgram"
-      | "marketProgram"
-      | "ammCreateFeeDestination"
-      | "tokenBMint"
-    >
-  >;
-
-export function createInitializeRaydiumInstructions({
-  programId = HASHFUND_PROGRAM_ID,
-  sysRentVar = SYSVAR_RENT_PUBKEY,
-  systemProgram = SystemProgram.programId,
-  tokenProgram = TOKEN_PROGRAM_ID,
-  associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
-  marketProgram = RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
-  ammProgram = RAYDIUM_DEVNET_PROGRAM_ID,
-  ammCreateFeeDestination = RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
-  tokenAMint,
-  tokenBMint = NATIVE_MINT,
-  tokenAMintInfo,
-  tokenBMintInfo = {
-    decimals: 9,
-  },
-  market,
-  payer,
-  data,
-}: CreateRaydiumInitializeInstructionArgs) {
   const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
   const [boundingCurveReserve] = findBoundingCurveReservePda(
     boundingCurve,
@@ -865,15 +747,13 @@ export function createInitializeRaydiumInstructions({
     version: 4,
     marketVersion: 3,
     programId: ammProgram,
-    marketId: market,
-    marketProgramId: marketProgram,
+    marketId: market.publicKey,
+    marketProgramId: serumProgram,
     baseMint: tokenAMint,
     quoteMint: tokenBMint,
     baseDecimals: tokenAMintInfo.decimals,
     quoteDecimals: tokenBMintInfo.decimals,
   });
-
-  console.log(poolInfo.id.toBase58())
 
   let boundingCurveLpReserve = getAssociatedTokenAddressSync(
     poolInfo.lpMint,
@@ -881,41 +761,73 @@ export function createInitializeRaydiumInstructions({
     true
   );
 
-  
+  const instructions0 = await createSerumTokenAccountInstructions({
+    connection,
+    tokenProgram,
+    tokenBMint,
+    tokenAMint,
+    tokenAVault: serumTokenAVault,
+    tokenBVault: serumTokenBVault,
+    vaultOwner,
+    payer,
+  });
 
-  return initializeRaydiumInstruction({
+  const instructions1 = await createSerumAccountInstructions({
+    connection,
+    serumProgram,
+    market,
+    asks,
+    bids,
+    eventQueue,
+    requestQueue,
+    payer,
+  });
+
+  const instruction2 = hashTokenInstruction({
     programId,
-    sysRentVar,
+    sysVarRent,
     systemProgram,
     tokenProgram,
     associateTokenProgram,
-    marketProgram,
+    serumProgram,
     ammProgram,
     tokenAMint,
     tokenBMint,
-    market,
+    serumTokenAVault: serumTokenAVault.publicKey,
+    serumTokenBVault: serumTokenBVault.publicKey,
+    market: market.publicKey,
+    bids: bids.publicKey,
+    asks: asks.publicKey,
+    requestQueue: requestQueue.publicKey,
+    eventQueue: eventQueue.publicKey,
+    ammLpMint: poolInfo.lpMint,
+    ammPool: poolInfo.id,
+    ammAuthority: poolInfo.authority,
+    ammTokenAVault: poolInfo.baseVault,
+    ammTokenBVault: poolInfo.quoteVault,
+    ammTargetOrders: poolInfo.targetOrders,
+    ammConfig: poolInfo.configId,
+    ammOpenOrders: poolInfo.openOrders,
     ammCreateFeeDestination,
-    payer,
     boundingCurve,
     boundingCurveReserve,
     boundingCurveTokenAReserve,
     boundingCurveTokenBReserve,
     boundingCurveLpReserve,
-    lpMint: poolInfo.lpMint,
-    ammPool: poolInfo.id,
-    ammTokenAVault: poolInfo.baseVault,
-    ammTokenBVault: poolInfo.quoteVault,
-    ammAuthority: poolInfo.authority,
-    ammTargetOrders: poolInfo.targetOrders,
-    ammConfig: poolInfo.configId,
-    ammOpenOrders: poolInfo.openOrders,
-    data: new InitializeRaydiumSchema(
+    payer,
+    data: new HashTokenSchema(
+      data.coinLotSize,
+      data.pcLotSize,
+      vaultOwnerNonce,
+      data.pcDustThreshhold,
       data.tokenAAmount,
       data.tokenBAmount,
       data.openTime,
       new BN(poolInfo.nonce)
     ),
   });
+
+  return [instructions0, instructions1, instruction2] as const;
 }
 
 type CreateSwapInstructionArgs = {

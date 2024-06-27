@@ -26,7 +26,7 @@ export const RAYDIUM_OPEN_BOOK_PROGRAM_ID = new PublicKey(
   "srmqPvymJeFKQ4zGQed1GFppgkRHL9kaELCbyksJtPX"
 );
 export const RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID = new PublicKey(
-  "EoTcMgcDRTJVZDMZWBoU6rhYHZfkNTVEAfz3uUJRcYGj"
+  "HQrkEwY4V76p32HZHEanRpdqe7xfdq6yFcFpbJbLefFn"
 );
 
 export const RAYDIUM_CREATE_POOL_FEE_ADDRESS = new PublicKey(

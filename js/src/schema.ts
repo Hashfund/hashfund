@@ -5,9 +5,8 @@ export enum SchemaVariant {
   CREATE = 0,
   MINT = 1,
   INITIALIZE_CURVE = 2,
-  INITIALIZE_SERUM_MARKET = 3,
-  INITIALIZE_RAYDIUM = 4,
-  SWAP = 5,
+  HASH_TOKEN = 3,
+  SWAP = 4,
 }
 
 export abstract class Schema {
@@ -86,39 +85,26 @@ export class InitializeCurveSchema extends Schema {
   }
 }
 
-export class InitializeSerumMarketSchema extends Schema {
+export class HashTokenSchema extends Schema {
   static schema = Borsh.struct([
     Borsh.u8("variant"),
     Borsh.u64("coin_lot_size"),
     Borsh.u64("pc_lot_size"),
     Borsh.u64("vault_signer_nonce"),
     Borsh.u64("pc_dust_threshold"),
-  ]);
-
-  public readonly variant = SchemaVariant.INITIALIZE_SERUM_MARKET;
-
-  constructor(
-    public readonly coin_lot_size: BN,
-    public readonly pc_lot_size: BN,
-    public readonly vault_signer_nonce: BN,
-    public readonly pc_dust_threshhold: BN
-  ) {
-    super();
-  }
-}
-
-export class InitializeRaydiumSchema extends Schema {
-  static schema = Borsh.struct([
-    Borsh.u8("variant"),
     Borsh.u64("token_a_amount"),
     Borsh.u64("token_b_amount"),
     Borsh.u64("open_time"),
     Borsh.u8("nonce"),
   ]);
 
-  public readonly variant = SchemaVariant.INITIALIZE_RAYDIUM;
+  public readonly variant = SchemaVariant.HASH_TOKEN;
 
   constructor(
+    public readonly coin_lot_size: BN,
+    public readonly pc_lot_size: BN,
+    public readonly vault_signer_nonce: BN,
+    public readonly pc_dust_threshhold: BN,
     public readonly token_a_amount: BN,
     public readonly token_b_amount: BN,
     public readonly open_time: BN,
@@ -130,7 +116,7 @@ export class InitializeRaydiumSchema extends Schema {
 
 export class SwapSchema extends Schema {
   static schema = Borsh.struct([
-    Borsh.u8("variant"),
+    Borsh.u64("variant"),
     Borsh.u64("amount"),
     Borsh.u8("direction"),
   ]);
