@@ -611,6 +611,7 @@ dependencies = [
 [[package]]
 name = "bounding_curve"
 version = "0.1.0"
+source = "git+https://github.com/oasisMystre/bounding_curve.git#d6338ff93d7cfcce94a1c0de39365d5dcbf0484e"
 dependencies = [
  "borsh 1.5.1",
 ]
@@ -1084,7 +1085,6 @@ dependencies = [
  "mpl-token-metadata",
  "num-traits",
  "pyth-sdk-solana",
- "raydium-library",
  "raydium_amm",
  "serum_dex 0.5.6",
  "solana-program",
@@ -1793,19 +1793,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "raydium-library"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "raydium_amm",
- "safe-transmute",
- "serum_dex 0.5.10",
- "solana-program",
-]
-
-[[package]]
 name = "raydium_amm"
 version = "0.3.0"
+source = "git+https://github.com/oasisMystre/raydium-amm#e288e94e0dc9d1c7167e95cc700505c5ba143c89"
 dependencies = [
  "arrayref",
  "arrform",

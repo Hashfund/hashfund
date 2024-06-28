@@ -1,4 +1,4 @@
-import { BN, min } from "bn.js";
+import { BN } from "bn.js";
 import {
   clusterApiUrl,
   Connection,
@@ -43,7 +43,7 @@ const main = async () => {
       solUsdFeed: SOL_USD_FEED,
       data: {
         supplyFraction: new BN(10),
-        maximumMarketCap: new BN(2).mul(new BN(10).pow(new BN(9))),
+        maximumMarketCap: new BN(5).mul(new BN(10).pow(new BN(9))),
       },
     })),
     createSwapInInstruction({
@@ -56,9 +56,9 @@ const main = async () => {
     })
   );
   transaction.feePayer = wallet.publicKey;
-  //  const tx = await simulateTransaction(connection, [transaction]);
-  //const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
-  // console.log("tx={}", tx);
+   //const tx = await simulateTransaction(connection, [transaction]);
+  const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
+   console.log("tx={}", tx);
 };
 
 main().catch(async (e) => {

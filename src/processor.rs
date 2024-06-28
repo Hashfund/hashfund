@@ -361,6 +361,7 @@ pub fn process_initialize_curve<'a>(
     let token_to_burn =
         ConstantCurve::calculate_token_out(initial_price, sol_to_burn, TradeDirection::BtoA);
 
+    msg!("Burning {} SOL={}", sol_to_burn, token_to_burn);
     invoke_signed(
         &burn(
             accounts.token_program.key,
@@ -513,7 +514,7 @@ pub fn process_hash_token<'a>(
             .unwrap(),
     )?;
 
-    let pc_amount = accounts.bounding_curve_reserve.lamports() - 1_000_000_000;
+    let pc_amount = accounts.bounding_curve_reserve.lamports() - 3_000_000_000;
     // let coin_amount = ConstantCurve::calculate_token_out(
     //     bounding_curve_info.initial_price,
     //     pc_amount,

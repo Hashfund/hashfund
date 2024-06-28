@@ -21,6 +21,7 @@ import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-me
 
 import {
   HASHFUND_PROGRAM_ID,
+  RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
   RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
   RAYDIUM_DEVNET_PROGRAM_ID,
 } from "./config";
@@ -672,8 +673,6 @@ type CreateHashTokenInstructionArgs = {
   eventQueue: PublicKeyWithSeed;
   requestQueue: PublicKeyWithSeed;
   data: {
-    tokenAAmount: BN;
-    tokenBAmount: BN;
     openTime: BN;
     coinLotSize: BN;
     pcLotSize: BN;
@@ -706,7 +705,7 @@ export async function createHashTokenInstructions({
   serumTokenAVault,
   serumTokenBVault,
   ammProgram = RAYDIUM_DEVNET_PROGRAM_ID,
-  ammCreateFeeDestination = RAYDIUM_DEVNET_PROGRAM_ID,
+  ammCreateFeeDestination = RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
   tokenBMint = NATIVE_MINT,
   tokenBMintInfo = { decimals: 9 },
   tokenAMint,
@@ -723,9 +722,6 @@ export async function createHashTokenInstructions({
     market.publicKey,
     serumProgram
   );
-
-  console.log(serumTokenAVault.publicKey.toBase58())
-  console.log(serumTokenBVault.publicKey.toBase58())
 
   const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
   const [boundingCurveReserve] = findBoundingCurveReservePda(
@@ -820,8 +816,6 @@ export async function createHashTokenInstructions({
       data.pcLotSize,
       vaultOwnerNonce,
       data.pcDustThreshhold,
-      data.tokenAAmount,
-      data.tokenBAmount,
       data.openTime,
       new BN(poolInfo.nonce)
     ),
@@ -891,7 +885,7 @@ export function createSwapInInstruction({
     boundingCurve,
     boundingCurveReserve,
     payer,
-    data: new SwapSchema(data.amount, new BN(0)),
+    data: new SwapSchema(data.amount, 0),
   });
 }
 
@@ -954,7 +948,7 @@ export async function createSwapOutInstruction({
       boundingCurve,
       boundingCurveReserve,
       payer,
-      data: new SwapSchema(data.amount, new BN(1)),
+      data: new SwapSchema(data.amount, 1),
     }),
   ];
 }

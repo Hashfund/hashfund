@@ -19,7 +19,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 
 let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 const tokenAMint = new PublicKey(
-  "64VnzwzgMxLBnnWwWQapeRV2C6y63okxdDqU97NCK6gG"
+  "BS5a91MfRZgRWe4wTGTGZX87kRNuwvGNdRSPi4NzDt2n"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -82,7 +82,7 @@ async function sellSwap(connection: Connection) {
 
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
-  const tx = await buySwap(connection, 1);
+  const tx = await buySwap(connection, 3);
   console.log("tx=", tx);
 }
 
