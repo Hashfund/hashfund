@@ -46,7 +46,7 @@ export type HashMatureEvent = {
 };
 
 export type HashTokenEvent = {
-  market: PublicKey;
+  market?: PublicKey;
   amm: PublicKey;
   coinAmount: BN;
   pcAmount: BN;
@@ -59,8 +59,8 @@ export type Event = {
   MintTo?: MintToEvent;
   InitializeCurve?: InitializeCurveEvent;
   Swap?: SwapEvent;
-  HashToken: HashTokenEvent;
-  HashMature: HashMatureEvent;
+  HashToken?: HashTokenEvent;
+  HashMature?: HashMatureEvent;
 };
 
 export class EventSchema extends Schema {
@@ -119,7 +119,7 @@ export class EventSchema extends Schema {
     Borsh.struct(
       [
         Borsh.publicKey("mint"),
-        Borsh.publicKey("market"),
+        Borsh.option(Borsh.publicKey(), "market"),
         Borsh.publicKey("amm"),
         Borsh.u64("coin_amount"),
         Borsh.u64("pc_amount"),

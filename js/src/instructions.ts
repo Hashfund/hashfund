@@ -1,7 +1,10 @@
 import BN from "bn.js";
 import { Market } from "@project-serum/serum";
 import { initializeAccount } from "@project-serum/serum/lib/token-instructions";
-import { getAssociatedPoolKeys } from "@raydium-io/raydium-sdk-v2";
+import {
+  getAssociatedPoolKeys,
+  getCreatePoolKeys,
+} from "@raydium-io/raydium-sdk-v2";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
@@ -41,6 +44,7 @@ import {
   MintTokenSchema,
   SwapSchema,
   HashTokenSchema,
+  HashTokenV2Schema,
 } from "./schema";
 
 type InitializeMintInstructionArgs = {
@@ -257,8 +261,8 @@ function hashTokenInstruction({
   payer,
   data,
 }: HashTokenInstructionArgs) {
-   console.log("bids=", bids.toBase58())
-  console.log("bc", boundingCurveReserve.toBase58())
+  console.log("bids=", bids.toBase58());
+  console.log("bc", boundingCurveReserve.toBase58());
   return new TransactionInstruction({
     programId,
     keys: [
@@ -285,6 +289,96 @@ function hashTokenInstruction({
       { pubkey: ammTargetOrders, isSigner: false, isWritable: true },
       { pubkey: ammConfig, isSigner: false, isWritable: false },
       { pubkey: ammOpenOrders, isSigner: false, isWritable: true },
+      { pubkey: ammCreateFeeDestination, isSigner: false, isWritable: true },
+      { pubkey: boundingCurve, isSigner: false, isWritable: true },
+      { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
+      {
+        pubkey: boundingCurveTokenAReserve,
+        isSigner: false,
+        isWritable: true,
+      },
+      {
+        pubkey: boundingCurveTokenBReserve,
+        isSigner: false,
+        isWritable: true,
+      },
+      { pubkey: boundingCurveLpReserve, isSigner: false, isWritable: true },
+      { pubkey: payer, isSigner: true, isWritable: true },
+    ],
+    data: data.serialize(),
+  });
+}
+
+export type HashTokenInstructionV2Args = {
+  ammObservableState: PublicKey;
+  data: HashTokenV2Schema;
+} & Pick<
+  HashTokenInstructionArgs,
+  | "programId"
+  | "sysVarRent"
+  | "systemProgram"
+  | "tokenProgram"
+  | "associateTokenProgram"
+  | "ammProgram"
+  | "tokenAMint"
+  | "tokenBMint"
+  | "ammPool"
+  | "ammAuthority"
+  | "ammConfig"
+  | "ammCreateFeeDestination"
+  | "ammLpMint"
+  | "ammTokenAVault"
+  | "ammTokenBVault"
+  | "boundingCurve"
+  | "boundingCurveReserve"
+  | "boundingCurveTokenAReserve"
+  | "boundingCurveTokenBReserve"
+  | "boundingCurveLpReserve"
+  | "payer"
+>;
+
+function hashTokenV2Instruction({
+  programId,
+  sysVarRent,
+  systemProgram,
+  tokenProgram,
+  associateTokenProgram,
+  ammProgram,
+  tokenAMint,
+  tokenBMint,
+  ammLpMint,
+  ammPool,
+  ammAuthority,
+  ammTokenAVault,
+  ammTokenBVault,
+  ammConfig,
+  ammObservableState,
+  ammCreateFeeDestination,
+  boundingCurve,
+  boundingCurveReserve,
+  boundingCurveTokenAReserve,
+  boundingCurveTokenBReserve,
+  boundingCurveLpReserve,
+  payer,
+  data,
+}: HashTokenInstructionV2Args) {
+  return new TransactionInstruction({
+    programId,
+    keys: [
+      { pubkey: sysVarRent, isSigner: false, isWritable: false },
+      { pubkey: systemProgram, isSigner: false, isWritable: false },
+      { pubkey: tokenProgram, isSigner: false, isWritable: false },
+      { pubkey: associateTokenProgram, isSigner: false, isWritable: false },
+      { pubkey: ammProgram, isSigner: false, isWritable: true },
+      { pubkey: tokenAMint, isSigner: false, isWritable: true },
+      { pubkey: tokenBMint, isSigner: false, isWritable: true },
+      { pubkey: ammLpMint, isSigner: false, isWritable: true },
+      { pubkey: ammPool, isSigner: false, isWritable: true },
+      { pubkey: ammAuthority, isSigner: false, isWritable: false },
+      { pubkey: ammTokenAVault, isSigner: false, isWritable: true },
+      { pubkey: ammTokenBVault, isSigner: false, isWritable: true },
+      { pubkey: ammConfig, isSigner: false, isWritable: false },
+      { pubkey: ammObservableState, isSigner: false, isWritable: true },
       { pubkey: ammCreateFeeDestination, isSigner: false, isWritable: true },
       { pubkey: boundingCurve, isSigner: false, isWritable: true },
       { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
@@ -822,6 +916,96 @@ export async function createHashTokenInstructions({
   });
 
   return [instructions0, instructions1, instruction2] as const;
+}
+
+type CreateHashTokenInstructionV2Args = {
+  data: { openTime: BN };
+} & Pick<HashTokenInstructionV2Args, "tokenAMint" | "payer"> &
+  Partial<
+    Pick<
+      HashTokenInstructionV2Args,
+      | "programId"
+      | "sysVarRent"
+      | "systemProgram"
+      | "tokenProgram"
+      | "associateTokenProgram"
+      | "tokenBMint"
+      | "ammProgram"
+      | "ammCreateFeeDestination"
+    >
+  >;
+
+export function createHashTokenV2Instructions({
+  programId = HASHFUND_PROGRAM_ID,
+  sysVarRent = SYSVAR_RENT_PUBKEY,
+  systemProgram = SystemProgram.programId,
+  tokenProgram = TOKEN_PROGRAM_ID,
+  associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
+  ammProgram = RAYDIUM_DEVNET_PROGRAM_ID,
+  tokenBMint = TOKEN_PROGRAM_ID,
+  ammCreateFeeDestination = RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
+  tokenAMint,
+  payer,
+  data,
+}: CreateHashTokenInstructionV2Args) {
+  const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
+  const [boundingCurveReserve] = findBoundingCurveReservePda(
+    boundingCurve,
+    programId
+  );
+  const poolInfo = getCreatePoolKeys({
+    programId: ammProgram,
+    mintA: tokenAMint,
+    mintB: tokenBMint,
+  });
+
+  const boundingCurveTokenAReserve = getAssociatedTokenAddressSync(
+    tokenAMint,
+    boundingCurveReserve,
+    true,
+    tokenProgram,
+    associateTokenProgram
+  );
+  const boundingCurveTokenBReserve = getAssociatedTokenAddressSync(
+    tokenBMint,
+    boundingCurveReserve,
+    true,
+    tokenProgram,
+    associateTokenProgram
+  );
+  const boundingCurveLpReserve = getAssociatedTokenAddressSync(
+    poolInfo.lpMint,
+    boundingCurveReserve,
+    true,
+    tokenProgram,
+    associateTokenProgram
+  );
+
+  return hashTokenV2Instruction({
+    programId,
+    sysVarRent,
+    systemProgram,
+    tokenProgram,
+    associateTokenProgram,
+    ammProgram,
+    tokenAMint,
+    tokenBMint,
+    ammCreateFeeDestination,
+    boundingCurve,
+    boundingCurveReserve,
+    boundingCurveTokenAReserve,
+    boundingCurveTokenBReserve,
+    boundingCurveLpReserve,
+    payer,
+    ammPool: poolInfo.poolId,
+    ammAuthority: poolInfo.authority,
+    ammTokenAVault: poolInfo.vaultA,
+    ammTokenBVault: poolInfo.vaultB,
+    ammLpMint: poolInfo.lpMint,
+    ammObservableState: poolInfo.observationId,
+    ammConfig: poolInfo.configId,
+    data: new HashTokenV2Schema(data.openTime),
+  });
 }
 
 type CreateSwapInstructionArgs = {

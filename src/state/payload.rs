@@ -34,3 +34,10 @@ pub struct HashTokenPayload {
     pub open_time: u64,
     pub nonce: u8,
 }
+
+
+#[derive(BorshDeserialize)]
+pub struct HashTokenPayloadV2 {
+    pub open_time: u64,
+
+}

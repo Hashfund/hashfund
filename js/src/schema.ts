@@ -7,6 +7,7 @@ export enum SchemaVariant {
   MINT = 1,
   INITIALIZE_CURVE = 2,
   HASH_TOKEN = 3,
+  HASH_TOKEN_V2 = 3,
   SWAP = 4,
 }
 
@@ -107,6 +108,16 @@ export class HashTokenSchema extends Schema {
     public readonly open_time: BN,
     public readonly nonce: BN
   ) {
+    super();
+  }
+}
+
+export class HashTokenV2Schema extends Schema {
+  static schema = Borsh.struct([Borsh.u8("variant"), Borsh.u64("open_time")]);
+
+  public readonly variant = SchemaVariant.HASH_TOKEN_V2;
+
+  constructor(public readonly open_time: BN) {
     super();
   }
 }

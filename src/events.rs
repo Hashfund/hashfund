@@ -42,7 +42,7 @@ pub enum Event {
     },
     HashToken {
         mint: Pubkey,
-        market: Pubkey,
+        market: Option<Pubkey>,
         amm: Pubkey,
         coin_amount: u64,
         pc_amount: u64,

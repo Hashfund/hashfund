@@ -1,5 +1,6 @@
 use std::ops::Div;
 
+use anchor_lang::context::CpiContext;
 use borsh::BorshSerialize;
 use bounding_curve::{
     curve::{
@@ -32,7 +33,8 @@ use spl_token::{
 
 use crate::{
     account::{
-        hash_token_account::HashTokenAccount, initialize_curve_account::InitializeCurveAccount,
+        hash_token_account::HashTokenAccount, hash_token_account_v2::HashTokenAccountV2,
+        initialize_curve_account::InitializeCurveAccount,
         initialize_mint_account::InitializeMintAccount, mint_to_account::MintToAccount,
         swap_account::SwapAccount,
     },
@@ -44,8 +46,8 @@ use crate::{
     events::{self, emit, Event},
     state::{
         payload::{
-            HashTokenPayload, InitializeCurvePayload, InitializeMintPayload, MintToPayload,
-            SwapPayload,
+            HashTokenPayload, HashTokenPayloadV2, InitializeCurvePayload, InitializeMintPayload,
+            MintToPayload, SwapPayload,
         },
         BoundingCurveInfo, BOUNDING_CURVE_INFO_SIZE,
     },
@@ -610,7 +612,111 @@ pub fn process_hash_token<'a>(
     emit(events::Event::HashToken {
         coin_amount,
         pc_amount,
-        market: accounts.market.key.clone(),
+        market: Some(accounts.market.key.clone()),
+        amm: accounts.amm_pool.key.clone(),
+        mint: accounts.token_a_mint.key.clone(),
+        timestamp: clock.unix_timestamp,
+    });
+
+    Ok(())
+}
+
+pub fn process_hash_token_v2<'a>(
+    context: &Context<'a, HashTokenPayloadV2, HashTokenAccountV2<'a>>,
+) -> ProgramResult {
+    let Context {
+        program_id,
+        payload,
+        accounts,
+    } = context;
+
+    accounts.check_accounts(program_id)?;
+
+    // let bounding_curve_info =
+    //     try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
+
+    // if bounding_curve_info.can_trade {
+    //     return Err(HashTokenError::InmatureBoundingCurve.into());
+    // }
+
+    let bounding_curve_token_a_info = Account::unpack(
+        &accounts
+            .bounding_curve_token_a_reserve
+            .data
+            .try_borrow()
+            .unwrap(),
+    )?;
+
+    let pc_amount = accounts.bounding_curve_reserve.lamports();
+    let coin_amount = bounding_curve_token_a_info.amount;
+
+    let bounding_curve_reserve_bump = context
+        .find_bounding_curve_reserve(&accounts.bounding_curve.key)
+        .1;
+
+    let signers_seeds: &[&[&[u8]]] = &[&[
+        b"hashfund",
+        accounts.bounding_curve.key.as_ref(),
+        &[bounding_curve_reserve_bump],
+    ]];
+
+    invoke_signed(
+        &transfer(
+            &accounts.bounding_curve_reserve.key,
+            &accounts.bounding_curve_token_b_reserve.key,
+            pc_amount,
+        ),
+        &[
+            accounts.bounding_curve_reserve.clone(),
+            accounts.bounding_curve_token_b_reserve.clone(),
+        ],
+        signers_seeds,
+    )?;
+
+    invoke_signed(
+        &sync_native(
+            &accounts.token_program.key,
+            &accounts.bounding_curve_token_b_reserve.key,
+        )?,
+        &[accounts.bounding_curve_token_b_reserve.clone()],
+        signers_seeds,
+    )?;
+
+    let ctx = CpiContext::new_with_signer(
+        accounts.amm_program.clone(),
+        raydium_cp_swap::cpi::accounts::Initialize {
+            system_program: accounts.system_program.clone(),
+            rent: accounts.sysvar_rent.clone(),
+            token_program: accounts.token_program.clone(),
+            associated_token_program: accounts.associate_token_program.clone(),
+            amm_config: accounts.amm_config.clone(),
+            observation_state: accounts.amm_observation_state.clone(),
+            authority: accounts.amm_authority.clone(),
+            pool_state: accounts.amm_config.clone(),
+            token_0_mint: accounts.token_a_mint.clone(),
+            token_1_mint: accounts.token_b_mint.clone(),
+            lp_mint: accounts.amm_lp_mint.clone(),
+            creator: accounts.bounding_curve_lp_reserve.clone(),
+            creator_token_0: accounts.bounding_curve_token_a_reserve.clone(),
+            creator_token_1: accounts.bounding_curve_token_b_reserve.clone(),
+            creator_lp_token: accounts.bounding_curve_lp_reserve.clone(),
+            token_0_program: accounts.token_program.clone(),
+            token_1_program: accounts.token_program.clone(),
+            token_0_vault: accounts.amm_token_a_vault.clone(),
+            token_1_vault: accounts.amm_token_b_vault.clone(),
+            create_pool_fee: accounts.amm_create_fee_destination.clone(),
+        },
+        signers_seeds,
+    );
+
+    raydium_cp_swap::cpi::initialize(ctx, coin_amount, pc_amount, payload.open_time)?;
+
+    let clock = Clock::get()?;
+
+    emit(events::Event::HashToken {
+        coin_amount,
+        pc_amount,
+        market: None,
         amm: accounts.amm_pool.key.clone(),
         mint: accounts.token_a_mint.key.clone(),
         timestamp: clock.unix_timestamp,
