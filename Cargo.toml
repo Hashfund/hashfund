@@ -20,6 +20,9 @@ thiserror = "1.0.61"
 raydium_amm = { version = "0.3.0", git = "https://github.com/oasisMystre/raydium-amm", features = [
     "no-entrypoint",
 ] }
+raydium-cp-swap = { version = "0.1.0", git = "https://github.com/raydium-io/raydium-cp-swap", features = [
+    "cpi",
+] }
 bounding_curve = { git = "https://github.com/oasisMystre/bounding_curve.git" }
 serum_dex = { version = "0.5.6", git = "https://github.com/project-serum/serum-dex", features = [
     "no-entrypoint",

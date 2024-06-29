@@ -1,5 +1,6 @@
 import BN from "bn.js";
 import Borsh from "@project-serum/borsh";
+import { safeBN, unsafeBN, unsafeBnToNumber } from "@solocker/safe-bn";
 
 export enum SchemaVariant {
   CREATE = 0,
@@ -125,12 +126,21 @@ export class SwapSchema extends Schema {
 }
 
 export class SafeMath extends Schema {
-  static schema = Borsh.struct(
-    [Borsh.u64("value"), Borsh.i32("percision")],
-    "SafeMath"
-  );
+  static buildSchema = (property: string) =>
+    Borsh.struct([Borsh.u64("value"), Borsh.i32("percision")], property);
+
+  static schema = SafeMath.buildSchema("SafeMath");
 
   constructor(public readonly value: BN, public readonly percision: BN) {
     super();
+  }
+
+  unwrap() {
+    return unsafeBnToNumber(
+      safeBN(this.value, this.percision.toNumber()).div(
+        new BN(10).pow(this.percision)
+      ),
+      this.percision.toNumber()
+    );
   }
 }
