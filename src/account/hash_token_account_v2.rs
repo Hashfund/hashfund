@@ -95,7 +95,7 @@ impl <'a> Account<'a> for HashTokenAccountV2<'a> {
 
 impl<'a> HashTokenAccountV2<'a> {
     pub fn check_accounts(&self, program_id: &Pubkey) -> ProgramResult {
-        let bounding_curve_pda = find_bounding_curve(&self.token_a_mint.key, program_id).0;
+        let bounding_curve_pda = find_bounding_curve(&self.token_b_mint.key, program_id).0;
         let bounding_curve_reserve_pda =
             find_bounding_curve(&self.bounding_curve.key, program_id).0;
         let bounding_curve_token_a_reserve_ata = get_associated_token_address_with_program_id(

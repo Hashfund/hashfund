@@ -27,11 +27,11 @@ impl<'a> Account<'a> for InitializeMintAccount<'a> {
 
         let system_program = next_account_info(accounts)?;
         let token_program = next_account_info(accounts)?;
+        let metadata_program = next_account_info(accounts)?;
 
         let mint = next_account_info(accounts)?;
         let authority = next_account_info(accounts)?;
 
-        let metadata_program = next_account_info(accounts)?;
         let metadata_pda = next_account_info(accounts)?;
         let master_edition = next_account_info(accounts)?;
 

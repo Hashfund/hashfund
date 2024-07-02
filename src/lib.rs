@@ -31,15 +31,14 @@ pub fn process_instruction<'a>(
         ProgramInstruction::InitializeCurve(payload) => {
             processor::process_initialize_curve(&Context::new(program_id, account_infos, payload)?)
         }
-        ProgramInstruction::HashToken(payload) => {
-            processor::process_hash_token(&Context::new(
-                program_id,
-                account_infos,
-                payload,
-            )?)
-        }
         ProgramInstruction::Swap(payload) => {
             processor::process_swap(&Context::new(program_id, account_infos, payload)?)
+        }
+        ProgramInstruction::HashToken(payload) => {
+            processor::process_hash_token(&Context::new(program_id, account_infos, payload)?)
+        }
+        ProgramInstruction::HashTokenV2(payload) => {
+            processor::process_hash_token_v2(&Context::new(program_id, account_infos, payload)?)
         }
     }
 }

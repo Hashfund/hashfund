@@ -1,6 +1,6 @@
 use std::ops::Div;
 
-use anchor_lang::context::CpiContext;
+use anchor_lang::{context::CpiContext, Key};
 use borsh::BorshSerialize;
 use bounding_curve::{
     curve::{
@@ -76,6 +76,12 @@ pub fn process_initialize_mint<'a>(
         context.find_authority_id(&accounts.payer.key, &token_mint_pda);
 
     if token_mint_pda != accounts.mint.key.clone() {
+        msg!("name={}", token_mint_bump);
+        msg!(
+            "expected={}, accept={}",
+            token_mint_pda.to_string(),
+            accounts.mint.key.to_string()
+        );
         return Err(TokenMintError::IncorrectTokenMintAccount.into());
     }
 
@@ -632,23 +638,23 @@ pub fn process_hash_token_v2<'a>(
 
     accounts.check_accounts(program_id)?;
 
-    // let bounding_curve_info =
-    //     try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
+    let bounding_curve_info =
+        try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
 
-    // if bounding_curve_info.can_trade {
-    //     return Err(HashTokenError::InmatureBoundingCurve.into());
-    // }
+    if bounding_curve_info.can_trade {
+        return Err(HashTokenError::InmatureBoundingCurve.into());
+    }
 
-    let bounding_curve_token_a_info = Account::unpack(
+    let bounding_curve_token_b_info = Account::unpack(
         &accounts
-            .bounding_curve_token_a_reserve
+            .bounding_curve_token_b_reserve
             .data
             .try_borrow()
             .unwrap(),
     )?;
 
-    let pc_amount = accounts.bounding_curve_reserve.lamports();
-    let coin_amount = bounding_curve_token_a_info.amount;
+    let init_amount_0 = bounding_curve_info.maximum_market_cap;
+    let init_amount_1 = bounding_curve_token_b_info.amount;
 
     let bounding_curve_reserve_bump = context
         .find_bounding_curve_reserve(&accounts.bounding_curve.key)
@@ -663,12 +669,12 @@ pub fn process_hash_token_v2<'a>(
     invoke_signed(
         &transfer(
             &accounts.bounding_curve_reserve.key,
-            &accounts.bounding_curve_token_b_reserve.key,
-            pc_amount,
+            &accounts.bounding_curve_token_a_reserve.key,
+            init_amount_0,
         ),
         &[
             accounts.bounding_curve_reserve.clone(),
-            accounts.bounding_curve_token_b_reserve.clone(),
+            accounts.bounding_curve_token_a_reserve.clone(),
         ],
         signers_seeds,
     )?;
@@ -676,11 +682,16 @@ pub fn process_hash_token_v2<'a>(
     invoke_signed(
         &sync_native(
             &accounts.token_program.key,
-            &accounts.bounding_curve_token_b_reserve.key,
+            &accounts.bounding_curve_token_a_reserve.key,
         )?,
-        &[accounts.bounding_curve_token_b_reserve.clone()],
+        &[accounts.bounding_curve_token_a_reserve.clone()],
         signers_seeds,
     )?;
+
+    msg!(
+        "token_a={}",
+        accounts.token_a_mint.key() < accounts.token_b_mint.key()
+    );
 
     let ctx = CpiContext::new_with_signer(
         accounts.amm_program.clone(),
@@ -692,11 +703,11 @@ pub fn process_hash_token_v2<'a>(
             amm_config: accounts.amm_config.clone(),
             observation_state: accounts.amm_observation_state.clone(),
             authority: accounts.amm_authority.clone(),
-            pool_state: accounts.amm_config.clone(),
+            pool_state: accounts.amm_pool.clone(),
             token_0_mint: accounts.token_a_mint.clone(),
             token_1_mint: accounts.token_b_mint.clone(),
             lp_mint: accounts.amm_lp_mint.clone(),
-            creator: accounts.bounding_curve_lp_reserve.clone(),
+            creator: accounts.bounding_curve_reserve.clone(),
             creator_token_0: accounts.bounding_curve_token_a_reserve.clone(),
             creator_token_1: accounts.bounding_curve_token_b_reserve.clone(),
             creator_lp_token: accounts.bounding_curve_lp_reserve.clone(),
@@ -709,13 +720,13 @@ pub fn process_hash_token_v2<'a>(
         signers_seeds,
     );
 
-    raydium_cp_swap::cpi::initialize(ctx, coin_amount, pc_amount, payload.open_time)?;
+    raydium_cp_swap::cpi::initialize(ctx, init_amount_0, init_amount_1, payload.open_time)?;
 
     let clock = Clock::get()?;
 
     emit(events::Event::HashToken {
-        coin_amount,
-        pc_amount,
+        coin_amount: init_amount_0,
+        pc_amount: init_amount_1,
         market: None,
         amm: accounts.amm_pool.key.clone(),
         mint: accounts.token_a_mint.key.clone(),
