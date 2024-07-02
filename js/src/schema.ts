@@ -142,16 +142,16 @@ export class SafeMath extends Schema {
 
   static schema = SafeMath.buildSchema("SafeMath");
 
-  constructor(public readonly value: BN, public readonly percision: BN) {
+  constructor(public readonly value: BN, public readonly percision: number) {
     super();
   }
 
-  unwrap() {
+  static unwrap(self: SafeMath) {
     return unsafeBnToNumber(
-      safeBN(this.value, this.percision.toNumber()).div(
-        new BN(10).pow(this.percision)
+      safeBN(self.value, self.percision).div(
+        new BN(10).pow(new BN(self.percision))
       ),
-      this.percision.toNumber()
+      self.percision
     );
   }
 }

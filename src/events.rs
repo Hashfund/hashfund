@@ -41,7 +41,8 @@ pub enum Event {
         payer: Pubkey,
     },
     HashToken {
-        mint: Pubkey,
+        token_a_mint: Pubkey,
+        token_b_mint: Pubkey,
         market: Option<Pubkey>,
         amm: Pubkey,
         coin_amount: u64,

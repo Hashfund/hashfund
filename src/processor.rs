@@ -1,6 +1,6 @@
 use std::ops::Div;
 
-use anchor_lang::{context::CpiContext, Key};
+use anchor_lang::context::CpiContext;
 use borsh::BorshSerialize;
 use bounding_curve::{
     curve::{
@@ -620,7 +620,8 @@ pub fn process_hash_token<'a>(
         pc_amount,
         market: Some(accounts.market.key.clone()),
         amm: accounts.amm_pool.key.clone(),
-        mint: accounts.token_a_mint.key.clone(),
+        token_a_mint: accounts.token_a_mint.key.clone(),
+        token_b_mint: accounts.token_b_mint.key.clone(),
         timestamp: clock.unix_timestamp,
     });
 
@@ -688,11 +689,6 @@ pub fn process_hash_token_v2<'a>(
         signers_seeds,
     )?;
 
-    msg!(
-        "token_a={}",
-        accounts.token_a_mint.key() < accounts.token_b_mint.key()
-    );
-
     let ctx = CpiContext::new_with_signer(
         accounts.amm_program.clone(),
         raydium_cp_swap::cpi::accounts::Initialize {
@@ -729,8 +725,19 @@ pub fn process_hash_token_v2<'a>(
         pc_amount: init_amount_1,
         market: None,
         amm: accounts.amm_pool.key.clone(),
-        mint: accounts.token_a_mint.key.clone(),
+        token_a_mint: accounts.token_a_mint.key.clone(),
+        token_b_mint: accounts.token_b_mint.key.clone(),
         timestamp: clock.unix_timestamp,
+    });
+
+    emit(events::Event::Swap {
+        mint: accounts.token_b_mint.key.clone(),
+        amount_in: 0,
+        amount_out: init_amount_1,
+        trade_direction: 1,
+        market_cap: accounts.bounding_curve_reserve.lamports(),
+        timestamp: clock.unix_timestamp,
+        payer: accounts.bounding_curve_reserve.key.clone(),
     });
 
     Ok(())
