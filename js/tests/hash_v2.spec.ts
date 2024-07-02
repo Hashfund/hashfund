@@ -1,36 +1,41 @@
 import BN from "bn.js";
 import {
-  clusterApiUrl,
+  ComputeBudgetProgram,
   Connection,
   Keypair,
   PublicKey,
+  sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
 
 import { loadWallet } from "./utils";
-import { createHashTokenV2Instructions } from "../src";
+import { createHashTokenV2Instructions, HTTP_RPC_URL } from "../src";
 import { simulateTransaction } from "@raydium-io/raydium-sdk-v2";
 
-const mint = new PublicKey("BS5a91MfRZgRWe4wTGTGZX87kRNuwvGNdRSPi4NzDt2n");
+const mint = new PublicKey("9TcSyTfksu7bPBvHQXMaTTFEe3Ywv2aU2x6hgSVxQyhx");
 
 async function hashToken(connection: Connection, wallet: Keypair) {
-  const ix = createHashTokenV2Instructions({
-    tokenAMint: mint,
+  const ix0 = ComputeBudgetProgram.setComputeUnitLimit({
+    units: 205_000,
+  });
+  const ix = await createHashTokenV2Instructions({
+    connection,
+    tokenBMint: mint,
     payer: wallet.publicKey,
     data: {
       openTime: new BN(0),
     },
   });
 
-  const tx0 = new Transaction().add(ix);
+  const tx0 = new Transaction().add(ix0).add(...ix);
 
   tx0.feePayer = wallet.publicKey;
 
-  console.log(await simulateTransaction(connection, [tx0]));
+  console.log(await sendAndConfirmTransaction(connection, tx0, [wallet]));
 }
 
 async function main() {
-  const connection: Connection = new Connection(clusterApiUrl("devnet"));
+  const connection: Connection = new Connection(HTTP_RPC_URL);
   const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 
   await hashToken(connection, wallet);

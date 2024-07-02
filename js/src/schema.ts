@@ -6,9 +6,9 @@ export enum SchemaVariant {
   CREATE = 0,
   MINT = 1,
   INITIALIZE_CURVE = 2,
-  HASH_TOKEN = 3,
-  HASH_TOKEN_V2 = 3,
-  SWAP = 4,
+  SWAP = 3,
+  HASH_TOKEN = 4,
+  HASH_TOKEN_V2 = 5,
 }
 
 export abstract class Schema {

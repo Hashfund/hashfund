@@ -17,9 +17,15 @@ export const SOL_USD_FEED = new PublicKey(
 export const RAYDIUM_PROGRAM_ID = new PublicKey(
   "675kPX9MHTjS2zt1qfr1NYHuzeLXfQM9H24wFSUt1Mp8"
 );
+export const RAYDIUM_V2_PROGRAM_ID = new PublicKey(
+  "CPMMoo8L3F4NbTegBCKVNunggL7H1ZpdTHKxQB5qKP1C"
+);
 
 export const RAYDIUM_DEVNET_PROGRAM_ID = new PublicKey(
   "HWy1jotHpo6UqeQxx49dpYYdQB8wj9Qk9MdxwjLvDHB8"
+);
+export const RAYDIUM_V2_DEVNET_PROGRAM_ID = new PublicKey(
+  "CPMDWBwJDtYax9qW7AyRuVC19Cc4L4Vcy4n2BHAbHkCW"
 );
 
 export const RAYDIUM_OPEN_BOOK_PROGRAM_ID = new PublicKey(
@@ -32,7 +38,15 @@ export const RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID = new PublicKey(
 export const RAYDIUM_CREATE_POOL_FEE_ADDRESS = new PublicKey(
   "7YttLkHDoNj9wyDur5pM1ejNaAvT9X4eqaYcHQqtj2G5"
 );
+export const RAYDIUM_V2_CREATE_POOL_FEE_ADDRESS = new PublicKey(
+  "DNXgeM9EiiaAbaWvwjHj9fQQLAX5ZsfHyvmYUNRAdNC8"
+);
 
 export const RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS = new PublicKey(
   "3XMrhbv989VxAMi3DErLV9eJht1pHppW5LbKxe9fkEFR"
 );
+export const RAYDIUM_V2_DEVNET_CREATE_POOL_FEE_ADDRESS = new PublicKey(
+  "G11FKBRaAkHAKuLCgLM6K6NUc9rTjPAznRCjZifrTQe2"
+);
+
+export const HTTP_RPC_URL = "https://api.devnet.solana.com";

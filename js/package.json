@@ -17,10 +17,13 @@
   },
   "license": "MIT",
   "scripts": {
+    "amman:start": "bun amman start",
+    "amman:airdrop": "bun amman airdrop",
     "prepublishOnly": "bun tsc",
     "gen:keypair": "bun run scripts/generate-random-keypair.ts"
   },
   "devDependencies": {
+    "@metaplex-foundation/amman": "^0.12.1",
     "@types/bun": "latest",
     "commander": "^12.1.0",
     "fs": "^0.0.1-security"

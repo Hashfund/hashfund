@@ -8,7 +8,7 @@ import {
   Transaction,
 } from "@solana/web3.js";
 
-import { loadWallet} from "./utils";
+import { loadWallet } from "./utils";
 import {
   createInitializeCurveInstruction,
   createSwapInInstruction,
@@ -19,7 +19,7 @@ import { NATIVE_MINT } from "@solana/spl-token";
 
 let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 const tokenAMint = new PublicKey(
-  "BS5a91MfRZgRWe4wTGTGZX87kRNuwvGNdRSPi4NzDt2n"
+  "9TcSyTfksu7bPBvHQXMaTTFEe3Ywv2aU2x6hgSVxQyhx"
 );
 const tokenBMint = NATIVE_MINT;
 

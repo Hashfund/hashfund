@@ -1,33 +1,29 @@
 import { BN } from "bn.js";
 import {
-  clusterApiUrl,
   Connection,
-  PublicKey,
   sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
-import { simulateTransaction } from "@raydium-io/raydium-sdk";
+import { NATIVE_MINT } from "@solana/spl-token";
 
 import { loadWallet } from "./utils";
 import {
   createInitializeCurveInstruction,
   createMintInstruction,
   createSwapInInstruction,
-  createSwapOutInstruction,
-  HASHFUND_PROGRAM_ID,
+  HTTP_RPC_URL,
   SOL_USD_FEED,
 } from "../src";
-import { NATIVE_MINT } from "@solana/spl-token";
-import { findMintAuthorityPda } from "../src/utils";
+import { simulateTransaction } from "@raydium-io/raydium-sdk-v2";
 
 const main = async () => {
-  const connection: Connection = new Connection(clusterApiUrl("devnet"));
+  const connection: Connection = new Connection(HTTP_RPC_URL);
   const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 
   const [mint, instructions] = createMintInstruction({
     data: {
       name: "Test",
-      ticker: "TEST #2",
+      ticker: "TEST",
       uri: "https://ik.imagekit.io/hashfund/tokens_metadata_BNvUnF4moZ4arrPYYdrEhjS64LUBHuABgrRJaXvLrLPe.json",
     },
     payer: wallet.publicKey,
@@ -56,9 +52,9 @@ const main = async () => {
     })
   );
   transaction.feePayer = wallet.publicKey;
-   //const tx = await simulateTransaction(connection, [transaction]);
+  // const tx = await simulateTransaction(connection, [transaction]);
   const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
-   console.log("tx={}", tx);
+  console.log("tx={}", tx);
 };
 
 main().catch(async (e) => {
