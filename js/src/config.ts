@@ -1,7 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 
 export const HASHFUND_PROGRAM_ID = new PublicKey(
-  "HAAGiEBpRs5MdJADhmNnnrJ3GgaYFtg5pLSrn6jzaNfu"
+  "FUnUHNvAzKGZHMJMjejnTydnMDMMxXo92RT4cUw5Ce6e"
 );
 
 export const SERUM_PROGRAM_ID = new PublicKey(

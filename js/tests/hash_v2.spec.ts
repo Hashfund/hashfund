@@ -31,7 +31,7 @@ async function hashToken(connection: Connection, wallet: Keypair) {
 
   tx0.feePayer = wallet.publicKey;
 
-  console.log(await sendAndConfirmTransaction(connection, tx0, [wallet]));
+  console.log(await simulateTransaction(connection, [tx0]));
 }
 
 async function main() {

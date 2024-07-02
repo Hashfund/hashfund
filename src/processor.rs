@@ -1,4 +1,4 @@
-use std::ops::Div;
+use std::ops::{Add, Div};
 
 use anchor_lang::context::CpiContext;
 use borsh::BorshSerialize;
@@ -299,8 +299,6 @@ pub fn process_initialize_curve<'a>(
 
     let initial_price = curve.calculate_initial_price();
 
-    msg!("initial_price={:?}", initial_price);
-
     let signers_seeds: &[&[&[u8]]] = &[&[
         b"hashfund",
         accounts.token_a_mint.key.as_ref(),
@@ -343,25 +341,14 @@ pub fn process_initialize_curve<'a>(
     let mut bounding_curve_state =
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
     bounding_curve_state.can_trade = true;
+    bounding_curve_state.is_hashed = false;
     bounding_curve_state.initial_price = initial_price;
     bounding_curve_state.maximum_market_cap = payload.maximum_market_cap;
     bounding_curve_state.mint = accounts.token_a_mint.key.clone();
     bounding_curve_state.serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
 
-    let clock = Clock::get()?;
-
-    emit(Event::InitializeCurve {
-        initial_price,
-        maximum_market_cap: payload.maximum_market_cap,
-        timestamp: clock.unix_timestamp,
-        mint: accounts.token_a_mint.key.clone(),
-        bounding_curve: accounts.bounding_curve.key.clone(),
-    });
-
     let feed = SolanaPriceAccount::account_info_to_feed(&accounts.sol_usd_feed)?;
     let price = price_to_number(feed.get_price_unchecked());
-
-    msg!("1 SOL={:?}", price);
 
     let sol_to_burn = price.inverse_div(5000).mul(10_u128.pow(9));
     let sol_to_burn = sol_to_burn.unwrap::<u64>();
@@ -369,7 +356,20 @@ pub fn process_initialize_curve<'a>(
     let token_to_burn =
         ConstantCurve::calculate_token_out(initial_price, sol_to_burn, TradeDirection::BtoA);
 
-    msg!("Burning {} SOL={}", sol_to_burn, token_to_burn);
+    let clock = Clock::get()?;
+
+    emit(Event::InitializeCurve {
+        initial_price,
+        maximum_market_cap: sol_to_burn.add(payload.maximum_market_cap),
+        timestamp: clock.unix_timestamp,
+        mint: accounts.token_a_mint.key.clone(),
+        bounding_curve: accounts.bounding_curve.key.clone(),
+    });
+
+    msg!("initial_price={:?}", initial_price.unwrap::<f64>());
+    msg!("1 SOL={:?}", price);
+    msg!("Burning {}SOL={}Token A", sol_to_burn, token_to_burn);
+
     invoke_signed(
         &burn(
             accounts.token_program.key,
@@ -392,7 +392,7 @@ pub fn process_initialize_curve<'a>(
     emit(Event::Swap {
         amount_in: sol_to_burn,
         amount_out: token_to_burn,
-        trade_direction: 2,
+        trade_direction: 0,
         market_cap: sol_to_burn,
         timestamp: clock.unix_timestamp,
         mint: accounts.token_a_mint.key.clone(),
@@ -419,14 +419,14 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
         return Err(InitializeCurveError::IncorrectBoundingCurveReserveAccount.into());
     }
 
-    let mut bounding_curve_info =
+    let mut bounding_curve_state =
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
 
-    if bounding_curve_info.mint != accounts.token_a_mint.key.clone() {
+    if bounding_curve_state.mint != accounts.token_a_mint.key.clone() {
         return Err(InitializeCurveError::IncorrectBoundingCurveAccount.into());
     }
 
-    if !bounding_curve_info.can_trade {
+    if !bounding_curve_state.can_trade {
         return Err(SwapError::NotTradable.into());
     }
 
@@ -438,19 +438,19 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
 
     match payload.direction {
         0 => {
-            bounding_curve_info = bounding_curve_info.swap_in::<ConstantCurve>(
+            bounding_curve_state = bounding_curve_state.swap_in::<ConstantCurve>(
                 accounts,
                 payload.amount,
                 signers_seeds,
             )?;
 
-            bounding_curve_info
+            bounding_curve_state
                 .serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
 
             Ok(())
         }
         1 => {
-            bounding_curve_info.swap_out::<ConstantCurve>(
+            bounding_curve_state.swap_out::<ConstantCurve>(
                 &accounts,
                 payload.amount,
                 signers_seeds,
@@ -473,11 +473,15 @@ pub fn process_hash_token<'a>(
 
     accounts.check_accounts(program_id)?;
 
-    let bounding_curve_info =
+    let mut bounding_curve_state =
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
 
-    if bounding_curve_info.can_trade {
-        return Err(HashTokenError::InmatureBoundingCurve.into());
+    if bounding_curve_state.can_trade {
+        return Err(HashTokenError::ImmatureBoundingCurve.into());
+    }
+
+    if bounding_curve_state.is_hashed {
+        return Err(HashTokenError::InvalidHashBoundingCurve.into());
     }
 
     invoke(
@@ -522,12 +526,7 @@ pub fn process_hash_token<'a>(
             .unwrap(),
     )?;
 
-    let pc_amount = accounts.bounding_curve_reserve.lamports() - 3_000_000_000;
-    // let coin_amount = ConstantCurve::calculate_token_out(
-    //     bounding_curve_info.initial_price,
-    //     pc_amount,
-    //     TradeDirection::BtoA,
-    // );
+    let pc_amount = bounding_curve_state.maximum_market_cap;
     let coin_amount = bounding_curve_token_a_info.amount;
 
     let bounding_curve_reserve_bump = context
@@ -625,6 +624,9 @@ pub fn process_hash_token<'a>(
         timestamp: clock.unix_timestamp,
     });
 
+    bounding_curve_state.is_hashed = true;
+    bounding_curve_state.serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
+
     Ok(())
 }
 
@@ -639,11 +641,25 @@ pub fn process_hash_token_v2<'a>(
 
     accounts.check_accounts(program_id)?;
 
-    let bounding_curve_info =
+    let bounding_curve_reserve_bump = context
+        .find_bounding_curve_reserve(&accounts.bounding_curve.key)
+        .1;
+
+    let signers_seeds: &[&[&[u8]]] = &[&[
+        b"hashfund",
+        accounts.bounding_curve.key.as_ref(),
+        &[bounding_curve_reserve_bump],
+    ]];
+
+    let mut bounding_curve_state =
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
 
-    if bounding_curve_info.can_trade {
-        return Err(HashTokenError::InmatureBoundingCurve.into());
+    if bounding_curve_state.can_trade {
+        return Err(HashTokenError::ImmatureBoundingCurve.into());
+    }
+
+    if bounding_curve_state.is_hashed {
+        return Err(HashTokenError::ImmatureBoundingCurve.into());
     }
 
     let bounding_curve_token_b_info = Account::unpack(
@@ -654,18 +670,8 @@ pub fn process_hash_token_v2<'a>(
             .unwrap(),
     )?;
 
-    let init_amount_0 = bounding_curve_info.maximum_market_cap;
+    let init_amount_0 = bounding_curve_state.maximum_market_cap;
     let init_amount_1 = bounding_curve_token_b_info.amount;
-
-    let bounding_curve_reserve_bump = context
-        .find_bounding_curve_reserve(&accounts.bounding_curve.key)
-        .1;
-
-    let signers_seeds: &[&[&[u8]]] = &[&[
-        b"hashfund",
-        accounts.bounding_curve.key.as_ref(),
-        &[bounding_curve_reserve_bump],
-    ]];
 
     invoke_signed(
         &transfer(
@@ -718,6 +724,31 @@ pub fn process_hash_token_v2<'a>(
 
     raydium_cp_swap::cpi::initialize(ctx, init_amount_0, init_amount_1, payload.open_time)?;
 
+    let lp_amount = Account::unpack(
+        &accounts
+            .bounding_curve_lp_reserve
+            .data
+            .try_borrow()
+            .unwrap(),
+    )?;
+
+    invoke_signed(
+        &burn(
+            &accounts.token_program.key,
+            &accounts.bounding_curve_lp_reserve.key,
+            &accounts.amm_lp_mint.key,
+            &accounts.bounding_curve_reserve.key,
+            &[],
+            lp_amount.amount,
+        )?,
+        &[
+            accounts.bounding_curve_lp_reserve.clone(),
+            accounts.amm_lp_mint.clone(),
+            accounts.bounding_curve_reserve.clone(),
+        ],
+        signers_seeds,
+    )?;
+
     let clock = Clock::get()?;
 
     emit(events::Event::HashToken {
@@ -735,10 +766,15 @@ pub fn process_hash_token_v2<'a>(
         amount_in: 0,
         amount_out: init_amount_1,
         trade_direction: 1,
-        market_cap: accounts.bounding_curve_reserve.lamports(),
+        market_cap: bounding_curve_state
+            .initial_market_cap
+            .add(accounts.bounding_curve_reserve.lamports()),
         timestamp: clock.unix_timestamp,
         payer: accounts.bounding_curve_reserve.key.clone(),
     });
+
+    bounding_curve_state.is_hashed = true;
+    bounding_curve_state.serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
 
     Ok(())
 }
