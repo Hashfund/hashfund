@@ -23,6 +23,7 @@ pub struct InitializeCurvePayload {
 pub struct SwapPayload {
     pub amount: u64,
     pub direction: u8,
+    pub can_hash: Option<bool>,
 }
 
 #[derive(BorshDeserialize)]

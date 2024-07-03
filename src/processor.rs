@@ -648,7 +648,7 @@ pub fn process_hash_token_v2<'a>(
     }
 
     if bounding_curve_state.is_hashed {
-        return Err(HashTokenError::ImmatureBoundingCurve.into());
+        return Err(HashTokenError::InvalidHashBoundingCurve.into());
     }
 
     let bounding_curve_token_b_info = Account::unpack(

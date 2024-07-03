@@ -8,6 +8,7 @@ pub mod mint_to_account;
 pub mod swap_account;
 
 pub trait Account<'a> {
+    
     fn new(accounts: &'a [AccountInfo<'a>]) -> Result<Self, ProgramError>
     where
         Self: Sized;

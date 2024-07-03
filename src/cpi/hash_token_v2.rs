@@ -3,12 +3,6 @@ use solana_program::{
     pubkey::Pubkey,
 };
 
-use crate::{
-    account::{hash_token_account_v2::HashTokenAccountV2, swap_account::SwapAccount},
-    context::Context,
-    state::payload::HashTokenPayloadV2,
-};
-
 const OPEN_MARKET_TIME: u8 = 0;
 
 pub fn hash_token_v2(
@@ -62,39 +56,4 @@ pub fn hash_token_v2(
         data: vec![5, OPEN_MARKET_TIME],
         program_id,
     };
-}
-
-pub fn context_from_swap<'a>(
-    program_id: &'a Pubkey,
-    swap_account: SwapAccount<'a>,
-) -> Context<'a, HashTokenPayloadV2, HashTokenAccountV2<'a>> {
-    Context {
-        program_id,
-        payload: HashTokenPayloadV2 {
-            open_time: OPEN_MARKET_TIME.into(),
-        },
-        accounts: HashTokenAccountV2 {
-            sysvar_rent: swap_account.sysvar_rent.clone(),
-            system_program: swap_account.system_program.clone(),
-            token_program: swap_account.token_program.clone(),
-            associate_token_program: swap_account.associate_token_program.clone(),
-            amm_program: swap_account.amm_program.clone(),
-            token_a_mint: swap_account.amm_token_a_mint.clone(),
-            token_b_mint: swap_account.amm_token_b_mint.clone(),
-            amm_lp_mint: swap_account.amm_lp_mint.clone(),
-            amm_pool: swap_account.amm_pool.clone(),
-            amm_authority: swap_account.amm_authority.clone(),
-            amm_token_a_vault: swap_account.amm_token_a_vault.clone(),
-            amm_token_b_vault: swap_account.amm_token_b_vault.clone(),
-            amm_config: swap_account.amm_config.clone(),
-            amm_observation_state: swap_account.amm_observation_state.clone(),
-            amm_create_fee_destination: swap_account.amm_create_fee_destination.clone(),
-            bounding_curve: swap_account.bounding_curve.clone(),
-            bounding_curve_reserve: swap_account.bounding_curve_reserve.clone(),
-            bounding_curve_token_a_reserve: swap_account.bounding_curve_token_a_reserve.clone(),
-            bounding_curve_token_b_reserve: swap_account.bounding_curve_token_b_reserve.clone(),
-            bounding_curve_lp_reserve: swap_account.bounding_curve_lp_reserve.clone(),
-            payer: None,
-        },
-    }
 }

@@ -1,6 +1,16 @@
+use account::hash_token_account_v2::HashTokenAccountV2;
 use context::Context;
+use errors::hash_token_error::HashTokenError;
 use instruction::{Instruction, ProgramInstruction};
-use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubkey::Pubkey};
+use num_traits::FromPrimitive;
+use solana_program::{
+    account_info::{next_account_infos, AccountInfo},
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
+use state::payload::HashTokenPayloadV2;
 
 pub mod account;
 pub mod context;
@@ -19,6 +29,7 @@ pub fn process_instruction<'a>(
     account_infos: &'a [AccountInfo<'a>],
     instruction_data: &[u8],
 ) -> ProgramResult {
+    msg!("Fuckkkk");
     let instruction = ProgramInstruction::unpack(&instruction_data)?;
 
     match instruction {
@@ -33,12 +44,50 @@ pub fn process_instruction<'a>(
             processor::process_initialize_curve(&Context::new(program_id, account_infos, payload)?)
         }
         ProgramInstruction::Swap(payload) => {
-            let context = Context::new(program_id, account_infos, payload)?;
+            let account_infos = &mut account_infos.iter();
+            let context =
+                Context::new(program_id, next_account_infos(account_infos, 13)?, payload)?;
+
             processor::process_swap(&context)?;
-            processor::process_hash_token_v2(&cpi::hash_token_v2::context_from_swap(
-                program_id,
-                context.accounts,
-            ))
+
+            if let Some(can_hash) = context.payload.can_hash {
+                if can_hash {
+                    let context = Box::new(Context {
+                        program_id,
+                        payload: HashTokenPayloadV2 { open_time: 0 },
+                        accounts: HashTokenAccountV2::with_default(
+                            context.accounts.sysvar_rent.clone(),
+                            context.accounts.system_program.clone(),
+                            context.accounts.token_program.clone(),
+                            context.accounts.associate_token_program.clone(),
+                            context.accounts.bounding_curve.clone(),
+                            context.accounts.bounding_curve_reserve.clone(),
+                            next_account_infos(account_infos, 14)?,
+                        )?,
+                    });
+
+                    match processor::process_hash_token_v2(&context) {
+                        Ok(()) => Ok(()),
+                        Err(ProgramError::Custom(error)) => {
+                            if let Some(error) = HashTokenError::from_u32(error) {
+                                match error {
+                                    HashTokenError::ImmatureBoundingCurve => Ok(()),
+                                    HashTokenError::InvalidHashBoundingCurve => {
+                                        Err(HashTokenError::InvalidHashBoundingCurve.into())
+                                    }
+                                }
+                            } else {
+                                Ok(())
+                            }
+                        }
+                        _ => Err(ProgramError::InvalidArgument),
+                    }
+                } else {
+                    Ok(())
+                }
+            } else {
+                Ok(())
+            }
         }
         ProgramInstruction::HashToken(payload) => {
             processor::process_hash_token(&Context::new(program_id, account_infos, payload)?)
