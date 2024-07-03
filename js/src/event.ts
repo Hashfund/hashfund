@@ -48,10 +48,10 @@ export type HashMatureEvent = {
 export type HashTokenEvent = {
   market?: PublicKey;
   amm: PublicKey;
-  coinAmount: BN;
-  pcAmount: BN;
-  tokenAMint: PublicKey;
-  tokenBMint: PublicKey;
+  coin_amount: BN;
+  pc_amount: BN;
+  token_a_mint: PublicKey;
+  token_b_mint: PublicKey;
   timestamp: BN;
 };
 
@@ -125,7 +125,7 @@ export class EventSchema extends Schema {
         Borsh.publicKey("amm"),
         Borsh.u64("coin_amount"),
         Borsh.u64("pc_amount"),
-        Borsh.i64("market"),
+        Borsh.i64("timestamp"),
       ],
       "HashToken"
     ),
