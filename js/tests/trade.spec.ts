@@ -8,18 +8,24 @@ import {
   Transaction,
 } from "@solana/web3.js";
 
-import { loadWallet } from "./utils";
+import { loadWallet, loadWalletFromPriv } from "./utils";
 import {
   createInitializeCurveInstruction,
   createSwapInInstruction,
   createSwapOutInstruction,
   SOL_USD_FEED,
 } from "../src";
-import { NATIVE_MINT } from "@solana/spl-token";
+import {
+  createAssociatedTokenAccountInstruction,
+  NATIVE_MINT,
+} from "@solana/spl-token";
+import { safeBN, unsafeBN } from "@solocker/safe-bn";
+import { simulateTransaction } from "@raydium-io/raydium-sdk-v2";
 
-let wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
+const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
+
 const tokenAMint = new PublicKey(
-  "9TcSyTfksu7bPBvHQXMaTTFEe3Ywv2aU2x6hgSVxQyhx"
+  "CfuNBEecdeL4enSsMVr5Y5pv2jUC5geFJPwMkj89G2J7"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -39,28 +45,31 @@ async function initializeCurve(connection: Connection) {
     }))
   );
 
-  return sendAndConfirmTransaction(connection, transaction, [wallet], {
-    commitment: "finalized",
-  });
+  return simulateTransaction(connection, [transaction]);
 }
 
 async function buySwap(connection: Connection, amount: number) {
   const transaction = new Transaction();
   transaction.add(
+    createAssociatedTokenAccountInstruction(
+      wallet.publicKey,
+      new PublicKey("HZALaPDW1ykbnHgtKr7ZpNFCp8w69p4M34J9fhLSHynS"),
+      wallet.publicKey,
+      tokenAMint
+    ),
     createSwapInInstruction({
       connection,
       tokenAMint,
       tokenBMint,
       payer: wallet.publicKey,
       data: {
-        amount: new BN(amount).mul(new BN(10).pow(new BN(9))),
+        amount: unsafeBN(safeBN(amount).mul(new BN(10).pow(new BN(9)))),
       },
     })
   );
+  transaction.feePayer = wallet.publicKey;
 
-  return sendAndConfirmTransaction(connection, transaction, [wallet], {
-    commitment: "finalized",
-  });
+  return simulateTransaction(connection, [transaction]);
 }
 
 async function sellSwap(connection: Connection) {
@@ -77,12 +86,14 @@ async function sellSwap(connection: Connection) {
     }))
   );
 
-  return sendAndConfirmTransaction(connection, transaction, [wallet]);
+  transaction.feePayer = wallet.publicKey;
+
+  return simulateTransaction(connection, [transaction]);
 }
 
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
-  const tx = await buySwap(connection, 3);
+  const tx = await buySwap(connection, 1);
   console.log("tx=", tx);
 }
 

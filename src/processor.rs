@@ -18,7 +18,6 @@ use solana_program::{
     borsh1::try_from_slice_unchecked,
     clock::Clock,
     entrypoint::ProgramResult,
-    msg,
     program::{invoke, invoke_signed},
     program_pack::Pack,
     pubkey::Pubkey,
@@ -76,12 +75,6 @@ pub fn process_initialize_mint<'a>(
         context.find_authority_id(&accounts.payer.key, &token_mint_pda);
 
     if token_mint_pda != accounts.mint.key.clone() {
-        msg!("name={}", token_mint_bump);
-        msg!(
-            "expected={}, accept={}",
-            token_mint_pda.to_string(),
-            accounts.mint.key.to_string()
-        );
         return Err(TokenMintError::IncorrectTokenMintAccount.into());
     }
 
@@ -366,10 +359,6 @@ pub fn process_initialize_curve<'a>(
         bounding_curve: accounts.bounding_curve.key.clone(),
     });
 
-    msg!("initial_price={:?}", initial_price.unwrap::<f64>());
-    msg!("1 SOL={:?}", price);
-    msg!("Burning {}SOL={}Token A", sol_to_burn, token_to_burn);
-
     invoke_signed(
         &burn(
             accounts.token_program.key,
@@ -392,7 +381,7 @@ pub fn process_initialize_curve<'a>(
     emit(Event::Swap {
         amount_in: sol_to_burn,
         amount_out: token_to_burn,
-        trade_direction: 0,
+        trade_direction: 2,
         market_cap: sol_to_burn,
         timestamp: clock.unix_timestamp,
         mint: accounts.token_a_mint.key.clone(),
@@ -439,7 +428,7 @@ pub fn process_swap<'a>(context: &Context<'a, SwapPayload, SwapAccount<'a>>) -> 
     match payload.direction {
         0 => {
             bounding_curve_state = bounding_curve_state.swap_in::<ConstantCurve>(
-                accounts,
+                &accounts,
                 payload.amount,
                 signers_seeds,
             )?;
@@ -765,7 +754,7 @@ pub fn process_hash_token_v2<'a>(
         mint: accounts.token_b_mint.key.clone(),
         amount_in: 0,
         amount_out: init_amount_1,
-        trade_direction: 1,
+        trade_direction: 2,
         market_cap: bounding_curve_state
             .initial_market_cap
             .add(accounts.bounding_curve_reserve.lamports()),

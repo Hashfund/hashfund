@@ -258,8 +258,6 @@ function hashTokenInstruction({
   payer,
   data,
 }: HashTokenInstructionArgs) {
-  console.log("bids=", bids.toBase58());
-  console.log("bc", boundingCurveReserve.toBase58());
   return new TransactionInstruction({
     programId,
     keys: [
@@ -307,7 +305,7 @@ function hashTokenInstruction({
 }
 
 export type HashTokenInstructionV2Args = {
-  ammObservableState: PublicKey;
+  ammObservationState: PublicKey;
   data: HashTokenV2Schema;
 } & Pick<
   HashTokenInstructionArgs,
@@ -349,7 +347,7 @@ function hashTokenV2Instruction({
   ammTokenAVault,
   ammTokenBVault,
   ammConfig,
-  ammObservableState,
+  ammObservationState,
   ammCreateFeeDestination,
   boundingCurve,
   boundingCurveReserve,
@@ -375,7 +373,7 @@ function hashTokenV2Instruction({
       { pubkey: ammTokenAVault, isSigner: false, isWritable: true },
       { pubkey: ammTokenBVault, isSigner: false, isWritable: true },
       { pubkey: ammConfig, isSigner: false, isWritable: true },
-      { pubkey: ammObservableState, isSigner: false, isWritable: true },
+      { pubkey: ammObservationState, isSigner: false, isWritable: true },
       { pubkey: ammCreateFeeDestination, isSigner: false, isWritable: true },
       { pubkey: boundingCurve, isSigner: false, isWritable: true },
       { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
@@ -390,7 +388,7 @@ function hashTokenV2Instruction({
         isWritable: true,
       },
       { pubkey: boundingCurveLpReserve, isSigner: false, isWritable: true },
-      { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: payer, isSigner: true, isWritable: false },
     ],
     data: data.serialize(),
   });
@@ -408,15 +406,20 @@ type SwapInstructionArgs = {
   tokenBDestination: PublicKey;
   boundingCurve: PublicKey;
   boundingCurveReserve: PublicKey;
-
   payer: PublicKey;
   data: SwapSchema;
-};
+} & Omit<HashTokenInstructionV2Args, "data"> & {
+    ammTokenAMint: PublicKey;
+    ammTokenBMint: PublicKey;
+  };
 
 function swapInstruction({
   programId,
+  sysVarRent,
   systemProgram,
   tokenProgram,
+  associateTokenProgram,
+  ammProgram,
   tokenAMint,
   tokenBMint,
   tokenASource,
@@ -425,14 +428,30 @@ function swapInstruction({
   tokenBDestination,
   boundingCurve,
   boundingCurveReserve,
+  ammTokenAMint,
+  ammTokenBMint,
+  ammLpMint,
+  ammPool,
+  ammAuthority,
+  ammTokenAVault,
+  ammTokenBVault,
+  ammConfig,
+  ammObservationState,
+  ammCreateFeeDestination,
+  boundingCurveTokenAReserve,
+  boundingCurveTokenBReserve,
+  boundingCurveLpReserve,
   payer,
   data,
 }: SwapInstructionArgs) {
   return new TransactionInstruction({
     programId,
     keys: [
+      { pubkey: sysVarRent, isSigner: false, isWritable: false },
       { pubkey: systemProgram, isSigner: false, isWritable: false },
       { pubkey: tokenProgram, isSigner: false, isWritable: false },
+      { pubkey: associateTokenProgram, isSigner: false, isWritable: false },
+      { pubkey: ammProgram, isSigner: false, isWritable: false },
       { pubkey: tokenAMint, isSigner: false, isWritable: false },
       { pubkey: tokenBMint, isSigner: false, isWritable: false },
       { pubkey: tokenASource, isSigner: false, isWritable: true },
@@ -441,6 +460,19 @@ function swapInstruction({
       { pubkey: tokenBDestination, isSigner: false, isWritable: true },
       { pubkey: boundingCurve, isSigner: false, isWritable: true },
       { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
+      { pubkey: ammTokenAMint, isSigner: false, isWritable: true },
+      { pubkey: ammTokenBMint, isSigner: false, isWritable: true },
+      { pubkey: ammLpMint, isSigner: false, isWritable: true },
+      { pubkey: ammPool, isSigner: false, isWritable: true },
+      { pubkey: ammAuthority, isSigner: false, isWritable: true },
+      { pubkey: ammTokenAVault, isSigner: false, isWritable: true },
+      { pubkey: ammTokenBVault, isSigner: false, isWritable: true },
+      { pubkey: ammConfig, isSigner: false, isWritable: true },
+      { pubkey: ammObservationState, isSigner: false, isWritable: true },
+      { pubkey: ammCreateFeeDestination, isSigner: false, isWritable: true },
+      { pubkey: boundingCurveTokenAReserve, isSigner: false, isWritable: true },
+      { pubkey: boundingCurveTokenBReserve, isSigner: false, isWritable: true },
+      { pubkey: boundingCurveLpReserve, isSigner: false, isWritable: true },
       { pubkey: payer, isSigner: true, isWritable: true },
     ],
     data: data.serialize(),
@@ -1000,9 +1032,6 @@ export async function createHashTokenV2Instructions({
     tokenProgram,
     associateTokenProgram
   );
-  console.log(boundingCurveTokenBReserve.toBase58())
-
-
   const boundingCurveTokenAReserveInstruction =
     await getOrCreateAssociatedTokenAccountInstructions(
       connection,
@@ -1048,7 +1077,7 @@ export async function createHashTokenV2Instructions({
       ammTokenAVault: poolInfo.vaultA,
       ammTokenBVault: poolInfo.vaultB,
       ammLpMint: poolInfo.lpMint,
-      ammObservableState: poolInfo.observationId,
+      ammObservationState: poolInfo.observationId,
       ammConfig: poolInfo.configId,
       data: new HashTokenV2Schema(data.openTime),
     }),
@@ -1065,14 +1094,25 @@ type CreateSwapInstructionArgs = {
 } & Partial<
   Pick<
     SwapInstructionArgs,
-    "programId" | "systemProgram" | "tokenProgram" | "tokenBMint"
+    | "programId"
+    | "sysVarRent"
+    | "systemProgram"
+    | "tokenProgram"
+    | "associateTokenProgram"
+    | "ammProgram"
+    | "ammCreateFeeDestination"
+    | "tokenBMint"
   >
 >;
 
 export function createSwapInInstruction({
   programId = HASHFUND_PROGRAM_ID,
+  sysVarRent = SYSVAR_RENT_PUBKEY,
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
+  associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
+  ammProgram = RAYDIUM_V2_DEVNET_PROGRAM_ID,
+  ammCreateFeeDestination = RAYDIUM_V2_DEVNET_CREATE_POOL_FEE_ADDRESS,
   tokenAMint,
   tokenBMint = NATIVE_MINT,
   payer,
@@ -1103,10 +1143,38 @@ export function createSwapInInstruction({
     true
   );
 
+  const ammTokenAMint = tokenBMint;
+  const ammTokenBMint = tokenAMint;
+
+  const poolInfo = getCreatePoolKeys({
+    programId: ammProgram,
+    mintA: ammTokenAMint,
+    mintB: ammTokenBMint,
+  });
+
+  const boundingCurveTokenAReserve = getAssociatedTokenAddressSync(
+    ammTokenAMint,
+    boundingCurveReserve,
+    true
+  );
+  const boundingCurveTokenBReserve = getAssociatedTokenAddressSync(
+    ammTokenBMint,
+    boundingCurveReserve,
+    true
+  );
+  const boundingCurveLpReserve = getAssociatedTokenAddressSync(
+    poolInfo.lpMint,
+    boundingCurveReserve,
+    true
+  );
+  
   return swapInstruction({
     programId,
+    sysVarRent,
     systemProgram,
     tokenProgram,
+    associateTokenProgram,
+    ammProgram,
     tokenAMint,
     tokenBMint,
     tokenASource,
@@ -1115,6 +1183,19 @@ export function createSwapInInstruction({
     tokenBDestination,
     boundingCurve,
     boundingCurveReserve,
+    ammTokenAMint,
+    ammTokenBMint,
+    ammLpMint: poolInfo.lpMint,
+    ammPool: poolInfo.poolId,
+    ammAuthority: poolInfo.authority,
+    ammTokenAVault: poolInfo.vaultA,
+    ammTokenBVault: poolInfo.vaultB,
+    ammConfig: poolInfo.configId,
+    ammObservationState: poolInfo.observationId,
+    ammCreateFeeDestination,
+    boundingCurveTokenAReserve,
+    boundingCurveTokenBReserve,
+    boundingCurveLpReserve,
     payer,
     data: new SwapSchema(data.amount, 0),
   });
@@ -1123,8 +1204,12 @@ export function createSwapInInstruction({
 export async function createSwapOutInstruction({
   connection,
   programId = HASHFUND_PROGRAM_ID,
+  sysVarRent = SYSVAR_RENT_PUBKEY,
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
+  associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
+  ammProgram = RAYDIUM_V2_DEVNET_PROGRAM_ID,
+  ammCreateFeeDestination = RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
   tokenAMint,
   tokenBMint = NATIVE_MINT,
   payer,
@@ -1164,12 +1249,40 @@ export async function createSwapOutInstruction({
       false
     );
 
+  const ammTokenAMint = tokenBMint;
+  const ammTokenBMint = tokenAMint;
+
+  const poolInfo = getCreatePoolKeys({
+    programId: ammProgram,
+    mintA: ammTokenAMint,
+    mintB: ammTokenBMint,
+  });
+
+  const boundingCurveTokenAReserve = getAssociatedTokenAddressSync(
+    ammTokenAMint,
+    boundingCurveReserve,
+    true
+  );
+  const boundingCurveTokenBReserve = getAssociatedTokenAddressSync(
+    ammTokenAMint,
+    boundingCurveReserve,
+    true
+  );
+  const boundingCurveLpReserve = getAssociatedTokenAddressSync(
+    poolInfo.lpMint,
+    boundingCurveReserve,
+    true
+  );
+
   return [
     ...tokenBDestinationAccountIx,
     swapInstruction({
       programId,
+      sysVarRent,
       systemProgram,
       tokenProgram,
+      associateTokenProgram,
+      ammProgram,
       tokenAMint,
       tokenBMint,
       tokenASource,
@@ -1178,6 +1291,19 @@ export async function createSwapOutInstruction({
       tokenBDestination,
       boundingCurve,
       boundingCurveReserve,
+      ammTokenAMint,
+      ammTokenBMint,
+      ammLpMint: poolInfo.lpMint,
+      ammPool: poolInfo.poolId,
+      ammAuthority: poolInfo.authority,
+      ammTokenAVault: poolInfo.vaultA,
+      ammTokenBVault: poolInfo.vaultB,
+      ammConfig: poolInfo.configId,
+      ammObservationState: poolInfo.observationId,
+      ammCreateFeeDestination,
+      boundingCurveTokenAReserve,
+      boundingCurveTokenBReserve,
+      boundingCurveLpReserve,
       payer,
       data: new SwapSchema(data.amount, 1),
     }),

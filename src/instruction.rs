@@ -1,5 +1,5 @@
 use borsh::BorshDeserialize;
-use solana_program::{msg, program_error::ProgramError};
+use solana_program::program_error::ProgramError;
 
 use crate::state::payload::{
     HashTokenPayload, HashTokenPayloadV2, InitializeCurvePayload, InitializeMintPayload,
@@ -28,8 +28,6 @@ impl Instruction for ProgramInstruction {
         let (&variant, rest) = input
             .split_first()
             .ok_or(ProgramError::InvalidInstructionData)?;
-
-        msg!("variant={}", variant);
 
         match variant {
             0 => Ok(Self::InitializeMint(

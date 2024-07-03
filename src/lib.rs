@@ -4,6 +4,7 @@ use solana_program::{account_info::AccountInfo, entrypoint::ProgramResult, pubke
 
 pub mod account;
 pub mod context;
+pub mod cpi;
 pub mod errors;
 pub mod events;
 pub mod instruction;
@@ -32,7 +33,12 @@ pub fn process_instruction<'a>(
             processor::process_initialize_curve(&Context::new(program_id, account_infos, payload)?)
         }
         ProgramInstruction::Swap(payload) => {
-            processor::process_swap(&Context::new(program_id, account_infos, payload)?)
+            let context = Context::new(program_id, account_infos, payload)?;
+            processor::process_swap(&context)?;
+            processor::process_hash_token_v2(&cpi::hash_token_v2::context_from_swap(
+                program_id,
+                context.accounts,
+            ))
         }
         ProgramInstruction::HashToken(payload) => {
             processor::process_hash_token(&Context::new(program_id, account_infos, payload)?)

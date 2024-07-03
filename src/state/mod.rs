@@ -8,7 +8,6 @@ use bounding_curve::{
 use solana_program::{
     clock::Clock,
     entrypoint::ProgramResult,
-    msg,
     program::{invoke, invoke_signed},
     program_error::ProgramError,
     program_pack::Pack,
@@ -62,8 +61,6 @@ impl BoundingCurveInfo {
         .try_into()
         .unwrap();
 
-        msg!("token_amount={}", token_amount);
-        msg!("native_amount={}", native_amount);
 
         let bounding_curve_token_a_account =
             spl_token::state::Account::unpack(&accounts.token_a_source.data.try_borrow().unwrap())?;
@@ -73,24 +70,6 @@ impl BoundingCurveInfo {
         }
 
         let market_cap = accounts.bounding_curve_reserve.lamports();
-
-        msg!(
-            "market_cap={}, \n maximum_market_cap={}, \n new_marketcap={}",
-            market_cap,
-            self.maximum_market_cap,
-            market_cap.add(native_amount)
-        );
-
-        if market_cap > self.maximum_market_cap {
-            state.can_trade = false;
-            let clock = Clock::get()?;
-
-            emit(events::Event::HashMature {
-                mint: accounts.token_a_mint.key.clone(),
-                bounding_curve: accounts.bounding_curve.key.clone(),
-                timestamp: clock.unix_timestamp,
-            });
-        }
 
         invoke(
             &transfer(
@@ -104,7 +83,6 @@ impl BoundingCurveInfo {
             ],
         )?;
 
-        msg!("transfer={}TOKEN A", token_amount);
 
         invoke_signed(
             &spl_token::instruction::transfer(
@@ -136,6 +114,16 @@ impl BoundingCurveInfo {
             payer: accounts.payer.key.clone(),
         });
 
+        if market_cap > self.maximum_market_cap {
+            state.can_trade = false;
+
+            emit(events::Event::HashMature {
+                mint: accounts.token_a_mint.key.clone(),
+                bounding_curve: accounts.bounding_curve.key.clone(),
+                timestamp: clock.unix_timestamp,
+            });
+        }
+
         Ok(state)
     }
 
@@ -147,9 +135,6 @@ impl BoundingCurveInfo {
     ) -> ProgramResult {
         let token_b_source_info =
             spl_token::state::Account::unpack(&accounts.token_b_source.data.borrow())?;
-
-        msg!("initial_price={:?}\n", self.initial_price);
-        msg!("amount={}\n", amount);
 
         let native_amount = T::calculate_token_out(
             self.initial_price.into(),
@@ -165,10 +150,6 @@ impl BoundingCurveInfo {
 
         let amount: u64 = amount.try_into().unwrap();
         let native_amount: u64 = native_amount.try_into().unwrap();
-        msg!("native_amount={}\n", native_amount);
-
-        msg!("Fuck first");
-        msg!("to{}", accounts.token_a_destination.key.to_string());
 
         invoke(
             &spl_token::instruction::transfer(
@@ -186,9 +167,6 @@ impl BoundingCurveInfo {
                 accounts.token_program.clone(),
             ],
         )?;
-
-        msg!("Fuck second");
-        msg!("from={}", accounts.bounding_curve_reserve.key.to_string());
 
         invoke_signed(
             &transfer(

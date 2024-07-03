@@ -1,6 +1,5 @@
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import { BoundingCurveInfo } from "../src/state";
-import BN from "bn.js";
 
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));

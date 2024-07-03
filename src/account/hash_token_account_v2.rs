@@ -33,10 +33,10 @@ pub struct HashTokenAccountV2<'a> {
     pub bounding_curve_token_a_reserve: AccountInfo<'a>,
     pub bounding_curve_token_b_reserve: AccountInfo<'a>,
     pub bounding_curve_lp_reserve: AccountInfo<'a>,
-    pub payer: AccountInfo<'a>,
+    pub payer: Option<AccountInfo<'a>>,
 }
 
-impl <'a> Account<'a> for HashTokenAccountV2<'a> {
+impl<'a> Account<'a> for HashTokenAccountV2<'a> {
     fn new(accounts: &'a [AccountInfo<'a>]) -> Result<Self, ProgramError> {
         let accounts = &mut accounts.iter();
 
@@ -64,7 +64,10 @@ impl <'a> Account<'a> for HashTokenAccountV2<'a> {
         let bounding_curve_token_b_reserve = next_account_info(accounts)?;
         let bounding_curve_lp_reserve = next_account_info(accounts)?;
 
-        let payer = next_account_info(accounts)?;
+        let payer = match next_account_info(accounts) {
+            Ok(account) => Some(account.clone()),
+            Err(_) => None,
+        };
 
         Ok(Self {
             sysvar_rent: sysvar_rent.clone(),
@@ -79,7 +82,7 @@ impl <'a> Account<'a> for HashTokenAccountV2<'a> {
             amm_token_a_vault: amm_token_a_vault.clone(),
             amm_token_b_vault: amm_token_b_vault.clone(),
             amm_config: amm_config.clone(),
-            amm_observation_state:  amm_observation_state.clone(),
+            amm_observation_state: amm_observation_state.clone(),
             amm_lp_mint: amm_lp_mint.clone(),
             amm_create_fee_destination: amm_create_fee_destination.clone(),
             bounding_curve: bounding_curve.clone(),
@@ -87,9 +90,8 @@ impl <'a> Account<'a> for HashTokenAccountV2<'a> {
             bounding_curve_token_a_reserve: bounding_curve_token_a_reserve.clone(),
             bounding_curve_token_b_reserve: bounding_curve_token_b_reserve.clone(),
             bounding_curve_lp_reserve: bounding_curve_lp_reserve.clone(),
-            payer: payer.clone(),
+            payer,
         })
- 
     }
 }
 
