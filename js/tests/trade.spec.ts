@@ -10,6 +10,7 @@ import {
 
 import { loadWallet, loadWalletFromPriv } from "./utils";
 import {
+  createCheckedSwapInInstruction,
   createInitializeCurveInstruction,
   createSwapInInstruction,
   createSwapOutInstruction,
@@ -25,7 +26,7 @@ import { simulateTransaction } from "@raydium-io/raydium-sdk-v2";
 const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 
 const tokenAMint = new PublicKey(
-  "CfuNBEecdeL4enSsMVr5Y5pv2jUC5geFJPwMkj89G2J7"
+  "D7sXV7RvTwP9SupXe6hr6CFjQhZ8RTzdYyuiKiANiLyx"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -51,17 +52,33 @@ async function initializeCurve(connection: Connection) {
 async function buySwap(connection: Connection, amount: number) {
   const transaction = new Transaction();
   transaction.add(
-    createAssociatedTokenAccountInstruction(
-      wallet.publicKey,
-      new PublicKey("HZALaPDW1ykbnHgtKr7ZpNFCp8w69p4M34J9fhLSHynS"),
-      wallet.publicKey,
-      tokenAMint
-    ),
     createSwapInInstruction({
       connection,
       tokenAMint,
       tokenBMint,
       payer: wallet.publicKey,
+
+      data: {
+        amount: unsafeBN(safeBN(amount).mul(new BN(10).pow(new BN(9)))),
+      },
+    }),
+
+    ...(await createSwapOutInstruction({
+      connection,
+      tokenAMint,
+      tokenBMint,
+      payer: wallet.publicKey,
+
+      data: {
+        amount: unsafeBN(safeBN(amount).mul(new BN(10).pow(new BN(9)))),
+      },
+    })),
+    createCheckedSwapInInstruction({
+      connection,
+      tokenAMint,
+      tokenBMint,
+      payer: wallet.publicKey,
+
       data: {
         amount: unsafeBN(safeBN(amount).mul(new BN(10).pow(new BN(9)))),
       },

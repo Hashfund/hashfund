@@ -127,11 +127,12 @@ export class SwapSchema extends Schema {
     Borsh.u8("variant"),
     Borsh.u64("amount"),
     Borsh.u8("direction"),
+    Borsh.option(Borsh.bool(),"can_hash"),
   ]);
 
   public readonly variant = SchemaVariant.SWAP;
 
-  constructor(public readonly amount: BN, public readonly direction: 0 | 1) {
+  constructor(public readonly amount: BN, public readonly direction: 0 | 1, public can_hash?: boolean) {
     super();
   }
 }

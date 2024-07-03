@@ -1,6 +1,7 @@
 import { BN } from "bn.js";
 import {
   Connection,
+  sendAndConfirmTransaction,
   Transaction,
 } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
@@ -38,20 +39,20 @@ const main = async () => {
       solUsdFeed: SOL_USD_FEED,
       data: {
         supplyFraction: new BN(100),
-        maximumMarketCap: new BN(10000).mul(new BN(10).pow(new BN(9))),
+        maximumMarketCap: new BN(1).mul(new BN(10).pow(new BN(9))),
       },
     })),
-    // createSwapInInstruction({
-    //   connection,
-    //   tokenAMint: mint,
-    //   payer: wallet.publicKey,
-    //   data: {
-    //     amount: new BN(5).mul(new BN(10).pow(new BN(8))),
-    //   },
-    // })
+    createSwapInInstruction({
+      connection,
+      tokenAMint: mint,
+      payer: wallet.publicKey,
+      data: {
+        amount: new BN(5).mul(new BN(10).pow(new BN(8))),
+      },
+    })
   );
   transaction.feePayer = wallet.publicKey;
-   const tx = await simulateTransaction(connection, [transaction]);
+  const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
   console.log("tx={}", tx);
 };
 
