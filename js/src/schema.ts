@@ -139,7 +139,7 @@ export class SwapSchema extends Schema {
 
 export class SafeMath extends Schema {
   static buildSchema = (property: string) =>
-    Borsh.struct([Borsh.u64("value"), Borsh.i32("percision")], property);
+    Borsh.struct([Borsh.u128("value"), Borsh.i32("percision")], property);
 
   static schema = SafeMath.buildSchema("SafeMath");
 

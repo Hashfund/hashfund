@@ -1,15 +1,17 @@
 import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
 import { BoundingCurveInfo } from "../src/state";
+import BN from "bn.js";
 
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
   const info = await connection.getAccountInfo(
-    new PublicKey("A6T2Mmv1S5FvtGVqZxCMbMknMcYYN1V4NLFmt3uPLwoS")
+    new PublicKey("7u4sgS4hfw2TJY2FeQw36jf3XfrPRSGpiJPjiVHHttTK")
   );
+  console.log(info)
 
   if (info) {
     let curve = BoundingCurveInfo.deserialize<BoundingCurveInfo>(info.data);
-    console.log(curve)
+    console.log(curve?.maximum_market_cap.div(new BN(10).pow(new BN(9))).toNumber())
   }
 }
 
