@@ -12,7 +12,7 @@ import { loadWallet } from "./utils";
 import { createHashTokenV2Instructions, HTTP_RPC_URL } from "../src";
 import { simulateTransaction } from "@raydium-io/raydium-sdk-v2";
 
-const mint = new PublicKey("9TcSyTfksu7bPBvHQXMaTTFEe3Ywv2aU2x6hgSVxQyhx");
+const mint = new PublicKey("DwJ8rwprNrKMzQP4PRnbkiubcLnnXndExP71Dr5LBgBf");
 
 async function hashToken(connection: Connection, wallet: Keypair) {
   const ix0 = ComputeBudgetProgram.setComputeUnitLimit({

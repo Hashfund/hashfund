@@ -26,7 +26,7 @@ import { simulateTransaction } from "@raydium-io/raydium-sdk-v2";
 const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
 
 const tokenAMint = new PublicKey(
-  "D7sXV7RvTwP9SupXe6hr6CFjQhZ8RTzdYyuiKiANiLyx"
+  "9Xe5raxeN2ojPCb2N4kasQiFdVem6UipLeTL88S27KdS"
 );
 const tokenBMint = NATIVE_MINT;
 
@@ -110,7 +110,7 @@ async function sellSwap(connection: Connection) {
 
 async function main() {
   const connection = new Connection(clusterApiUrl("devnet"));
-  const tx = await buySwap(connection, 1);
+  const tx = await buySwap(connection, 0.01);
   console.log("tx=", tx);
 }
 

@@ -11,6 +11,7 @@ import {
   createInitializeCurveInstruction,
   createMintInstruction,
   createSwapInInstruction,
+  createSwapOutInstruction,
   HTTP_RPC_URL,
   SOL_USD_FEED,
 } from "../src";
@@ -22,8 +23,8 @@ const main = async () => {
 
   const [mint, instructions] = createMintInstruction({
     data: {
-      name: "Test 0",
-      ticker: "TEST 8",
+      name: "Test 1",
+      ticker: "TEST 1",
       uri: "https://ik.imagekit.io/hashfund/tokens_metadata_BNvUnF4moZ4arrPYYdrEhjS64LUBHuABgrRJaXvLrLPe.json",
     },
     payer: wallet.publicKey,
@@ -39,7 +40,7 @@ const main = async () => {
       solUsdFeed: SOL_USD_FEED,
       data: {
         supplyFraction: new BN(100),
-        maximumMarketCap: new BN(1).mul(new BN(10).pow(new BN(9))),
+        maximumMarketCap: new BN(521).mul(new BN(10).pow(new BN(9))),
       },
     })),
     createSwapInInstruction({
@@ -49,10 +50,18 @@ const main = async () => {
       data: {
         amount: new BN(5).mul(new BN(10).pow(new BN(8))),
       },
-    })
+    }),
+    ...await createSwapOutInstruction({
+      connection,
+      tokenAMint: mint,
+      payer: wallet.publicKey,
+      data: {
+        amount: new BN(5).mul(new BN(10).pow(new BN(8))),
+      },
+    }),
   );
   transaction.feePayer = wallet.publicKey;
-  const tx = await sendAndConfirmTransaction(connection, transaction, [wallet]);
+  const tx = await simulateTransaction(connection, [transaction]);
   console.log("tx={}", tx);
 };
 

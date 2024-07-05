@@ -6,7 +6,6 @@ use num_traits::FromPrimitive;
 use solana_program::{
     account_info::{next_account_infos, AccountInfo},
     entrypoint::ProgramResult,
-    msg,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
@@ -29,7 +28,6 @@ pub fn process_instruction<'a>(
     account_infos: &'a [AccountInfo<'a>],
     instruction_data: &[u8],
 ) -> ProgramResult {
-    msg!("Fuckkkk");
     let instruction = ProgramInstruction::unpack(&instruction_data)?;
 
     match instruction {

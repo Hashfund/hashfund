@@ -331,15 +331,6 @@ pub fn process_initialize_curve<'a>(
         signers_seeds,
     )?;
 
-    let mut bounding_curve_state =
-        try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
-    bounding_curve_state.can_trade = true;
-    bounding_curve_state.is_hashed = false;
-    bounding_curve_state.initial_price = initial_price;
-    bounding_curve_state.maximum_market_cap = payload.maximum_market_cap;
-    bounding_curve_state.mint = accounts.token_a_mint.key.clone();
-    bounding_curve_state.serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
-
     let feed = SolanaPriceAccount::account_info_to_feed(&accounts.sol_usd_feed)?;
     let price = price_to_number(feed.get_price_unchecked());
 
@@ -348,6 +339,16 @@ pub fn process_initialize_curve<'a>(
 
     let token_to_burn =
         ConstantCurve::calculate_token_out(initial_price, sol_to_burn, TradeDirection::BtoA);
+
+    let mut bounding_curve_state =
+        try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
+    bounding_curve_state.can_trade = true;
+    bounding_curve_state.is_hashed = false;
+    bounding_curve_state.initial_market_cap = sol_to_burn;
+    bounding_curve_state.initial_price = initial_price;
+    bounding_curve_state.maximum_market_cap = payload.maximum_market_cap;
+    bounding_curve_state.mint = accounts.token_a_mint.key.clone();
+    bounding_curve_state.serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
 
     let clock = Clock::get()?;
 

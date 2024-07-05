@@ -127,12 +127,16 @@ export class SwapSchema extends Schema {
     Borsh.u8("variant"),
     Borsh.u64("amount"),
     Borsh.u8("direction"),
-    Borsh.option(Borsh.bool(),"can_hash"),
+    Borsh.option(Borsh.bool(), "can_hash"),
   ]);
 
   public readonly variant = SchemaVariant.SWAP;
 
-  constructor(public readonly amount: BN, public readonly direction: 0 | 1, public can_hash?: boolean) {
+  constructor(
+    public readonly amount: BN,
+    public readonly direction: 0 | 1,
+    public can_hash?: boolean
+  ) {
     super();
   }
 }
@@ -147,12 +151,12 @@ export class SafeMath extends Schema {
     super();
   }
 
-  static unwrap(self: SafeMath) {
+  static unwrap(self: SafeMath, exp: number = 0) {
     return unsafeBnToNumber(
       safeBN(self.value, self.percision).div(
         new BN(10).pow(new BN(self.percision))
       ),
-      self.percision
+      self.percision + exp
     );
   }
 }

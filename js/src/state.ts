@@ -16,7 +16,7 @@ export class BoundingCurveInfo extends Schema {
 
   public readonly can_trade!: boolean;
   public readonly is_hashed!: boolean;
-  public readonly initial_price!: BN;
+  public readonly initial_price!: SafeMath;
   public readonly initial_market_cap!: BN;
   public readonly maximum_market_cap!: BN;
   public readonly mint!: PublicKey;

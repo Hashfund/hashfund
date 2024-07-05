@@ -1,6 +1,5 @@
 use solana_program::{
     account_info::{next_account_info, AccountInfo},
-    msg,
     program_error::ProgramError,
 };
 
@@ -24,7 +23,6 @@ pub struct SwapAccount<'a> {
 
 impl<'a> Account<'a> for SwapAccount<'a> {
     fn new(accounts: &'a [AccountInfo<'a>]) -> Result<Self, ProgramError> {
-        msg!("Fucking started");
         let accounts = &mut accounts.iter();
 
         let sysvar_rent = next_account_info(accounts)?;
@@ -44,8 +42,6 @@ impl<'a> Account<'a> for SwapAccount<'a> {
         let bounding_curve_reserve = next_account_info(accounts)?;
         let payer = next_account_info(accounts)?;
 
-        msg!("Fucking completed");
-
         Ok(Self {
             sysvar_rent: sysvar_rent.clone(),
             system_program: system_program.clone(),
@@ -63,5 +59,3 @@ impl<'a> Account<'a> for SwapAccount<'a> {
         })
     }
 }
-
-
