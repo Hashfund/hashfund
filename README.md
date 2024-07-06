@@ -1,4 +1,19 @@
-DenByUozSNBA6654m2UGHs76eFe5fz5x52chA3Y6kT2S
-mint=BS5a91MfRZgRWe4wTGTGZX87kRNuwvGNdRSPi4NzDt2n
-tx=3JiS97asSvzPCS5nrn3CMN67wtQW2DGDQymjBn85Q7sr1oDRiYPUybhWZQhsNiLDCxWVnRLbgr8cy28Rvtd5RMoJ
-tx_migrate=4JuqVuq1nchYXT2tHqkRSDafXDvmmEzFwVBFiHAK9ffKGJvxd1zBCNENCpVvSwfYpFunarQ4A96wbPMXGX121rmY
+# HashFund 
+This is a permissionless Fair Token Launch Contract.
+
+## How it works 
+
+### Create new mint
+1. Set Token metadata information
+2. Set maximum marketcap
+3. Set optional initial buy in
+4. Initialize bounding curve with maximum market cap to hit raydium and supply fraction
+
+### Bounding curve 
+
+Bounding curve price is in constant pricing. You get out what you put in.
+
+### Constant pricing implementation and paper 
+
+To check constant pricing implementation and paper check this pdf 
+
