@@ -1,4 +1,4 @@
-use std::ops::{Add, Div};
+use std::ops::{Add, Div, Mul};
 
 use anchor_lang::context::CpiContext;
 use borsh::BorshSerialize;
@@ -191,10 +191,7 @@ pub fn process_mint_to<'a>(
     } = context;
 
     let bounding_curve_pda = context.find_bounding_curve(accounts.mint.key).0;
-    let bounding_curve_reserve_pda = context.find_bounding_curve_reserve(&bounding_curve_pda).0;
-
-    let mint_reserve_ata =
-        context.get_bounding_curve_ata(&bounding_curve_reserve_pda, accounts.mint.key);
+    let mint_reserve_ata = context.get_bounding_curve_ata(&bounding_curve_pda, accounts.mint.key);
 
     let (mint_authority_pda, mint_authority_bump) =
         context.find_authority_id(&accounts.payer.key, &accounts.mint.key);
@@ -205,10 +202,6 @@ pub fn process_mint_to<'a>(
 
     if bounding_curve_pda != accounts.bounding_curve.key.clone() {
         return Err(InitializeCurveError::IncorrectBoundingCurveAccount.into());
-    }
-
-    if bounding_curve_reserve_pda != accounts.bounding_curve_reserve.key.clone() {
-        return Err(InitializeCurveError::IncorrectBoundingCurveReserveAccount.into());
     }
 
     if mint_reserve_ata != accounts.mint_reserve.key.clone() {
@@ -262,8 +255,9 @@ pub fn process_initialize_curve<'a>(
         context.find_bounding_curve(&accounts.token_a_mint.key);
     let (bounding_curve_reserve_pda, bounding_curve_reserve_bump) =
         context.find_bounding_curve_reserve(&bounding_curve_pda);
+
     let mint_reserve_pda =
-        context.get_bounding_curve_ata(&bounding_curve_reserve_pda, &accounts.token_a_mint.key);
+        context.get_bounding_curve_ata(&bounding_curve_pda, &accounts.token_a_mint.key);
 
     if bounding_curve_pda != accounts.bounding_curve.key.clone() {
         return Err(InitializeCurveError::IncorrectBoundingCurveAccount.into());
@@ -282,21 +276,32 @@ pub fn process_initialize_curve<'a>(
 
     let token_a_mint = Mint::unpack(&accounts.token_a_mint.data.borrow())?;
 
-    let curve = ConstantCurve::new(
-        token_a_mint
-            .supply
-            .div(payload.supply_fraction as u64)
-            .into(),
-        payload.maximum_market_cap.into(),
-    );
+    let curve_initial_supply = token_a_mint
+        .supply
+        .mul(payload.supply_fraction as u64)
+        .div(100)
+        .into();
 
-    let initial_price = curve.calculate_initial_price();
-
-    let signers_seeds: &[&[&[u8]]] = &[&[
-        b"hashfund",
-        accounts.token_a_mint.key.as_ref(),
-        &[bounding_curve_bump],
-    ]];
+    invoke_signed(
+        &spl_token::instruction::transfer(
+            &accounts.token_program.key,
+            &accounts.token_a_mint_reserve.key,
+            &accounts.bounding_curve_token_a_reserve.key,
+            &accounts.bounding_curve.key,
+            &[],
+            curve_initial_supply,
+        )?,
+        &[
+            accounts.token_a_mint_reserve.clone(),
+            accounts.bounding_curve_token_a_reserve.clone(),
+            accounts.bounding_curve.clone(),
+        ],
+        &[&[
+            b"hashfund",
+            accounts.token_a_mint.key.as_ref(),
+            &[bounding_curve_bump],
+        ]],
+    )?;
 
     invoke_signed(
         &create_account(
@@ -307,7 +312,11 @@ pub fn process_initialize_curve<'a>(
             program_id,
         ),
         &[accounts.payer.clone(), accounts.bounding_curve.clone()],
-        signers_seeds,
+        &[&[
+            b"hashfund",
+            accounts.token_a_mint.key.as_ref(),
+            &[bounding_curve_bump],
+        ]],
     )?;
 
     let signers_seeds: &[&[&[u8]]] = &[&[
@@ -337,16 +346,22 @@ pub fn process_initialize_curve<'a>(
     let sol_to_burn = price.inverse_div(5000).mul(10_u128.pow(9));
     let sol_to_burn = sol_to_burn.unwrap::<u64>();
 
+    let maximum_market_cap = payload.maximum_market_cap.add(sol_to_burn);
+
+    let curve = ConstantCurve::new(curve_initial_supply, maximum_market_cap);
+
+    let initial_price = curve.calculate_initial_price();
     let token_to_burn =
         ConstantCurve::calculate_token_out(initial_price, sol_to_burn, TradeDirection::BtoA);
 
     let mut bounding_curve_state =
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
+
     bounding_curve_state.can_trade = true;
     bounding_curve_state.is_hashed = false;
     bounding_curve_state.initial_market_cap = sol_to_burn;
     bounding_curve_state.initial_price = initial_price;
-    bounding_curve_state.maximum_market_cap = payload.maximum_market_cap;
+    bounding_curve_state.maximum_market_cap = maximum_market_cap;
     bounding_curve_state.mint = accounts.token_a_mint.key.clone();
     bounding_curve_state.serialize(&mut &mut accounts.bounding_curve.data.borrow_mut()[..])?;
 
@@ -354,7 +369,9 @@ pub fn process_initialize_curve<'a>(
 
     emit(Event::InitializeCurve {
         initial_price,
-        maximum_market_cap: sol_to_burn.add(payload.maximum_market_cap),
+        maximum_market_cap,
+        curve_initial_supply,
+        initial_market_cap: sol_to_burn,
         timestamp: clock.unix_timestamp,
         mint: accounts.token_a_mint.key.clone(),
         bounding_curve: accounts.bounding_curve.key.clone(),
@@ -363,14 +380,14 @@ pub fn process_initialize_curve<'a>(
     invoke_signed(
         &burn(
             accounts.token_program.key,
-            &accounts.token_a_mint_reserve.key,
+            &accounts.bounding_curve_token_a_reserve.key,
             accounts.token_a_mint.key,
             &accounts.bounding_curve_reserve.key,
             &[],
             token_to_burn,
         )?,
         &[
-            accounts.token_a_mint_reserve.clone(),
+            accounts.bounding_curve_token_a_reserve.clone(),
             accounts.token_a_mint.clone(),
             accounts.bounding_curve_reserve.clone(),
         ],

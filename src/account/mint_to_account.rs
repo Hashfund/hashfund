@@ -12,7 +12,6 @@ pub struct MintToAccount<'a> {
     pub mint_authority: AccountInfo<'a>,
 
     pub bounding_curve: AccountInfo<'a>,
-    pub bounding_curve_reserve: AccountInfo<'a>,
 
     pub payer: AccountInfo<'a>,
 }
@@ -27,7 +26,6 @@ impl<'a> Account<'a> for MintToAccount<'a> {
         let mint_authority = next_account_info(accounts)?;
 
         let bounding_curve = next_account_info(accounts)?;
-        let bounding_curve_reserve = next_account_info(accounts)?;
         let payer = next_account_info(accounts)?;
 
         Ok(Self {
@@ -36,7 +34,6 @@ impl<'a> Account<'a> for MintToAccount<'a> {
             mint_reserve: mint_reserve.clone(),
             mint_authority: mint_authority.clone(),
             bounding_curve: bounding_curve.clone(),
-            bounding_curve_reserve: bounding_curve_reserve.clone(),
             payer: payer.clone(),
         })
     }

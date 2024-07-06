@@ -23,6 +23,8 @@ pub enum Event {
         mint: Pubkey,
         bounding_curve: Pubkey,
         initial_price: SafeNumber,
+        curve_initial_supply: u64,
+        initial_market_cap: u64,
         maximum_market_cap: u64,
         timestamp: i64,
     },

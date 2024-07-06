@@ -110,7 +110,6 @@ type MintTokenInstructionArgs = {
   mint: PublicKey;
   mintReserveAta: PublicKey;
   boundingCurve: PublicKey;
-  boundingCurveReserve: PublicKey;
   payer: PublicKey;
   data: MintTokenSchema;
 };
@@ -122,7 +121,6 @@ function mintTokenInstruction({
   mint,
   mintReserveAta,
   boundingCurve,
-  boundingCurveReserve,
   data,
 }: MintTokenInstructionArgs) {
   const [mintAuthority] = findMintAuthorityPda(payer, mint, programId);
@@ -135,7 +133,6 @@ function mintTokenInstruction({
       { pubkey: mintReserveAta, isSigner: false, isWritable: true },
       { pubkey: mintAuthority, isSigner: false, isWritable: true },
       { pubkey: boundingCurve, isSigner: false, isWritable: true },
-      { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
       { pubkey: payer, isSigner: true, isWritable: false },
     ],
     data: data.serialize(),
@@ -148,10 +145,10 @@ type InitializeCurveArgs = {
   tokenProgram: PublicKey;
   tokenAMint: PublicKey;
   tokenBMint: PublicKey;
-  tokenAMintAuthority: PublicKey;
   tokenAReserveAta: PublicKey;
   boundingCurve: PublicKey;
   boundingCurveReserve: PublicKey;
+  boundingCurveTokenAReserve: PublicKey;
   payer: PublicKey;
   solUsdFeed: PublicKey;
   data: InitializeCurveSchema;
@@ -163,10 +160,10 @@ function initializeCurveInstruction({
   tokenProgram,
   tokenAMint,
   tokenBMint,
-  tokenAMintAuthority,
   tokenAReserveAta,
   boundingCurve,
   boundingCurveReserve,
+  boundingCurveTokenAReserve,
   solUsdFeed,
   payer,
   data,
@@ -178,12 +175,12 @@ function initializeCurveInstruction({
       { pubkey: tokenProgram, isSigner: false, isWritable: false },
       { pubkey: tokenAMint, isSigner: false, isWritable: false },
       { pubkey: tokenBMint, isSigner: false, isWritable: false },
-      { pubkey: tokenAMintAuthority, isSigner: false, isWritable: false },
       { pubkey: tokenAReserveAta, isSigner: false, isWritable: false },
       { pubkey: boundingCurve, isSigner: false, isWritable: true },
       { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
-      { pubkey: payer, isSigner: true, isWritable: true },
+      { pubkey: boundingCurveTokenAReserve, isSigner: false, isWritable: true },
       { pubkey: solUsdFeed, isSigner: false, isWritable: false },
+      { pubkey: payer, isSigner: true, isWritable: true },
     ],
     data: data.serialize(),
   });
@@ -501,7 +498,7 @@ function swapInstruction({
   return new TransactionInstruction({
     programId,
     keys,
-    data: data.serialize()
+    data: data.serialize(),
   });
 }
 
@@ -571,14 +568,10 @@ export function createMintInstruction({
   });
 
   const [boundingCurve] = findBoundingCurvePda(mint, programId);
-  const [boundingCurveReserve] = findBoundingCurveReservePda(
-    boundingCurve,
-    programId
-  );
 
   const mintReserveAta = getAssociatedTokenAddressSync(
     mint,
-    boundingCurveReserve,
+    boundingCurve,
     true,
     tokenProgram,
     associateTokenProgramId
@@ -588,7 +581,7 @@ export function createMintInstruction({
     createAssociatedTokenAccountInstruction(
       payer,
       mintReserveAta,
-      boundingCurveReserve,
+      boundingCurve,
       mint,
       tokenProgram,
       associateTokenProgramId
@@ -601,7 +594,6 @@ export function createMintInstruction({
     mintReserveAta,
     tokenProgram,
     boundingCurve,
-    boundingCurveReserve,
     data: new MintTokenSchema(totalSupply),
   });
 
@@ -631,10 +623,10 @@ export async function createInitializeCurveInstruction({
   programId = HASHFUND_PROGRAM_ID,
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
-  tokenAMint,
   tokenBMint = NATIVE_MINT,
-  payer,
+  tokenAMint,
   solUsdFeed,
+  payer,
   data,
 }: CreateInitializeCurveArgs) {
   const [boundingCurve] = findBoundingCurvePda(tokenAMint, programId);
@@ -642,20 +634,6 @@ export async function createInitializeCurveInstruction({
     boundingCurve,
     programId
   );
-  const [tokenAMintAuthority] = findMintAuthorityPda(
-    payer,
-    tokenAMint,
-    programId
-  );
-
-  const boundingCurveTokenBAccountIx =
-    await getOrCreateAssociatedTokenAccountInstructions(
-      connection,
-      tokenBMint,
-      payer,
-      boundingCurveReserve,
-      true
-    );
 
   const payerTokenAAccountIx =
     await getOrCreateAssociatedTokenAccountInstructions(
@@ -675,7 +653,32 @@ export async function createInitializeCurveInstruction({
       false
     );
 
-  const boundingCurveAta = getAssociatedTokenAddressSync(
+  const boundingCurveTokenAReserveIx =
+    await getOrCreateAssociatedTokenAccountInstructions(
+      connection,
+      tokenAMint,
+      payer,
+      boundingCurveReserve,
+      true
+    );
+
+  const boundingCurveTokenBReserveIx =
+    await getOrCreateAssociatedTokenAccountInstructions(
+      connection,
+      tokenBMint,
+      payer,
+      boundingCurveReserve,
+      true
+    );
+
+  const tokenAReserveAta = getAssociatedTokenAddressSync(
+    tokenAMint,
+    boundingCurve,
+    true,
+    tokenProgram
+  );
+
+  const boundingCurveTokenAReserve = getAssociatedTokenAddressSync(
     tokenAMint,
     boundingCurveReserve,
     true,
@@ -686,21 +689,22 @@ export async function createInitializeCurveInstruction({
     programId,
     systemProgram,
     tokenProgram,
+    tokenAReserveAta,
+    tokenAMint,
+    tokenBMint,
     boundingCurve,
     boundingCurveReserve,
-    tokenAReserveAta: boundingCurveAta,
-    tokenAMint,
-    tokenAMintAuthority,
-    tokenBMint,
-    payer,
+    boundingCurveTokenAReserve,
     solUsdFeed,
+    payer,
     data: new InitializeCurveSchema(data.supplyFraction, data.maximumMarketCap),
   });
 
   return [
-    ...boundingCurveTokenBAccountIx,
     ...payerTokenAAccountIx,
     ...payerTokenBAccountIx,
+    ...boundingCurveTokenAReserveIx,
+    ...boundingCurveTokenBReserveIx,
     initializeCurveIx,
   ];
 }
