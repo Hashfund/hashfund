@@ -13,9 +13,13 @@ import {
   createSwapInInstruction,
   createSwapOutInstruction,
   HTTP_RPC_URL,
+  parseLogs,
+  SafeMath,
   SOL_USD_FEED,
 } from "../src";
 import { simulateTransaction } from "@raydium-io/raydium-sdk-v2";
+import { Logs } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 
 const main = async () => {
   const connection: Connection = new Connection(HTTP_RPC_URL);
@@ -39,8 +43,8 @@ const main = async () => {
       payer: wallet.publicKey,
       solUsdFeed: SOL_USD_FEED,
       data: {
-        supplyFraction: new BN(100),
-        maximumMarketCap: new BN(521).mul(new BN(10).pow(new BN(9))),
+        supplyFraction: new BN(50),
+        maximumMarketCap: new BN(512).mul(new BN(10).pow(new BN(9))),
       },
     })),
     createSwapInInstruction({
@@ -48,21 +52,43 @@ const main = async () => {
       tokenAMint: mint,
       payer: wallet.publicKey,
       data: {
-        amount: new BN(5).mul(new BN(10).pow(new BN(8))),
+        amount: new BN(50).mul(new BN(10).pow(new BN(8))),
       },
     }),
-    ...await createSwapOutInstruction({
+    ...(await createSwapOutInstruction({
       connection,
       tokenAMint: mint,
       payer: wallet.publicKey,
       data: {
         amount: new BN(5).mul(new BN(10).pow(new BN(8))),
       },
-    }),
+    }))
   );
   transaction.feePayer = wallet.publicKey;
-  const tx = await simulateTransaction(connection, [transaction]);
-  console.log("tx={}", tx);
+  const logs: Logs[] = await simulateTransaction(connection, [transaction]);
+  logs
+    .map(({ logs }) => parseLogs(logs))
+    .forEach((events) =>
+      events.map((event) =>
+        console.log(
+          JSON.stringify(
+            event,
+            (_, value) => {
+              if (value instanceof PublicKey) {
+                return value.toBase58();
+              }
+
+              if (value instanceof BN) {
+                return value.toNumber();
+              }
+
+              return value;
+            },
+            2
+          )
+        )
+      )
+    );
 };
 
 main().catch(async (e) => {

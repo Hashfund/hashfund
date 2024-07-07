@@ -1,12 +1,14 @@
 import BN from "bn.js";
 import { sha256 } from "@noble/hashes/sha256";
 import { Connection, PublicKey, Keypair } from "@solana/web3.js";
-import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 import {
   createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
+
+import { EventSchema, type Event } from "./event";
 
 export function findMetadataPda(
   mint: PublicKey,
@@ -54,7 +56,10 @@ export function findBoundingCurvePda(mint: PublicKey, programId: PublicKey) {
   );
 }
 
-export function findBoundingCurveReservePda(boundingCurve: PublicKey, programId: PublicKey) {
+export function findBoundingCurveReservePda(
+  boundingCurve: PublicKey,
+  programId: PublicKey
+) {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("hashfund"), boundingCurve.toBuffer()],
     programId
@@ -143,4 +148,33 @@ export function generatePublicKey({
   const seed = Keypair.generate().publicKey.toBase58().slice(0, 32);
   const publicKey = createWithSeed(fromPublicKey, seed, programId);
   return { publicKey, seed };
+}
+
+export function parseLogs(logs: string[]) {
+  const regex = /emit!/g;
+  let events: Event[] = [];
+  const batchMint: Pick<Event, "Mint" | "MintTo"> = {};
+
+  for (const log of logs) {
+    if (log.search(regex) > 0) {
+      try {
+        const event = EventSchema.deserialize<Event>(
+          Buffer.from(log.split(regex)[1], "base64")
+        );
+
+        if (event?.Mint) {
+          batchMint.Mint = event.Mint;
+          continue;
+        }
+        if (event?.MintTo) {
+          batchMint.MintTo = event.MintTo;
+          continue;
+        }
+
+        if (event) events.push(event);
+      } catch {}
+    }
+  }
+
+  return [batchMint, ...events] as const;
 }

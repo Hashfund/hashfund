@@ -25,6 +25,8 @@ type InitializeCurveEvent = {
   mint: PublicKey;
   bounding_curve: PublicKey;
   initial_price: SafeMath;
+  curve_initial_supply: BN;
+  initial_market_cap: BN;
   maximum_market_cap: BN;
   timestamp: BN;
 };
@@ -91,6 +93,8 @@ export class EventSchema extends Schema {
         Borsh.publicKey("mint"),
         Borsh.publicKey("bounding_curve"),
         SafeMath.buildSchema("initial_price"),
+        Borsh.u64("curve_initial_supply"),
+        Borsh.u64("initial_market_cap"),
         Borsh.u64("maximum_market_cap"),
         Borsh.i64("timestamp"),
       ],
