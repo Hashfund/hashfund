@@ -1,4 +1,4 @@
-import "dotenv/config"
+import "dotenv/config";
 import { BN } from "bn.js";
 import {
   Connection,
@@ -24,9 +24,7 @@ import { PublicKey } from "@solana/web3.js";
 
 const main = async () => {
   const connection: Connection = new Connection(HTTP_RPC_URL);
-  console.log(process.env.PRIVATE_KEY!)
-  const wallet = loadWalletFromPriv(process.env.PRIVATE_KEY!)
-
+  const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
   const [mint, instructions] = createMintInstruction({
     data: {
       name: "Test 1",
@@ -68,6 +66,8 @@ const main = async () => {
   );
   transaction.feePayer = wallet.publicKey;
   const logs: Logs[] = await simulateTransaction(connection, [transaction]);
+  if (logs.some((log) => log.err)) logs.forEach((log) => console.log(log.err));
+
   logs
     .map(({ logs }) => parseLogs(logs))
     .forEach((events) =>

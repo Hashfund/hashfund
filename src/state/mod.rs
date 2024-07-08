@@ -24,7 +24,7 @@ use crate::{
 
 pub mod payload;
 
-pub const BOUNDING_CURVE_INFO_SIZE: usize = 8 + 8 + 32 + 1 + 1 + SAFE_MATH_SIZE;
+pub const BOUNDING_CURVE_INFO_SIZE: usize = 8 + 8 + 8+ 32 + 1 + 1 + SAFE_MATH_SIZE;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Copy)]
 pub struct BoundingCurveInfo {
