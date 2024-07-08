@@ -359,6 +359,7 @@ pub fn process_initialize_curve<'a>(
 
     bounding_curve_state.can_trade = true;
     bounding_curve_state.is_hashed = false;
+    bounding_curve_state.curve_initial_supply = curve_initial_supply;
     bounding_curve_state.initial_market_cap = sol_to_burn;
     bounding_curve_state.initial_price = initial_price;
     bounding_curve_state.maximum_market_cap = maximum_market_cap;

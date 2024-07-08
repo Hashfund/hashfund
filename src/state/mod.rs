@@ -28,9 +28,10 @@ pub const BOUNDING_CURVE_INFO_SIZE: usize = 8 + 8 + 32 + 1 + 1 + SAFE_MATH_SIZE;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Copy)]
 pub struct BoundingCurveInfo {
-    pub initial_price: SafeNumber,
+    pub curve_initial_supply: u64,
     pub initial_market_cap: u64,
     pub maximum_market_cap: u64,
+    pub initial_price: SafeNumber,
     pub mint: Pubkey,
     pub can_trade: bool,
     pub is_hashed: bool,

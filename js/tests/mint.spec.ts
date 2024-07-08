@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { BN } from "bn.js";
 import {
   Connection,
@@ -6,7 +7,7 @@ import {
 } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 
-import { loadWallet } from "./utils";
+import { loadWallet, loadWalletFromPriv } from "./utils";
 import {
   createInitializeCurveInstruction,
   createMintInstruction,
@@ -23,7 +24,8 @@ import { PublicKey } from "@solana/web3.js";
 
 const main = async () => {
   const connection: Connection = new Connection(HTTP_RPC_URL);
-  const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
+  console.log(process.env.PRIVATE_KEY!)
+  const wallet = loadWalletFromPriv(process.env.PRIVATE_KEY!)
 
   const [mint, instructions] = createMintInstruction({
     data: {
