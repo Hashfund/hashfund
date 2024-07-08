@@ -16,4 +16,3 @@ Bounding curve price is in constant pricing. You get out what you put in.
 ### Constant pricing implementation and paper 
 
 To check constant pricing implementation and paper check this pdf 
-
