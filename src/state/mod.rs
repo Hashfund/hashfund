@@ -24,7 +24,7 @@ use crate::{
 
 pub mod payload;
 
-pub const BOUNDING_CURVE_INFO_SIZE: usize = 8 + 8 + 8+ 32 + 1 + 1 + SAFE_MATH_SIZE;
+pub const BOUNDING_CURVE_INFO_SIZE: usize = 8 + 8 + 8 + 32 + 1 + 1 + SAFE_MATH_SIZE;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Copy)]
 pub struct BoundingCurveInfo {
@@ -62,7 +62,6 @@ impl BoundingCurveInfo {
         .try_into()
         .unwrap();
 
-
         let bounding_curve_token_a_account =
             spl_token::state::Account::unpack(&accounts.token_a_source.data.try_borrow().unwrap())?;
 
@@ -83,7 +82,6 @@ impl BoundingCurveInfo {
                 accounts.bounding_curve_reserve.clone(),
             ],
         )?;
-
 
         invoke_signed(
             &spl_token::instruction::transfer(
@@ -111,7 +109,7 @@ impl BoundingCurveInfo {
             trade_direction: 0,
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
-            market_cap: self.initial_market_cap.add(market_cap.add(native_amount)),
+            market_cap: market_cap.add(native_amount),
             payer: accounts.payer.key.clone(),
         });
 
@@ -190,10 +188,7 @@ impl BoundingCurveInfo {
             trade_direction: 1,
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
-            market_cap: self
-                .initial_market_cap
-                .add(token_b_source_info.amount)
-                .sub(native_amount),
+            market_cap: token_b_source_info.amount.sub(native_amount),
             payer: accounts.payer.key.clone(),
         });
 

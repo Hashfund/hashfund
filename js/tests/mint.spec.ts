@@ -1,10 +1,6 @@
 import "dotenv/config";
 import { BN } from "bn.js";
-import {
-  Connection,
-  sendAndConfirmTransaction,
-  Transaction,
-} from "@solana/web3.js";
+import { Connection, Transaction } from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 
 import { loadWallet, loadWalletFromPriv } from "./utils";
@@ -65,6 +61,7 @@ const main = async () => {
     }))
   );
   transaction.feePayer = wallet.publicKey;
+  connection.getFeeForMessage(transaction.compileMessage(), "finalized");
   const logs: Logs[] = await simulateTransaction(connection, [transaction]);
   if (logs.some((log) => log.err)) logs.forEach((log) => console.log(log.err));
 
