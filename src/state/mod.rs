@@ -110,6 +110,7 @@ impl BoundingCurveInfo {
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
             market_cap: market_cap.add(native_amount),
+            virtual_market_cap: self.initial_market_cap.add(market_cap).add(native_amount),
             payer: accounts.payer.key.clone(),
         });
 
@@ -189,6 +190,10 @@ impl BoundingCurveInfo {
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
             market_cap: token_b_source_info.amount.sub(native_amount),
+            virtual_market_cap: self
+                .initial_market_cap
+                .add(token_b_source_info.amount)
+                .sub(native_amount),
             payer: accounts.payer.key.clone(),
         });
 

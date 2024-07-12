@@ -37,6 +37,7 @@ type SwapEvent = {
   amount_out: BN;
   trade_direction: number;
   market_cap: BN;
+  virtual_market_cap: BN;
   timestamp: BN;
   payer: PublicKey;
 };
@@ -116,6 +117,7 @@ export class EventSchema extends Schema {
         Borsh.u64("amount_out"),
         Borsh.u8("trade_direction"),
         Borsh.u64("market_cap"),
+        Borsh.u64("virtual_market_cap"),
         Borsh.i64("timestamp"),
         Borsh.publicKey("payer"),
       ],

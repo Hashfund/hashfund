@@ -39,6 +39,7 @@ pub enum Event {
         amount_out: u64,
         trade_direction: u8,
         market_cap: u64,
+        virtual_market_cap: u64,
         timestamp: i64,
         payer: Pubkey,
     },

@@ -401,7 +401,8 @@ pub fn process_initialize_curve<'a>(
         amount_in: sol_to_burn,
         amount_out: token_to_burn,
         trade_direction: 2,
-        market_cap: sol_to_burn,
+        market_cap: 0,
+        virtual_market_cap: sol_to_burn,
         timestamp: clock.unix_timestamp,
         mint: accounts.token_a_mint.key.clone(),
         payer: accounts.bounding_curve_reserve.key.clone(),
@@ -774,9 +775,10 @@ pub fn process_hash_token_v2<'a>(
         amount_in: 0,
         amount_out: init_amount_1,
         trade_direction: 2,
-        market_cap: bounding_curve_state
+        virtual_market_cap: bounding_curve_state
             .initial_market_cap
             .add(accounts.bounding_curve_reserve.lamports()),
+        market_cap: accounts.bounding_curve_reserve.lamports(),
         timestamp: clock.unix_timestamp,
         payer: accounts.bounding_curve_reserve.key.clone(),
     });
