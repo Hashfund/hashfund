@@ -1,6 +1,10 @@
 import "dotenv/config";
 import { BN } from "bn.js";
-import { Connection, Transaction } from "@solana/web3.js";
+import {
+  Connection,
+  sendAndConfirmTransaction,
+  Transaction,
+} from "@solana/web3.js";
 import { NATIVE_MINT } from "@solana/spl-token";
 
 import { loadWallet, loadWalletFromPriv } from "./utils";
@@ -23,14 +27,14 @@ const main = async () => {
   const wallet = loadWallet("/Users/macbookpro/.config/solana/id.json");
   const [mint, instructions] = createMintInstruction({
     data: {
-      name: "Test 1",
+      name: "Test 9",
       ticker: "TEST 1",
       uri: "https://ik.imagekit.io/hashfund/tokens_metadata_BNvUnF4moZ4arrPYYdrEhjS64LUBHuABgrRJaXvLrLPe.json",
     },
     payer: wallet.publicKey,
   });
 
-  console.log("mint={}", mint.toBase58());
+  console.log("mint=", mint.toBase58());
   const transaction = new Transaction().add(...instructions).add(
     ...(await createInitializeCurveInstruction({
       connection,
@@ -39,7 +43,7 @@ const main = async () => {
       payer: wallet.publicKey,
       solUsdFeed: SOL_USD_FEED,
       data: {
-        supplyFraction: new BN(50),
+        supplyFraction: new BN(100),
         maximumMarketCap: new BN(512).mul(new BN(10).pow(new BN(9))),
       },
     })),
@@ -48,7 +52,7 @@ const main = async () => {
       tokenAMint: mint,
       payer: wallet.publicKey,
       data: {
-        amount: new BN(50).mul(new BN(10).pow(new BN(8))),
+        amount: new BN(50).mul(new BN(10).pow(new BN(6))),
       },
     }),
     ...(await createSwapOutInstruction({
@@ -61,8 +65,8 @@ const main = async () => {
     }))
   );
   transaction.feePayer = wallet.publicKey;
-  connection.getFeeForMessage(transaction.compileMessage(), "finalized");
   const logs: Logs[] = await simulateTransaction(connection, [transaction]);
+
   if (logs.some((log) => log.err)) logs.forEach((log) => console.log(log.err));
 
   logs
