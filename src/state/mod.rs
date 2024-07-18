@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub};
+use std::ops::Add;
 
 use borsh::{BorshDeserialize, BorshSerialize};
 use bounding_curve::{
@@ -69,8 +69,6 @@ impl BoundingCurveInfo {
             return Err(SwapError::InsufficientTokenInReserve.into());
         }
 
-        let market_cap = accounts.bounding_curve_reserve.lamports();
-
         invoke(
             &transfer(
                 accounts.payer.key,
@@ -109,12 +107,14 @@ impl BoundingCurveInfo {
             trade_direction: 0,
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
-            market_cap: market_cap.add(native_amount),
-            virtual_market_cap: self.initial_market_cap.add(market_cap).add(native_amount),
+            market_cap: accounts.bounding_curve_reserve.lamports(),
+            virtual_market_cap: self
+                .initial_market_cap
+                .add(accounts.bounding_curve_reserve.lamports()),
             payer: accounts.payer.key.clone(),
         });
 
-        if market_cap > self.maximum_market_cap {
+        if accounts.bounding_curve_reserve.lamports() > self.maximum_market_cap {
             state.can_trade = false;
 
             emit(events::Event::HashMature {
@@ -133,9 +133,6 @@ impl BoundingCurveInfo {
         amount: u64,
         signers_seeds: &[&[&[u8]]],
     ) -> ProgramResult {
-        let token_b_source_info =
-            spl_token::state::Account::unpack(&accounts.token_b_source.data.borrow())?;
-
         let native_amount = T::calculate_token_out(
             self.initial_price.into(),
             amount.into(),
@@ -189,11 +186,10 @@ impl BoundingCurveInfo {
             trade_direction: 1,
             timestamp: clock.unix_timestamp,
             mint: accounts.token_a_mint.key.clone(),
-            market_cap: token_b_source_info.amount.sub(native_amount),
+            market_cap: accounts.bounding_curve_reserve.lamports(),
             virtual_market_cap: self
                 .initial_market_cap
-                .add(token_b_source_info.amount)
-                .sub(native_amount),
+                .add(accounts.bounding_curve_reserve.lamports()),
             payer: accounts.payer.key.clone(),
         });
 

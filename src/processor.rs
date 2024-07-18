@@ -15,15 +15,7 @@ use mpl_token_metadata::{
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
-    borsh1::try_from_slice_unchecked,
-    clock::Clock,
-    entrypoint::ProgramResult,
-    program::{invoke, invoke_signed},
-    program_pack::Pack,
-    pubkey::Pubkey,
-    rent::Rent,
-    system_instruction::{create_account, transfer},
-    sysvar::Sysvar,
+    borsh1::try_from_slice_unchecked, clock::Clock, entrypoint::ProgramResult, msg, program::{invoke, invoke_signed}, program_pack::Pack, pubkey::Pubkey, rent::Rent, system_instruction::{create_account, transfer}, sysvar::Sysvar
 };
 use spl_token::{
     instruction::{burn, initialize_mint, mint_to, sync_native},
@@ -282,6 +274,8 @@ pub fn process_initialize_curve<'a>(
         .div(100)
         .into();
 
+    msg!("curve_supply={}", curve_initial_supply);
+
     invoke_signed(
         &spl_token::instruction::transfer(
             &accounts.token_program.key,
@@ -346,11 +340,13 @@ pub fn process_initialize_curve<'a>(
     let sol_to_burn = price.inverse_div(5000).mul(10_u128.pow(9));
     let sol_to_burn = sol_to_burn.unwrap::<u64>();
 
-    let maximum_market_cap = payload.maximum_market_cap.add(sol_to_burn);
+    let maximum_market_cap = payload.maximum_market_cap;
+    msg!("maxium_cap={}", maximum_market_cap);
 
     let curve = ConstantCurve::new(curve_initial_supply, maximum_market_cap);
 
     let initial_price = curve.calculate_initial_price();
+    msg!("initial_price={}", initial_price.unwrap::<f64>());
     let token_to_burn =
         ConstantCurve::calculate_token_out(initial_price, sol_to_burn, TradeDirection::BtoA);
 
