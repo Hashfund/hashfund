@@ -34,6 +34,7 @@ pub struct HashTokenAccountV2<'a> {
     pub bounding_curve_token_a_reserve: AccountInfo<'a>,
     pub bounding_curve_token_b_reserve: AccountInfo<'a>,
     pub bounding_curve_lp_reserve: AccountInfo<'a>,
+    pub hash_token_fee_receiver: AccountInfo<'a>,
     pub payer: Option<AccountInfo<'a>>,
 }
 
@@ -65,6 +66,8 @@ impl<'a> Account<'a> for HashTokenAccountV2<'a> {
         let bounding_curve_token_b_reserve = next_account_info(accounts)?;
         let bounding_curve_lp_reserve = next_account_info(accounts)?;
 
+        let hash_token_fee_receiver = next_account_info(accounts)?;
+
         let payer = match next_account_info(accounts) {
             Ok(account) => Some(account.clone()),
             Err(_) => None,
@@ -91,6 +94,7 @@ impl<'a> Account<'a> for HashTokenAccountV2<'a> {
             bounding_curve_token_a_reserve: bounding_curve_token_a_reserve.clone(),
             bounding_curve_token_b_reserve: bounding_curve_token_b_reserve.clone(),
             bounding_curve_lp_reserve: bounding_curve_lp_reserve.clone(),
+            hash_token_fee_receiver: hash_token_fee_receiver.clone(),
             payer,
         })
     }
@@ -195,6 +199,8 @@ impl<'a> HashTokenAccountV2<'a> {
         let bounding_curve_token_b_reserve = next_account_info(accounts)?;
         let bounding_curve_lp_reserve = next_account_info(accounts)?;
 
+        let hash_fee_reciever = next_account_info(accounts)?;
+
         Ok(HashTokenAccountV2 {
             sysvar_rent,
             system_program,
@@ -216,6 +222,7 @@ impl<'a> HashTokenAccountV2<'a> {
             bounding_curve_token_a_reserve: bounding_curve_token_a_reserve.clone(),
             bounding_curve_token_b_reserve: bounding_curve_token_b_reserve.clone(),
             bounding_curve_lp_reserve: bounding_curve_lp_reserve.clone(),
+            hash_token_fee_receiver: hash_fee_reciever.clone(),
             payer: None,
         })
     }

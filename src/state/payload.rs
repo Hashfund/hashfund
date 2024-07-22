@@ -40,5 +40,5 @@ pub struct HashTokenPayload {
 #[derive(BorshDeserialize)]
 pub struct HashTokenPayloadV2 {
     pub open_time: u64,
-
+    pub estimated_pool_creation_fee: u64,
 }

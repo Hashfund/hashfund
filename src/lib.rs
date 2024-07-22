@@ -5,11 +5,13 @@ use instruction::{Instruction, ProgramInstruction};
 use num_traits::FromPrimitive;
 use solana_program::{
     account_info::{next_account_infos, AccountInfo},
+    declare_id,
     entrypoint::ProgramResult,
     program_error::ProgramError,
     pubkey::Pubkey,
 };
 use state::payload::HashTokenPayloadV2;
+use utils::raydium::get_estimated_creation_fee;
 
 pub mod account;
 pub mod context;
@@ -22,6 +24,20 @@ pub mod state;
 pub mod utils;
 
 solana_program::entrypoint!(process_instruction);
+
+pub mod create_mint_fee_receiver {
+
+    super::declare_id!("8yrLUREzVZ47fqLZ2jBSqBdsUivSeEy8GaqY8WVvd3Nc");
+}
+
+pub mod swap_fee_receiver {
+
+    super::declare_id!("9AajQJL4MYX8ttZWr5uHMsoGWMKaCG6SzDjTFm59qhEe");
+}
+pub mod hash_token_fee_receiver {
+
+    super::declare_id!("9AajQJL4MYX8ttZWr5uHMsoGWMKaCG6SzDjTFm59qhEe");
+}
 
 pub fn process_instruction<'a>(
     program_id: &'a Pubkey,
@@ -44,7 +60,7 @@ pub fn process_instruction<'a>(
         ProgramInstruction::Swap(payload) => {
             let account_infos = &mut account_infos.iter();
             let context =
-                Context::new(program_id, next_account_infos(account_infos, 13)?, payload)?;
+                Context::new(program_id, next_account_infos(account_infos, 14)?, payload)?;
 
             processor::process_swap(&context)?;
 
@@ -52,7 +68,10 @@ pub fn process_instruction<'a>(
                 if can_hash {
                     let context = Box::new(Context {
                         program_id,
-                        payload: HashTokenPayloadV2 { open_time: 0 },
+                        payload: HashTokenPayloadV2 {
+                            open_time: 0,
+                            estimated_pool_creation_fee: get_estimated_creation_fee(),
+                        },
                         accounts: HashTokenAccountV2::with_default(
                             context.accounts.sysvar_rent.clone(),
                             context.accounts.system_program.clone(),
@@ -60,7 +79,7 @@ pub fn process_instruction<'a>(
                             context.accounts.associate_token_program.clone(),
                             context.accounts.bounding_curve.clone(),
                             context.accounts.bounding_curve_reserve.clone(),
-                            next_account_infos(account_infos, 14)?,
+                            next_account_infos(account_infos, 15)?,
                         )?,
                     });
 

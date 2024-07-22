@@ -3,6 +3,7 @@ use solana_program::{
     program_error::ProgramError,
 };
 
+
 use super::Account;
 
 pub struct InitializeMintAccount<'a> {
@@ -15,6 +16,7 @@ pub struct InitializeMintAccount<'a> {
     pub metadata_program: AccountInfo<'a>,
     pub metadata_pda: AccountInfo<'a>,
     pub master_edition: AccountInfo<'a>,
+    pub create_mint_fee_receiver: AccountInfo<'a>,
     pub payer: AccountInfo<'a>,
 }
 
@@ -35,6 +37,8 @@ impl<'a> Account<'a> for InitializeMintAccount<'a> {
         let metadata_pda = next_account_info(accounts)?;
         let master_edition = next_account_info(accounts)?;
 
+        let create_mint_fee_receiver = next_account_info(accounts)?;
+
         let payer = next_account_info(accounts)?;
 
         Ok(Self {
@@ -47,6 +51,7 @@ impl<'a> Account<'a> for InitializeMintAccount<'a> {
             metadata_program: metadata_program.clone(),
             metadata_pda: metadata_pda.clone(),
             master_edition: master_edition.clone(),
+            create_mint_fee_receiver: create_mint_fee_receiver.clone(),
             payer: payer.clone(),
         })
     }

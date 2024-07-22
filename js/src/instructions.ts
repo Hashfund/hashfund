@@ -23,7 +23,10 @@ import {
 import { MPL_TOKEN_METADATA_PROGRAM_ID } from "@metaplex-foundation/mpl-token-metadata";
 
 import {
+  HASHFUND_CREATE_MINT_FEE_ADDRESS,
+  HASHFUND_HASH_TOKEN_FEE_ADDRESS,
   HASHFUND_PROGRAM_ID,
+  HASHFUND_SWAP_FEE_ADDRESS,
   RAYDIUM_DEVNET_CREATE_POOL_FEE_ADDRESS,
   RAYDIUM_DEVNET_OPEN_BOOK_PROGRAM_ID,
   RAYDIUM_DEVNET_PROGRAM_ID,
@@ -60,6 +63,7 @@ type InitializeMintInstructionArgs = {
   mintAuthority: PublicKey;
   metadataPda: PublicKey;
   masterEditionPda: PublicKey;
+  createMintFeeAddress: PublicKey;
   payer: PublicKey;
   data: InitializeMintTokenSchema;
 };
@@ -76,6 +80,7 @@ function initializeMintInstruction({
   metadataPda,
   masterEditionPda,
   payer,
+  createMintFeeAddress,
   data,
 }: InitializeMintInstructionArgs) {
   return new TransactionInstruction({
@@ -98,6 +103,7 @@ function initializeMintInstruction({
       { pubkey: mintAuthority, isSigner: false, isWritable: true },
       { pubkey: metadataPda, isSigner: false, isWritable: true },
       { pubkey: masterEditionPda, isSigner: false, isWritable: true },
+      { pubkey: createMintFeeAddress, isSigner: false, isWritable: true },
       { pubkey: payer, isSigner: true, isWritable: false },
     ],
     data: data.serialize(),
@@ -133,7 +139,7 @@ function mintTokenInstruction({
       { pubkey: mintReserveAta, isSigner: false, isWritable: true },
       { pubkey: mintAuthority, isSigner: false, isWritable: true },
       { pubkey: boundingCurve, isSigner: false, isWritable: true },
-      { pubkey: payer, isSigner: true, isWritable: false },
+      { pubkey: payer, isSigner: true, isWritable: true },
     ],
     data: data.serialize(),
   });
@@ -303,6 +309,7 @@ function hashTokenInstruction({
 
 export type HashTokenInstructionV2Args = {
   ammObservationState: PublicKey;
+  hashTokenFeeAddress: PublicKey;
   data: HashTokenV2Schema;
 } & Pick<
   HashTokenInstructionArgs,
@@ -351,6 +358,7 @@ function hashTokenV2Instruction({
   boundingCurveTokenAReserve,
   boundingCurveTokenBReserve,
   boundingCurveLpReserve,
+  hashTokenFeeAddress,
   payer,
   data,
 }: HashTokenInstructionV2Args) {
@@ -385,7 +393,8 @@ function hashTokenV2Instruction({
         isWritable: true,
       },
       { pubkey: boundingCurveLpReserve, isSigner: false, isWritable: true },
-      { pubkey: payer, isSigner: true, isWritable: false },
+      { pubkey: hashTokenFeeAddress, isSigner: false, isWritable: true },
+      { pubkey: payer, isSigner: true, isWritable: true },
     ],
     data: data.serialize(),
   });
@@ -403,6 +412,7 @@ type SwapInstructionArgs = {
   tokenBDestination: PublicKey;
   boundingCurve: PublicKey;
   boundingCurveReserve: PublicKey;
+  swapFeeAddress: PublicKey;
   payer: PublicKey;
   data: SwapSchema;
 } & Pick<
@@ -438,6 +448,7 @@ function swapInstruction({
   boundingCurve,
   boundingCurveReserve,
   amm,
+  swapFeeAddress,
   payer,
   data,
 }: SwapInstructionArgs) {
@@ -454,6 +465,7 @@ function swapInstruction({
     { pubkey: tokenBDestination, isSigner: false, isWritable: true },
     { pubkey: boundingCurve, isSigner: false, isWritable: true },
     { pubkey: boundingCurveReserve, isSigner: false, isWritable: true },
+    { pubkey: swapFeeAddress, isSigner: false, isWritable: true },
     { pubkey: payer, isSigner: true, isWritable: true },
   ];
 
@@ -473,6 +485,7 @@ function swapInstruction({
       boundingCurveTokenAReserve,
       boundingCurveTokenBReserve,
       boundingCurveLpReserve,
+      hashTokenFeeAddress,
     } = amm;
 
     keys.push(
@@ -489,7 +502,8 @@ function swapInstruction({
       { pubkey: ammCreateFeeDestination, isSigner: false, isWritable: true },
       { pubkey: boundingCurveTokenAReserve, isSigner: false, isWritable: true },
       { pubkey: boundingCurveTokenBReserve, isSigner: false, isWritable: true },
-      { pubkey: boundingCurveLpReserve, isSigner: false, isWritable: true }
+      { pubkey: boundingCurveLpReserve, isSigner: false, isWritable: true },
+      { pubkey: hashTokenFeeAddress, isSigner: false, isWritable: false }
     );
 
     data.can_hash = true;
@@ -521,6 +535,7 @@ type CreateMintInstructionArgs = {
     | "sysvarRent"
     | "tokenProgram"
     | "metadataProgram"
+    | "createMintFeeAddress"
   >
 >;
 
@@ -532,6 +547,7 @@ export function createMintInstruction({
   tokenProgram = TOKEN_PROGRAM_ID,
   associateTokenProgramId = ASSOCIATED_TOKEN_PROGRAM_ID,
   metadataProgram = MPL_TOKEN_METADATA_PROGRAM_ID,
+  createMintFeeAddress = HASHFUND_CREATE_MINT_FEE_ADDRESS,
   payer,
   data: {
     name,
@@ -564,6 +580,7 @@ export function createMintInstruction({
     mintAuthority,
     metadataPda,
     masterEditionPda,
+    createMintFeeAddress,
     data,
   });
 
@@ -1013,6 +1030,7 @@ type CreateHashTokenInstructionV2Args = {
       | "tokenAMint"
       | "ammProgram"
       | "ammCreateFeeDestination"
+      | "hashTokenFeeAddress"
     >
   >;
 
@@ -1025,6 +1043,7 @@ export async function createHashTokenV2Instructions({
   associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
   ammProgram = RAYDIUM_V2_DEVNET_PROGRAM_ID,
   tokenAMint = NATIVE_MINT,
+  hashTokenFeeAddress = HASHFUND_HASH_TOKEN_FEE_ADDRESS,
   ammCreateFeeDestination = RAYDIUM_V2_DEVNET_CREATE_POOL_FEE_ADDRESS,
   tokenBMint,
   payer,
@@ -1101,6 +1120,7 @@ export async function createHashTokenV2Instructions({
       boundingCurveTokenAReserve,
       boundingCurveTokenBReserve,
       boundingCurveLpReserve,
+      hashTokenFeeAddress,
       payer,
       ammPool: poolInfo.poolId,
       ammAuthority: poolInfo.authority,
@@ -1122,7 +1142,10 @@ type CreateSwapInstructionArgs = {
     amount: BN;
   };
 } & Partial<
-  Pick<HashTokenInstructionV2Args, "ammProgram" | "ammCreateFeeDestination">
+  Pick<
+    HashTokenInstructionV2Args,
+    "ammProgram" | "ammCreateFeeDestination" | "hashTokenFeeAddress"
+  >
 > &
   Partial<
     Pick<
@@ -1132,6 +1155,7 @@ type CreateSwapInstructionArgs = {
       | "systemProgram"
       | "tokenProgram"
       | "associateTokenProgram"
+      | "swapFeeAddress"
       | "tokenBMint"
     >
   >;
@@ -1145,6 +1169,8 @@ export function createCheckedSwapInInstruction({
   tokenBMint = NATIVE_MINT,
   ammProgram = RAYDIUM_V2_DEVNET_PROGRAM_ID,
   ammCreateFeeDestination = RAYDIUM_V2_DEVNET_CREATE_POOL_FEE_ADDRESS,
+  swapFeeAddress = HASHFUND_SWAP_FEE_ADDRESS,
+  hashTokenFeeAddress = HASHFUND_HASH_TOKEN_FEE_ADDRESS,
   tokenAMint,
   payer,
   data,
@@ -1213,6 +1239,7 @@ export function createCheckedSwapInInstruction({
     tokenBDestination,
     boundingCurve,
     boundingCurveReserve,
+    swapFeeAddress,
     payer,
     amm: {
       ammProgram,
@@ -1229,6 +1256,7 @@ export function createCheckedSwapInInstruction({
       boundingCurveTokenAReserve,
       boundingCurveTokenBReserve,
       boundingCurveLpReserve,
+      hashTokenFeeAddress,
     },
     data: new SwapSchema(data.amount, 0),
   });
@@ -1241,7 +1269,7 @@ export function createSwapInInstruction({
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
   associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
-
+  swapFeeAddress = HASHFUND_SWAP_FEE_ADDRESS,
   tokenAMint,
   tokenBMint = NATIVE_MINT,
   payer,
@@ -1289,6 +1317,8 @@ export function createSwapInInstruction({
     boundingCurve,
     boundingCurveReserve,
     payer,
+    swapFeeAddress,
+
     data: new SwapSchema(data.amount, 0),
   });
 }
@@ -1300,8 +1330,9 @@ export async function createSwapOutInstruction({
   systemProgram = SystemProgram.programId,
   tokenProgram = TOKEN_PROGRAM_ID,
   associateTokenProgram = ASSOCIATED_TOKEN_PROGRAM_ID,
-  tokenAMint,
   tokenBMint = NATIVE_MINT,
+  swapFeeAddress = HASHFUND_SWAP_FEE_ADDRESS,
+  tokenAMint,
   payer,
   data,
 }: Omit<CreateSwapInstructionArgs, "ammProgram" | "ammCreateFeeDestination"> & {
@@ -1357,6 +1388,7 @@ export async function createSwapOutInstruction({
       tokenBDestination,
       boundingCurve,
       boundingCurveReserve,
+      swapFeeAddress,
       payer,
       data: new SwapSchema(data.amount, 1),
     }),

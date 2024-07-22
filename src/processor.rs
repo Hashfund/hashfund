@@ -1,12 +1,9 @@
-use std::ops::{Add, Div, Mul};
+use std::ops::{Add, Div, Mul, Sub};
 
 use anchor_lang::context::CpiContext;
 use borsh::BorshSerialize;
 use bounding_curve::{
-    curve::{
-        calculator::{CurveCalculator, TradeDirection},
-        constant_curve::ConstantCurve,
-    },
+    curve::{calculator::CurveCalculator, constant_curve::ConstantCurve},
     safe_number::Math,
 };
 use mpl_token_metadata::{
@@ -15,7 +12,16 @@ use mpl_token_metadata::{
 };
 use pyth_sdk_solana::state::SolanaPriceAccount;
 use solana_program::{
-    borsh1::try_from_slice_unchecked, clock::Clock, entrypoint::ProgramResult, msg, program::{invoke, invoke_signed}, program_pack::Pack, pubkey::Pubkey, rent::Rent, system_instruction::{create_account, transfer}, sysvar::Sysvar
+    borsh1::try_from_slice_unchecked,
+    clock::Clock,
+    entrypoint::ProgramResult,
+    msg,
+    program::{invoke, invoke_signed},
+    program_pack::Pack,
+    pubkey::Pubkey,
+    rent::Rent,
+    system_instruction::{create_account, transfer},
+    sysvar::Sysvar,
 };
 use spl_token::{
     instruction::{burn, initialize_mint, mint_to, sync_native},
@@ -30,11 +36,14 @@ use crate::{
         swap_account::SwapAccount,
     },
     context::Context,
+    create_mint_fee_receiver,
     errors::{
-        hash_token_error::HashTokenError, initialize_curve_error::InitializeCurveError,
-        swap_error::SwapError, token_mint_error::TokenMintError,
+        fee_account_error::FeeAccountError, hash_token_error::HashTokenError,
+        initialize_curve_error::InitializeCurveError, swap_error::SwapError,
+        token_mint_error::TokenMintError,
     },
     events::{self, emit, Event},
+    hash_token_fee_receiver,
     state::{
         payload::{
             HashTokenPayload, HashTokenPayloadV2, InitializeCurvePayload, InitializeMintPayload,
@@ -42,7 +51,7 @@ use crate::{
         },
         BoundingCurveInfo, BOUNDING_CURVE_INFO_SIZE,
     },
-    utils::pyth::price_to_number,
+    utils::{pyth::price_to_number, raydium::get_estimated_creation_fee},
 };
 
 pub fn process_initialize_mint<'a>(
@@ -65,6 +74,10 @@ pub fn process_initialize_mint<'a>(
 
     let (mint_authority_pda, mint_authority_bump) =
         context.find_authority_id(&accounts.payer.key, &token_mint_pda);
+
+    if create_mint_fee_receiver::ID != accounts.create_mint_fee_receiver.key.clone() {
+        return Err(FeeAccountError::InvalidCreateMintFeeReceiverAccount.into());
+    }
 
     if token_mint_pda != accounts.mint.key.clone() {
         return Err(TokenMintError::IncorrectTokenMintAccount.into());
@@ -92,6 +105,18 @@ pub fn process_initialize_mint<'a>(
     ];
 
     let signers_seeds: &[&[&[u8]]] = &[token_mint_signer_seeds, mint_authority_signer_seeds];
+
+    invoke(
+        &transfer(
+            &accounts.payer.key,
+            &create_mint_fee_receiver::ID,
+            5_u64.mul(10_u64.pow(5)),
+        ),
+        &[
+            accounts.payer.clone(),
+            accounts.create_mint_fee_receiver.clone(),
+        ],
+    )?;
 
     invoke_signed(
         &create_account(
@@ -274,8 +299,6 @@ pub fn process_initialize_curve<'a>(
         .div(100)
         .into();
 
-    msg!("curve_supply={}", curve_initial_supply);
-
     invoke_signed(
         &spl_token::instruction::transfer(
             &accounts.token_program.key,
@@ -340,15 +363,13 @@ pub fn process_initialize_curve<'a>(
     let sol_to_burn = price.inverse_div(5000).mul(10_u128.pow(9));
     let sol_to_burn = sol_to_burn.unwrap::<u64>();
 
-    let maximum_market_cap = payload.maximum_market_cap;
-    msg!("maxium_cap={}", maximum_market_cap);
+    let maximum_market_cap = payload.maximum_market_cap.add(get_estimated_creation_fee());
+
+    msg!("maximum_market_cap={}", maximum_market_cap);
 
     let curve = ConstantCurve::new(curve_initial_supply, maximum_market_cap);
 
     let initial_price = curve.calculate_initial_price();
-    msg!("initial_price={}", initial_price.unwrap::<f64>());
-    let token_to_burn =
-        ConstantCurve::calculate_token_out(initial_price, sol_to_burn, TradeDirection::BtoA);
 
     let mut bounding_curve_state =
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
@@ -374,28 +395,11 @@ pub fn process_initialize_curve<'a>(
         bounding_curve: accounts.bounding_curve.key.clone(),
     });
 
-    invoke_signed(
-        &burn(
-            accounts.token_program.key,
-            &accounts.bounding_curve_token_a_reserve.key,
-            accounts.token_a_mint.key,
-            &accounts.bounding_curve_reserve.key,
-            &[],
-            token_to_burn,
-        )?,
-        &[
-            accounts.bounding_curve_token_a_reserve.clone(),
-            accounts.token_a_mint.clone(),
-            accounts.bounding_curve_reserve.clone(),
-        ],
-        signers_seeds,
-    )?;
-
     let clock = Clock::get()?;
 
     emit(Event::Swap {
         amount_in: sol_to_burn,
-        amount_out: token_to_burn,
+        amount_out: 0,
         trade_direction: 2,
         market_cap: 0,
         virtual_market_cap: sol_to_burn,
@@ -659,6 +663,10 @@ pub fn process_hash_token_v2<'a>(
     let mut bounding_curve_state =
         try_from_slice_unchecked::<BoundingCurveInfo>(&accounts.bounding_curve.data.borrow())?;
 
+    if hash_token_fee_receiver::ID != accounts.hash_token_fee_receiver.key.clone() {
+        return Err(FeeAccountError::InvalidHashFeeReceiverAccount.into());
+    }
+
     if bounding_curve_state.can_trade {
         return Err(HashTokenError::ImmatureBoundingCurve.into());
     }
@@ -675,14 +683,50 @@ pub fn process_hash_token_v2<'a>(
             .unwrap(),
     )?;
 
-    let init_amount_0 = bounding_curve_state.maximum_market_cap;
+    let init_amount_0 = accounts.bounding_curve_reserve.lamports();
     let init_amount_1 = bounding_curve_token_b_info.amount;
+    let rent = Rent::get()?;
+
+    msg!("initial_amount_0={}", init_amount_0);
+
+    let init_amount_0 = init_amount_0.sub(payload.estimated_pool_creation_fee);
+
+    let hash_token_fee = init_amount_0.mul(5).div(100);
+
+    let init_amount_0 = init_amount_0
+        .sub(rent.minimum_balance(0))
+        .sub(hash_token_fee);
+
+    let safe_init_amount_0 = if init_amount_0 > bounding_curve_state.maximum_market_cap {
+        bounding_curve_state.maximum_market_cap
+    } else {
+        init_amount_0
+    };
+
+    let hash_token_fee = if init_amount_0 > bounding_curve_state.maximum_market_cap {
+        hash_token_fee + init_amount_0 - bounding_curve_state.maximum_market_cap
+    } else {
+        hash_token_fee
+    };
+
+    invoke_signed(
+        &transfer(
+            &accounts.bounding_curve_reserve.key,
+            &hash_token_fee_receiver::ID,
+            hash_token_fee,
+        ),
+        &[
+            accounts.bounding_curve_reserve.clone(),
+            accounts.hash_token_fee_receiver.clone(),
+        ],
+        signers_seeds,
+    )?;
 
     invoke_signed(
         &transfer(
             &accounts.bounding_curve_reserve.key,
             &accounts.bounding_curve_token_a_reserve.key,
-            init_amount_0,
+            safe_init_amount_0,
         ),
         &[
             accounts.bounding_curve_reserve.clone(),

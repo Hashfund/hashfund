@@ -3,6 +3,7 @@ use solana_program::{account_info::AccountInfo, program_error::ProgramError};
 pub mod pda;
 pub mod pyth;
 pub mod serum;
+pub mod  raydium;
 
 pub fn optional_next_account_info<'a, 'b>(
     iter: &mut dyn Iterator<Item = &'a AccountInfo<'b>>,

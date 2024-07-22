@@ -18,6 +18,7 @@ pub struct SwapAccount<'a> {
     pub token_b_destination: AccountInfo<'a>,
     pub bounding_curve: AccountInfo<'a>,
     pub bounding_curve_reserve: AccountInfo<'a>,
+    pub swap_fee_receiver: AccountInfo<'a>,
     pub payer: AccountInfo<'a>,
 }
 
@@ -40,6 +41,9 @@ impl<'a> Account<'a> for SwapAccount<'a> {
 
         let bounding_curve = next_account_info(accounts)?;
         let bounding_curve_reserve = next_account_info(accounts)?;
+
+        let swap_fee_receiver = next_account_info(accounts)?;
+
         let payer = next_account_info(accounts)?;
 
         Ok(Self {
@@ -55,6 +59,7 @@ impl<'a> Account<'a> for SwapAccount<'a> {
             token_b_destination: token_b_destination.clone(),
             bounding_curve: bounding_curve.clone(),
             bounding_curve_reserve: bounding_curve_reserve.clone(),
+            swap_fee_receiver: swap_fee_receiver.clone(),
             payer: payer.clone(),
         })
     }

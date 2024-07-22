@@ -4,6 +4,16 @@ export const HASHFUND_PROGRAM_ID = new PublicKey(
   "HaSHDAqXwaSboq8zpuGzGyezpWwNf2EsgJn71Y6vXLQz"
 );
 
+export const HASHFUND_CREATE_MINT_FEE_ADDRESS = new PublicKey(
+  "8yrLUREzVZ47fqLZ2jBSqBdsUivSeEy8GaqY8WVvd3Nc"
+);
+export const HASHFUND_SWAP_FEE_ADDRESS = new PublicKey(
+  "9AajQJL4MYX8ttZWr5uHMsoGWMKaCG6SzDjTFm59qhEe"
+);
+export const HASHFUND_HASH_TOKEN_FEE_ADDRESS = new PublicKey(
+  "9AajQJL4MYX8ttZWr5uHMsoGWMKaCG6SzDjTFm59qhEe"
+);
+
 export const SERUM_PROGRAM_ID = new PublicKey(
   "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin"
 );
