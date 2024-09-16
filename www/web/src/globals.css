@@ -1,0 +1,85 @@
+@unocss preflights;
+@unocss default;
+
+@unocss;
+
+.btn {
+  @apply flex items-center justify-center text-black px-4 py-2 rounded;
+}
+
+.btn-primary {
+  @apply bg-gradient-to-r from-primary to-secondary;
+}
+
+.btn-primary:hover,
+.btn-primary:active {
+  @apply from-primary/80 to-secondary/80;
+}
+
+.input-with-icon:focus-within svg {
+  @apply text-amber;
+}
+
+table {
+  @apply text-left border-collapse border-spacing-0;
+}
+
+table th {
+  @apply font-light text-white/75 bg-black/20 py-4 text-nowrap cursor-pointer;
+}
+
+.dollar::before {
+  content: "$";
+  font-family: monospace;
+}
+
+.sol::after {
+  content: " SOL";
+  @apply text-sm;
+}
+
+th:not(:first-child),
+td:not(:first-child) {
+  @apply px-4;
+}
+th,
+td {
+  @apply py-2  whitespace-nowrap;
+}
+
+td,
+th {
+  @apply border-b border-dark-200;
+}
+
+.overflow-x-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: -ms-autohiding-scrollbar;
+}
+
+.overflow-x-scroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+  -webkit-appearance: none;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.per::after {
+  content: "%";
+  font-family: monospace;
+  @apply text-sm;
+}
+
+input {
+  @apply bg-transparent placeholder-white/50 outline-none!;
+}

@@ -1,0 +1,28 @@
+{
+  "name": "@hashfund/chart",
+  "version": "27.006",
+  "private": true,
+  "module": "charting_library/charting_library.esm.js",
+  "main": "charting_library/charting_library.cjs.js",
+  "exports": {
+    ".": {
+      "types": "./charting_library.d.ts",
+      "import": "./charting_library/charting_library.esm.js",
+      "require": "./charting_library/charting_library.cjs.js"
+    },
+    "./datafeeds/udf": {
+      "types": "./datafeeds/udf/types.d.ts",
+      "default": "./datafeeds/udf/lib/udf-compatible-datafeed.js"
+    }
+  },
+  "types": "charting_library.d.ts",
+  "files": [
+    "charting_library/",
+    "datafeeds/",
+    "/*.d.ts"
+  ],
+  "homepage": "https://www.tradingview.com/charting-library-docs",
+  "bugs": {
+    "url": "https://github.com/tradingview/charting_library/issues"
+  }
+}

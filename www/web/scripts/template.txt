@@ -1,0 +1,9 @@
+import %name%Asset from "%path%";
+
+export function %name%(props: Omit<React.ComponentProps<typeof Image>, "src">) {
+  return (
+    <Image 
+      {...props} 
+      src={%name%Asset} />
+  );
+}

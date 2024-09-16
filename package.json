@@ -1,0 +1,13 @@
+{
+  "name": "hashfund",
+  "packageManager": "yarn@1.22.22",
+  "dependencies": {
+    "turbo": "^2.1.2"
+  },
+  "workspaces": [
+    "www/**",
+    "servers/**",
+    "programs/**/js",
+    "packages/**"
+  ]
+}

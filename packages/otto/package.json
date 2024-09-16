@@ -1,0 +1,47 @@
+{
+  "name": "@hashfund/program",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "description": "program instructions and utils for hashfund program",
+  "repository": {
+    "type": "git",
+    "directory": "js",
+    "url": "https://github.com/Hashfund/hashfund"
+  },
+  "author": {
+    "name": "Oguntunde Caleb Fiyinfoluwa",
+    "email": "payouk@gmail.com",
+    "url": "https://create.usegong.com"
+  },
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "amman:start": "bun amman start",
+    "amman:airdrop": "bun amman airdrop",
+    "gen:keypair": "bun run scripts/generate-random-keypair.ts"
+  },
+  "devDependencies": {
+    "@types/bn.js": "^5.1.5",
+    "@types/bun": "latest",
+    "@types/node": "^20.14.9",
+    "commander": "^12.1.0",
+    "fs": "^0.0.1-security"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@metaplex-foundation/mpl-token-metadata": "^3.2.1",
+    "@project-serum/borsh": "^0.2.5",
+    "@project-serum/serum": "^0.13.65",
+    "@raydium-io/raydium-sdk-v2": "^0.1.35-alpha",
+    "@solana/spl-token": "^0.4.6",
+    "@solana/web3.js": "^1.92.3",
+    "@solocker/safe-bn": "^0.0.5",
+    "bn.js": "^5.2.1",
+    "bs58": "^5.0.0"
+  }
+}

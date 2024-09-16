@@ -1,0 +1,21 @@
+{
+  "name": "watchdog",
+  "version": "0.0.0",
+  "type": "module",
+  "module": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "bun src/index.ts",
+    "serve": "node dist/index.js"
+  },
+  "dependencies": {
+    "@hashfund/api": "*",
+    "@hashfund/program": "*",
+    "dotenv": "^16.4.5"
+  },
+  "ts-node": {
+    "require": [
+      "tsconfig-paths/register"
+    ]
+  }
+}
