@@ -3,7 +3,7 @@
 FROM node:22-alpine3.19 as base 
 
 RUN apk update && \
-    apk add build-base && \
+    apk add linux-dev-lts build-base && \
     apk add make gcc g++ python3
 
 RUN yarn global add turbo
