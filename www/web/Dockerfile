@@ -3,7 +3,7 @@
 FROM node:22-alpine3.19 as base 
 
 RUN apk update && \
-    apk add libc6-compat build-essential libudev-dev && \
+    apk add libc6-compat alpine-sdk && \
     apk add make gcc g++ python3
 
 RUN yarn global add turbo
