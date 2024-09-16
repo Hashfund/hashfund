@@ -1,5 +1,6 @@
 {
   "name": "@hashfund/api",
+  "private":"true",
   "module": "dist/index.js",
   "exports": {
     ".": {

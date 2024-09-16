@@ -1,5 +1,6 @@
 {
   "name": "hashfund",
+  "private":"true",
   "packageManager": "yarn@1.22.22",
   "dependencies": {
     "turbo": "^2.1.2"

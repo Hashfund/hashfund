@@ -1,8 +1,9 @@
 {
   "name": "@hashfund/program",
+  "private":"true",
   "version": "0.0.0",
-  "main": "dist/index.js",
   "type": "module",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "description": "program instructions and utils for hashfund program",
   "repository": {
