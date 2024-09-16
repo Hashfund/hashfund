@@ -6,13 +6,11 @@ services:
     autoDeploy: true
     dockerfilePath: servers/api/Dockerfile
     buildFilter:
-      ignoredPaths:
-        - www/web/*.{json,ts}
-        - www/web/**/*.{json,ts}
-        - servers/api/*.{json,ts}
-        - servers/api/**/*.{json,ts}
-        - packages/program/*.{json,ts}
-        - packages/program/**/*.{json,ts}         
+      paths:
+        - servers/api/*.ts
+        - servers/api/**/*.json
+        - packages/program/*.json
+        - packages/program/**/*.ts
     envVars:
       - fromGroup: api
       - key: DATABASE_URL
@@ -29,12 +27,12 @@ services:
     dockerfilePath: servers/watchdog/Dockerfile
     buildFilter:
       paths:
-        - servers/api/*.{json,ts}
-        - servers/api/**/*.{json,ts}
-        - servers/watchdog/*.{json,ts}
-        - servers/watchdog/**/*.{json,ts}   
-        - packages/program/*.{json,ts}
-        - packages/program/**/*.{json,ts}  
+        - servers/api/*.ts
+        - servers/api/**/*.json
+        - servers/watchdog/*.json
+        - servers/watchdog/**/*.ts
+        - packages/program/*.json
+        - packages/program/**/*.ts
     envVars:
       - fromGroup: api
       - key: DATABASE_URL
@@ -49,8 +47,10 @@ services:
     dockerfilePath: www/web/Dockerfile
     buildFilter:
       paths:
-        - packages/program/*.{json,ts}
-        - packages/program/**/*.{json,ts} 
+        - www/web/*.json
+        - www/web/**/*.ts
+        - packages/program/*.json
+        - packages/program/**/*.ts
     envVars:
       - fromGroup: api
       - key: NEXT_PUBLIC_BASE_API_URL
