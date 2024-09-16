@@ -50,7 +50,7 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",
-    "typescript": "^5",
+    "typescript": "latest",
     "unocss": "^0.60.4"
   }
 }

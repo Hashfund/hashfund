@@ -20,10 +20,10 @@
   "devDependencies": {
     "@types/bun": "latest",
     "drizzle-kit": "^0.22.7",
-    "typescript": "^5.5.2"
+    "typescript": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "latest"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",

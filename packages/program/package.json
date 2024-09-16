@@ -32,7 +32,7 @@
     "fs": "^0.0.1-security"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "latest"
   },
   "dependencies": {
     "@metaplex-foundation/mpl-token-metadata": "^3.2.1",
