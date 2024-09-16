@@ -1,18 +1,22 @@
 import { z } from "zod";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-import { zIsAddress } from "db/zod";
-import { safeRequest } from "utils/metadata";
-import { DateRangeQuery, dateRangeSchema } from "utils/date";
+import { zIsAddress } from "../../db/zod";
+import { safeRequest } from "../../utils/metadata";
+import { DateRangeQuery, dateRangeSchema } from "../../utils/date";
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
   limitOffsetPaginationSchema,
-} from "utils/pagination";
+} from "../../utils/pagination";
 
-import { mintQuery, orderLeaderboardBy, orderMintsBy, withSearch } from "./mint.query";
 import {
-  getAllMint,
+  mintQuery,
+  orderLeaderboardBy,
+  orderMintsBy,
+  withSearch,
+} from "./mint.query";
+import {
   getMint,
   getMintGraph,
   getMintLeaderboard,

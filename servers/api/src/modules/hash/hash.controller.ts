@@ -2,8 +2,8 @@ import { z } from "zod";
 import { eq, SQL } from "drizzle-orm";
 
 import { db } from "../../db";
-import { hashes } from "../../db/schema/hash";
 import { mints } from "../../db/schema";
+import { hashes } from "../../db/schema/hash";
 import type { insertHashSchema } from "../../db/zod";
 
 export const createHash = function (values: z.infer<typeof insertHashSchema>) {

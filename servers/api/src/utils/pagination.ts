@@ -1,5 +1,5 @@
+import { z } from "zod";
 import { FastifyRequest } from "fastify";
-import { ostring, z } from "zod";
 
 export type LimitOffsetPaginationQuery = {
   offset: number;

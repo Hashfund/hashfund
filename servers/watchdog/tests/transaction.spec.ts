@@ -1,8 +1,8 @@
 import { Connection } from "@solana/web3.js";
 import { parseLogs } from "@hashfund/program";
-import { HTTP_RPC_ENDPOINT } from "../src/config";
 
-import {onLogs} from "../src/worker"
+import { onLogs } from "../src/";
+import { HTTP_RPC_ENDPOINT } from "../src/config";
 
 async function main() {
   const connection = new Connection(HTTP_RPC_ENDPOINT);

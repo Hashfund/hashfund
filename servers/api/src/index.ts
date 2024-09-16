@@ -3,10 +3,10 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import multipart  from "@fastify/multipart";
 
-import { mintRoutes } from "modules/mint/mint.route";
-import { swapRoutes } from "modules/swap/swap.route";
-import { userRoutes } from "modules/user/user.route";
-import { assetRoutes } from "modules/asset/asset.route";
+import { mintRoutes } from "./modules/mint/mint.route";
+import { swapRoutes } from "./modules/swap/swap.route";
+import { userRoutes } from "./modules/user/user.route";
+import { assetRoutes } from "./modules/asset/asset.route";
 
 const main = async () => {
   const app = Fastify({

@@ -1,7 +1,7 @@
-import { and, desc, eq, like, or, SQL, sql } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
 
-import { boundingCurves, mints } from "db/schema";
-import { mapFilters, queryBuilder } from "utils/query";
+import { boundingCurves, mints } from "../../db/schema";
+import { mapFilters, queryBuilder } from "../../utils/query";
 
 import { getAllMint, getMintLeaderboard } from "./mint.controller";
 

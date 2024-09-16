@@ -1,6 +1,16 @@
 import { z } from "zod";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
+import { insertUserSchema, zIsAddress } from "../../db/zod";
+import {
+  buildURLFromRequest,
+  LimitOffsetPagination,
+  LimitOffsetPaginationQuery,
+  limitOffsetPaginationSchema,
+} from "../../utils/pagination";
+import { safeRequest } from "../../utils/metadata";
+import { imagekit } from "../../modules/asset/asset.route";
+
 import { userQuery } from "./user.query";
 import {
   getAllUsers,
@@ -9,15 +19,6 @@ import {
   getUserTokens,
   updateUser,
 } from "./user.controller";
-import { insertUserSchema, zIsAddress } from "db/zod";
-import {
-  buildURLFromRequest,
-  LimitOffsetPagination,
-  LimitOffsetPaginationQuery,
-  limitOffsetPaginationSchema,
-} from "utils/pagination";
-import { safeRequest } from "utils/metadata";
-import { imagekit } from "modules/asset/asset.route";
 
 const idParamSchema = z.object({
   id: zIsAddress,

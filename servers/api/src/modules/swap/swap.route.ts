@@ -1,13 +1,14 @@
 import { z } from "zod";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-import { zIsAddress } from "db/zod";
-import { dateRangeSchema } from "utils/date";
+import { zIsAddress } from "../../db/zod";
+import { dateRangeSchema } from "../../utils/date";
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
   limitOffsetPaginationSchema,
-} from "utils/pagination";
+} from "../../utils/pagination";
+
 import {
   getAllSwapByMint,
   getAllSwaps,

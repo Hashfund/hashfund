@@ -1,11 +1,14 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
-import { getHashes } from "./hash.controller";
+
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
   LimitOffsetPaginationQuery,
   limitOffsetPaginationSchema,
-} from "utils/pagination";
+} from "../../utils/pagination";
+
+import { getHashes } from "./hash.controller";
+
 
 function getHashesRoute(
   req: FastifyRequest<{ Querystring: LimitOffsetPaginationQuery }>

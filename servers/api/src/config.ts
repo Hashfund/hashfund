@@ -1,5 +1,5 @@
-import { BN } from "bn.js";
 import "dotenv/config";
+import { BN } from "bn.js";
 
 export const DB_URL = process.env.DATABASE_URL!;
 export const IMAGEKIT_PUBLIC_KEY = process.env.IMAGEKIT_PUBLIC_KEY!;
