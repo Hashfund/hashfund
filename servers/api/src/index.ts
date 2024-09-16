@@ -39,5 +39,3 @@ const main = async () => {
 };
 
 main().catch(console.log);
-
-export * from "./modules";

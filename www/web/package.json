@@ -23,7 +23,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.35",
     "@solana/wallet-adapter-wallets": "^0.19.32",
     "@solana/web3.js": "^1.93.0",
-    "@solocker/safe-bn": "^0.0.5",
+    "@hashfund/bn": "*",
     "@unocss/reset": "^0.60.4",
     "autoprefixer": "^10.4.19",
     "axios": "^1.7.2",

@@ -38,4 +38,4 @@ COPY --from=installer --chown=nodejs:nodejs /usr/src/app/ .
 
 WORKDIR /usr/src/app/servers/watchdog
 
-CMD npx tsx src/index.ts
+CMD node dist/index.js

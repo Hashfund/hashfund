@@ -1,6 +1,6 @@
 import BN from "bn.js";
-import Borsh from "@project-serum/borsh";
-import { safeBN, unsafeBN, unsafeBnToNumber } from "@solocker/safe-bn";
+import * as Borsh from "@project-serum/borsh";
+import { safeBN, unsafeBN, unsafeBnToNumber } from "@hashfund/bn";
 
 export enum SchemaVariant {
   CREATE = 0,

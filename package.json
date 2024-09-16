@@ -2,7 +2,12 @@
   "name": "hashfund",
   "private": "true",
   "packageManager": "yarn@1.22.22",
+  "scripts": {
+    "clean": "rimraf -rf node_modules .turbo dist out */*/.turbo */packages/dist */*/.next */*/node_modules"
+  },
   "devDependencies": {
+    "@tsconfig/recommended": "^1.0.7",
+    "rimraf": "^6.0.1",
     "typescript": "latest"
   },
   "dependencies": {

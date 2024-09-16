@@ -2,22 +2,16 @@
   "name": "watchdog",
   "private": "true",
   "version": "0.0.0",
-  "type": "module",
   "module": "src/index.ts",
-  "main": "dist/index.cjs",
+  "main": "dist/index.js",
   "scripts": {
-    "build": "tsup src/index.ts --format cjs --minify --treeshake",
+    "build": "tsc",
     "dev": "bun src/index.ts",
-    "serve": "node dist/index.cjs"
+    "serve": "node dist/index.js"
   },
   "dependencies": {
     "@hashfund/api": "*",
     "@hashfund/program": "*",
     "dotenv": "^16.4.5"
-  },
-  "ts-node": {
-    "require": [
-      "tsconfig-paths/register"
-    ]
   }
 }

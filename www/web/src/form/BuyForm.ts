@@ -1,5 +1,5 @@
 import { BN } from "bn.js";
-import { safeBN, unsafeBN } from "@solocker/safe-bn";
+import { safeBN, unsafeBN } from "@hashfund/bn";
 
 import { Connection, PublicKey } from "@solana/web3.js";
 import { WalletContextState } from "@solana/wallet-adapter-react";

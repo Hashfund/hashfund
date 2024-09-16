@@ -11,7 +11,7 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { safeBN, unsafeBN } from "@solocker/safe-bn";
+import { safeBN, unsafeBN } from "@hashfund/bn";
 
 import { loadWallet } from "./utils";
 import {

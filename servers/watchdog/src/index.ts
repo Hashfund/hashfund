@@ -1,8 +1,8 @@
-import "dotenv/config";
 import { Connection, type Logs } from "@solana/web3.js";
 import { HASHFUND_PROGRAM_ID, SafeMath, parseLogs } from "@hashfund/program";
 
 import hashfund from "@hashfund/api";
+import { HTTP_RPC_ENDPOINT, WSS_RPC_ENDPOINT } from "./config";
 
 const {
   createMint,
@@ -13,8 +13,7 @@ const {
   createHash,
 } = hashfund;
 
-export const HTTP_RPC_ENDPOINT = process.env.HTTP_RPC_ENDPOINT!;
-export const WSS_RPC_ENDPOINT = process.env.WSS_RPC_ENDPOINT!;
+
 
 export const onLogs = async ({ logs, signature }: Logs) => {
   const events = parseLogs(logs);

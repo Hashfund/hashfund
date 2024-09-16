@@ -1,6 +1,6 @@
 import { Price } from "@pythnetwork/price-service-client";
 import { normalizeBN } from "./decimal";
-import { safeBN } from "@solocker/safe-bn";
+import { safeBN } from "@hashfund/bn";
 
 export const calculateBNPercentile = (a: string, b: string) => {
   const value = normalizeBN(a) - normalizeBN(b);

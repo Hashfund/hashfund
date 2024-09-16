@@ -1,5 +1,5 @@
 import type BN from "bn.js";
-import Borsh from "@project-serum/borsh";
+import * as Borsh from "@project-serum/borsh";
 import type { PublicKey } from "@solana/web3.js";
 
 import { SafeMath, Schema } from "./schema";

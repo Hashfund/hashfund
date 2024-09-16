@@ -1,7 +1,7 @@
 import BN from "bn.js";
 
 import { Connection } from "@solana/web3.js";
-import { safeBN, unsafeBN } from "@solocker/safe-bn";
+import { safeBN, unsafeBN } from "@hashfund/bn";
 import { WalletContextState } from "@solana/wallet-adapter-react";
 
 import { mixed, object, string, InferType, number } from "yup";

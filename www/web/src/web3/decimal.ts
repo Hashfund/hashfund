@@ -1,4 +1,4 @@
-import { safeBN, unsafeBnToNumber } from "@solocker/safe-bn";
+import { safeBN, unsafeBnToNumber } from "@hashfund/bn";
 import BN from "bn.js";
 
 export const normalizeBNString = function (
