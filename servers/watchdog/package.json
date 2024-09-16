@@ -3,11 +3,12 @@
   "private": "true",
   "version": "0.0.0",
   "type": "module",
-  "module": "dist/index.js",
+  "module": "src/index.ts",
+  "main": "dist/index.cjs",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsup src/index.ts --format cjs --minify --treeshake",
     "dev": "bun src/index.ts",
-    "serve": "node dist/index.js"
+    "serve": "node dist/index.cjs"
   },
   "dependencies": {
     "@hashfund/api": "*",

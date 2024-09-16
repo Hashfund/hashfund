@@ -1,4 +1,13 @@
-export { createHash } from "./hash/hash.controller";
-export { getOrCreateUser } from "./user/user.controller";
-export { createMint, updateMint } from "./mint/mint.controller";
-export { createBoundingCurve, createSwap } from "./swap/swap.controller";
+import { createHash } from "./hash/hash.controller";
+import { getOrCreateUser } from "./user/user.controller";
+import { createMint, updateMint } from "./mint/mint.controller";
+import { createBoundingCurve, createSwap } from "./swap/swap.controller";
+
+export default {
+  createHash,
+  getOrCreateUser,
+  createMint,
+  updateMint,
+  createBoundingCurve,
+  createSwap,
+};

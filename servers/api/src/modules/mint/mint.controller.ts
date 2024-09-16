@@ -15,7 +15,7 @@ import {
   sum,
 } from "drizzle-orm";
 
-import { buildRange, TimeUnit } from "../../utils/date";
+import { buildRange, type TimeUnit } from "../../utils/date";
 
 import { hashes } from "../../db/schema/hash";
 import { insertMintSchema, updateMintSchema } from "../../db/zod";

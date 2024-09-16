@@ -2,9 +2,7 @@
   "compilerOptions": {
     "target": "ES2017",
     "outDir": "dist",
-    "baseUrl": "./src",
-    "module": "ES2022",
-    "moduleResolution": "Bundler"
+    "baseUrl": "./src"
   },
   "include": ["src/"],
   "extends": "@tsconfig/recommended/tsconfig.json"

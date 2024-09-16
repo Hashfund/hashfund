@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Moment } from "moment";
+import type { Moment } from "moment";
 
 export type DateRangeQuery = {
   to?: string;

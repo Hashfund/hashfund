@@ -1,7 +1,7 @@
 import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import multipart  from "@fastify/multipart";
+import multipart from "@fastify/multipart";
 
 import { mintRoutes } from "./modules/mint/mint.route";
 import { swapRoutes } from "./modules/swap/swap.route";
@@ -19,7 +19,7 @@ const main = async () => {
   });
 
   await app.register(multipart, {
-    attachFieldsToBody: 'keyValues'
+    attachFieldsToBody: "keyValues",
   });
 
   userRoutes(app);
@@ -39,3 +39,5 @@ const main = async () => {
 };
 
 main().catch(console.log);
+
+export * from "./modules";

@@ -1,16 +1,20 @@
-import { Connection, Logs } from "@solana/web3.js";
+import "dotenv/config";
+import { Connection, type Logs } from "@solana/web3.js";
 import { HASHFUND_PROGRAM_ID, SafeMath, parseLogs } from "@hashfund/program";
 
-import {
+import hashfund from "@hashfund/api";
+
+const {
   createMint,
   updateMint,
   getOrCreateUser,
   createBoundingCurve,
   createSwap,
   createHash,
-} from "@hashfund/api";
+} = hashfund;
 
-import { HTTP_RPC_ENDPOINT, WSS_RPC_ENDPOINT } from "./config";
+export const HTTP_RPC_ENDPOINT = process.env.HTTP_RPC_ENDPOINT!;
+export const WSS_RPC_ENDPOINT = process.env.WSS_RPC_ENDPOINT!;
 
 export const onLogs = async ({ logs, signature }: Logs) => {
   const events = parseLogs(logs);
@@ -122,7 +126,8 @@ async function run() {
 }
 
 run()
-  .catch(() => {
+  .catch((error) => {
+    console.error(error);
     process.exit(1);
   })
   .then(() => console.log("Running worker in background..."));

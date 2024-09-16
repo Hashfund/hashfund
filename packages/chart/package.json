@@ -1,6 +1,6 @@
 {
   "name": "@hashfund/chart",
-  "version": "27.006",
+  "version": "0.0.0",
   "private": true,
   "module": "charting_library/charting_library.esm.js",
   "main": "charting_library/charting_library.cjs.js",

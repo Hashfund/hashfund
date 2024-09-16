@@ -1,17 +1,21 @@
 {
   "name": "@hashfund/api",
   "version": "0.0.0",
-  "private":"true",
-  "module": "dist/index.js",
+  "private": "true",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "types": "src/modules/index.ts",
+  "module": "./src/modules/index.ts",
   "exports": {
     ".": {
-      "default": "./dist/modules/index.js",
-      "types": "./src/modules/index.ts"
+      "types": "./src/modules/index.ts",
+      "require": "./dist/index.cjs",
+      "default": "./src/modules/index.ts"
     }
   },
   "scripts": {
     "dev": "bun src/index.ts",
-    "build": "tsc -p tsconfig.json",
+    "build": "tsup src/index.ts --format cjs --minify --treeshake",
     "start": "node -r tsconfig-paths/register -r ts-node/register  dist/index.js",
     "migrate": "drizzle-kit generate && drizzle-kit migrate"
   },
