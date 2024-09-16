@@ -1,5 +1,5 @@
 import { HASHFUND_PROGRAM_ID } from "@hashfund/program";
-import { findBoundingCurveReservePda } from "@hashfund/program/dist/utils";
+import { findBoundingCurveReservePda } from "@hashfund/program";
 
 import { PublicKey } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";

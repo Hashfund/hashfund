@@ -5,4 +5,5 @@ export { SafeMath } from "./schema";
 export {
   getOrCreateAssociatedTokenAccountInstructions,
   parseLogs,
+  findBoundingCurveReservePda
 } from "./utils";

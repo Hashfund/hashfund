@@ -1,6 +1,6 @@
 {
   "name": "@hashfund/wallets",
-  "version": "0.19.32",
+  "version": "0.0.0",
   "author": "Solana Maintainers <maintainers@solana.foundation>",
   "repository": "https://github.com/anza-xyz/wallet-adapter",
   "license": "Apache-2.0",

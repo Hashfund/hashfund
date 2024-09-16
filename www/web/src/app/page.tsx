@@ -1,6 +1,6 @@
+import { RouteProps } from "@/types";
 import { useMints } from "@/composables/api/useMints";
 import { Annoucement, RecentMint, RecentFreed, Token } from "@/components/home";
-import { RouteProps } from "@/types";
 
 export default async function HomePage({ searchParams }: RouteProps) {
   const tokenSortBy = searchParams.token_sort_by ?? "market_cap";

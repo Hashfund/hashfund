@@ -1,7 +1,9 @@
 import { PublicKey } from "@solana/web3.js";
 
-import { HASHFUND_PROGRAM_ID } from "@hashfund/program";
-import { findBoundingCurveReservePda } from "@hashfund/program/dist/utils";
+import {
+  findBoundingCurveReservePda,
+  HASHFUND_PROGRAM_ID,
+} from "@hashfund/program";
 
 import { connection } from "@/web3";
 import { RouteProps } from "@/types";
