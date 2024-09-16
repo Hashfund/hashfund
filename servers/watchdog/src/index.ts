@@ -10,7 +10,7 @@ import {
   createHash,
 } from "@hashfund/api";
 
-import { HTTP_RPC_ENDPOINT, WSS_RPC_ENDPOINT } from "config";
+import { HTTP_RPC_ENDPOINT, WSS_RPC_ENDPOINT } from "./config";
 
 export const onLogs = async ({ logs, signature }: Logs) => {
   const events = parseLogs(logs);
