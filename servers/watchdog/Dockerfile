@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.2
 
-FROM node:18-alpine as base 
+FROM node:22-alpine3.19 as base 
 
 RUN apk upgrade && \
     apk add libgcc libstdc++ && \ 
