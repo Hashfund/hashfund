@@ -52,7 +52,7 @@ services:
         - packages/program/*.json
         - packages/program/**/*.ts
     envVars:
-      - fromGroup: api
+      - fromGroup: web
       - key: NEXT_PUBLIC_BASE_API_URL
         fromService:
           type: web
