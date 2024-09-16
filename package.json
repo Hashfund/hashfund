@@ -3,7 +3,7 @@
   "private": "true",
   "packageManager": "yarn@1.22.22",
   "scripts": {
-    "clean": "rimraf -rf node_modules .turbo dist out */*/.turbo */packages/dist */*/.next */*/node_modules"
+    "clean": "rimraf -rf node_modules .turbo dist out */*/.turbo */packages/dist */*/.next */*/node_modules */bun.lockb */*/bun.lockb"
   },
   "devDependencies": {
     "@tsconfig/recommended": "^1.0.7",

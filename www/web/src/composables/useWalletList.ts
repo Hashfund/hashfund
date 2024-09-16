@@ -29,10 +29,9 @@ import {
   TokenaryWalletAdapter,
   TokenPocketWalletAdapter,
   TorusWalletAdapter,
-  TrezorWalletAdapter,
   TrustWalletAdapter,
   XDEFIWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
+} from "@hashfund/wallets";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 
 import {
@@ -77,15 +76,14 @@ export const useWalletList = () => {
       new TokenaryWalletAdapter(),
       new TokenPocketWalletAdapter(),
       new TorusWalletAdapter(),
-      new TrezorWalletAdapter(),
       new TrustWalletAdapter(),
       new XDEFIWalletAdapter(),
       new SolanaMobileWalletAdapter({
         addressSelector: createDefaultAddressSelector(),
         appIdentity: {
-          name: "My app",
-          uri: "https://myapp.io",
-          icon: "relative/path/to/icon.png",
+          name: "Hashfund",
+          uri: "https://hashfund.fun",
+          icon: "https://hashfund.fun/favicon.ico",
         },
         authorizationResultCache: createDefaultAuthorizationResultCache(),
         cluster: WalletAdapterNetwork.Devnet,

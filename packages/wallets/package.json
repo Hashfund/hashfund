@@ -1,0 +1,68 @@
+{
+  "name": "@hashfund/wallets",
+  "version": "0.19.32",
+  "author": "Solana Maintainers <maintainers@solana.foundation>",
+  "repository": "https://github.com/anza-xyz/wallet-adapter",
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "lib",
+    "src",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    "types": "./src/index.ts",
+    "require": "./dist/index.js",
+    "default": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "dependencies": {
+    "@solana/wallet-adapter-alpha": "*",
+    "@solana/wallet-adapter-avana": "*",
+    "@solana/wallet-adapter-bitkeep": "*",
+    "@solana/wallet-adapter-bitpie": "*",
+    "@solana/wallet-adapter-clover": "*",
+    "@solana/wallet-adapter-coin98": "*",
+    "@solana/wallet-adapter-coinbase": "*",
+    "@solana/wallet-adapter-coinhub": "*",
+    "@solana/wallet-adapter-fractal": "*",
+    "@solana/wallet-adapter-huobi": "*",
+    "@solana/wallet-adapter-hyperpay": "*",
+    "@solana/wallet-adapter-keystone": "*",
+    "@solana/wallet-adapter-krystal": "*",
+    "@solana/wallet-adapter-ledger": "*",
+    "@solana/wallet-adapter-mathwallet": "*",
+    "@solana/wallet-adapter-neko": "*",
+    "@solana/wallet-adapter-nightly": "*",
+    "@solana/wallet-adapter-nufi": "*",
+    "@solana/wallet-adapter-onto": "*",
+    "@solana/wallet-adapter-particle": "*",
+    "@solana/wallet-adapter-phantom": "*",
+    "@solana/wallet-adapter-safepal": "*",
+    "@solana/wallet-adapter-saifu": "*",
+    "@solana/wallet-adapter-salmon": "*",
+    "@solana/wallet-adapter-sky": "*",
+    "@solana/wallet-adapter-solflare": "*",
+    "@solana/wallet-adapter-solong": "*",
+    "@solana/wallet-adapter-spot": "*",
+    "@solana/wallet-adapter-tokenary": "*",
+    "@solana/wallet-adapter-tokenpocket": "*",
+    "@solana/wallet-adapter-torus": "*",
+    "@solana/wallet-adapter-trust": "*",
+    "@solana/wallet-adapter-unsafe-burner": "*",
+    "@solana/wallet-adapter-walletconnect": "*",
+    "@solana/wallet-adapter-xdefi": "*"
+  }
+}
