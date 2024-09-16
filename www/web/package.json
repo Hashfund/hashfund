@@ -52,5 +52,8 @@
     "postcss": "^8",
     "typescript": "latest",
     "unocss": "^0.60.4"
-  }
+  },
+  "buildDependenciesFromSource": true,
+  "nodeGypRebuild": false,
+  "npmRebuild": false
 }

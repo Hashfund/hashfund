@@ -9,6 +9,7 @@ services:
       paths:
         - servers/api/*.ts
         - servers/api/**/*.json
+        - servers/api/Dockerfile
         - packages/program/*.json
         - packages/program/**/*.ts
     envVars:
@@ -29,6 +30,7 @@ services:
       paths:
         - servers/api/*.ts
         - servers/api/**/*.json
+        - servers/api/Dockerfile
         - servers/watchdog/*.json
         - servers/watchdog/**/*.ts
         - packages/program/*.json
@@ -49,6 +51,7 @@ services:
       paths:
         - www/web/*.json
         - www/web/**/*.ts
+        - www/web/Dockerfile
         - packages/program/*.json
         - packages/program/**/*.ts
     envVars:

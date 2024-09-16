@@ -40,4 +40,4 @@ WORKDIR /usr/src/app/servers/api
 
 RUN npx --yes @fastify/secure-session > secret-key
 
-CMD yarn migrate && node dist/index.cjs
+CMD yarn migrate && node dist/index.js
