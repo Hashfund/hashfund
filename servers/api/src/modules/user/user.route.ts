@@ -19,7 +19,7 @@ import {
   getUserTokens,
   updateUser,
 } from "./user.controller";
-import { catchRuntimeError } from "utils/error";
+import { catchRuntimeError } from "../../utils/error";
 
 const idParamSchema = z.object({
   id: zIsAddress,
