@@ -1,8 +1,10 @@
 import { z } from "zod";
+import moment from "moment";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
 import { zIsAddress } from "../../db/zod";
 import { safeRequest } from "../../utils/metadata";
+import { catchRuntimeError } from "../../utils/error";
 import { DateRangeQuery, dateRangeSchema } from "../../utils/date";
 import {
   buildURLFromRequest,
@@ -16,12 +18,7 @@ import {
   orderMintsBy,
   withSearch,
 } from "./mint.query";
-import {
-  getMint,
-  getMintGraph,
-  getMintLeaderboard,
-} from "./mint.controller";
-import moment from "moment";
+import { getMint, getMintGraph, getMintLeaderboard } from "./mint.controller";
 
 type GetAllMintQuery = z.infer<typeof limitOffsetPaginationSchema> &
   DateRangeQuery &
@@ -149,21 +146,21 @@ export const mintRoutes = (fastify: FastifyInstance) => {
     .route({
       method: "GET",
       url: "/mints/",
-      handler: getAllMintRoute,
+      handler: catchRuntimeError(getAllMintRoute),
     })
     .route({
       method: "GET",
       url: "/mints/:id/",
-      handler: getMintRoute,
+      handler: catchRuntimeError(getMintRoute),
     })
     .route({
       method: "GET",
       url: "/mints/:id/leaderboard/",
-      handler: getMintLeaderboardRoute,
+      handler: catchRuntimeError(getMintLeaderboardRoute),
     })
     .route({
       method: "GET",
       url: "/mints/:id/graph",
-      handler: getMintGraphRoute,
+      handler: catchRuntimeError(getMintGraphRoute),
     });
 };

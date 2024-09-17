@@ -19,6 +19,7 @@ import {
   getUserTokens,
   updateUser,
 } from "./user.controller";
+import { catchRuntimeError } from "utils/error";
 
 const idParamSchema = z.object({
   id: zIsAddress,
@@ -136,26 +137,26 @@ export const userRoutes = (fastify: FastifyInstance) => {
     .route({
       method: "GET",
       url: "/users/",
-      handler: getAllUsersRoute,
+      handler: catchRuntimeError(getAllUsersRoute),
     })
     .route({
       method: "GET",
       url: "/users/:id/",
-      handler: getOrCreateUserRoute,
+      handler: catchRuntimeError(getOrCreateUserRoute),
     })
     .route({
       method: "POST",
       url: "/users/:id/",
-      handler: updateUserRoute,
+      handler: catchRuntimeError(updateUserRoute),
     })
     .route({
       method: "GET",
       url: "/users/leaderboard",
-      handler: getUsersLeaderboardRoute,
+      handler: catchRuntimeError(getUsersLeaderboardRoute),
     })
     .route({
       method: "GET",
       url: "/users/:id/tokens",
-      handler: getUserTokensRoute,
+      handler: catchRuntimeError(getUserTokensRoute),
     });
 };

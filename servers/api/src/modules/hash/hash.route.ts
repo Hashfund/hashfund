@@ -1,5 +1,6 @@
 import { FastifyInstance, FastifyRequest } from "fastify";
 
+import { catchRuntimeError } from "../../utils/error";
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
@@ -8,7 +9,6 @@ import {
 } from "../../utils/pagination";
 
 import { getHashes } from "./hash.controller";
-
 
 function getHashesRoute(
   req: FastifyRequest<{ Querystring: LimitOffsetPaginationQuery }>
@@ -27,6 +27,6 @@ export const hashesRoutes = function (fastify: FastifyInstance) {
   fastify.route({
     method: "GET",
     url: "/hashes/",
-    handler: getHashesRoute,
+    handler: catchRuntimeError(getHashesRoute),
   });
 };

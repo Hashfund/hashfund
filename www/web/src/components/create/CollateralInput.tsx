@@ -92,7 +92,7 @@ export default function CollateralInput({
         boundingCurveSOL={ConstantCurve.calculateTokenOut(
           initialPrice,
           boundingCurve,
-          6,
+          0,
           TradeDirection.AToB
         )}
       />

@@ -83,7 +83,8 @@ export default function CreateFormMarketCap({
                   <p className="text-xs opacity-75">
                     The Token will be launched on hashfund at&nbsp;
                     <pre className="inline text-amber">
-                      {formatPrice(solPrice * liquidityCurve.virtualMarketCap)}
+                      {/* {formatPrice(solPrice * liquidityCurve.virtualMarketCap)} */}
+                      $4,000.00
                     </pre>
                     &nbsp; marketcap, and it'll require&nbsp;
                     <pre className="inline text-amber">

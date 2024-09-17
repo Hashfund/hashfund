@@ -1,8 +1,9 @@
 import { z } from "zod";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import { zIsAddress } from "../../db/zod";
 import { dateRangeSchema } from "../../utils/date";
+import { catchRuntimeError } from "../../utils/error";
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
@@ -53,8 +54,7 @@ const getAllSwapByMintRoute = async function (
   req: FastifyRequest<{
     Params: z.infer<typeof getAllSwapByMintParamsSchema>;
     Querystring: z.infer<typeof getAllSwapsByMintQuerySchema>;
-  }>,
-  reply: FastifyReply
+  }>
 ) {
   return getAllSwapByMintParamsSchema
     .parseAsync(req.params)
@@ -77,8 +77,7 @@ const getAllSwapByMintRoute = async function (
             )
           );
         });
-    })
-    .catch((error) => reply.status(404).send(error));
+    });
 };
 
 const getUserSwapByMintParamsSchema = getAllSwapByMintParamsSchema.extend({
@@ -100,16 +99,16 @@ export const swapRoutes = (fastify: FastifyInstance) => {
     .route({
       method: "GET",
       url: "/swaps/",
-      handler: getAllSwapsRoute,
+      handler: catchRuntimeError(getAllSwapsRoute),
     })
     .route({
       method: "GET",
       url: "/swaps/:mint/",
-      handler: getAllSwapByMintRoute,
+      handler: catchRuntimeError(getAllSwapByMintRoute),
     })
     .route({
       method: "GET",
       url: "/swaps/:mint/:user/",
-      handler: getUserSwapByMintRoute,
+      handler: catchRuntimeError(getUserSwapByMintRoute),
     });
 };
