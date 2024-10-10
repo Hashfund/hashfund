@@ -13,7 +13,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
-    "compile": "anchor build -- --features='devnet' && cp -r target/idl target/types src/target",
+    "compile": "anchor build -- --features='devnet' && cp -r target/idl target/types src",
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
   },
