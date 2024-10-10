@@ -8,3 +8,5 @@ test-ledger
 .yarn
 dist 
 .amman
+.env
+.env.*
