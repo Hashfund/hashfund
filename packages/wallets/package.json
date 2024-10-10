@@ -28,6 +28,9 @@
   "scripts": {
     "build": "tsc"
   },
+  "peerDependencies": {
+    "typescript": "latest"
+  },
   "dependencies": {
     "@solana/wallet-adapter-alpha": "*",
     "@solana/wallet-adapter-avana": "*",

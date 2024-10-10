@@ -1,6 +1,7 @@
 import BN from "bn.js";
-import { ConstantCurveCalculator, TradeDirection } from "../src";
 import { expect } from "chai";
+
+import { ConstantCurveCalculator, TradeDirection } from "../src";
 
 describe("Test constant curve js impl", () => {
   it("Should swap token out 1:1", () => {

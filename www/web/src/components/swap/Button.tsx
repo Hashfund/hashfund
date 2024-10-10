@@ -1,7 +1,7 @@
 "use client";
-import type { MintWithExtra } from "@hashfund/sdk/models";
-import { PublicKey } from "@solana/web3.js";
+import { web3 } from "@coral-xyz/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
+import type { MintWithExtra } from "@hashfund/sdk/models";
 
 import { useState, useMemo } from "react";
 import { Popover, PopoverButton } from "@headlessui/react";
@@ -35,7 +35,7 @@ export function SwapButton({ mint }: SwapButtonProps) {
       symbol: mint.symbol,
       decimals: mint.decimals,
       image: mint.metadata.image,
-      mint: new PublicKey(mint.id),
+      mint: new web3.PublicKey(mint.id),
       balance: mintBalance?.uiAmount ?? 0,
       initialPrice: mint.boundingCurve.initialPrice,
     }),

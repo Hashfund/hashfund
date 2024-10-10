@@ -1,5 +1,6 @@
 import { expect } from "chai";
 
+import { safeBN, unsafeBN } from "@hashfund/bn";
 import { Program, web3 } from "@coral-xyz/anchor";
 import { workspace, setProvider, AnchorProvider, BN } from "@coral-xyz/anchor";
 
@@ -7,13 +8,13 @@ import { MintLayout, NATIVE_MINT } from "@solana/spl-token";
 import { Amman } from "@metaplex-foundation/amman-client";
 
 import {
+  IDL,
   getEstimatedRaydiumCpPoolCreationFee,
   initializeConfig,
   migrateFund,
   mintToken,
   swap,
 } from "../src";
-import { Zeroboost } from "../target/types/zeroboost";
 import { buildConfig } from "./config";
 
 export const amman = Amman.instance();
@@ -21,7 +22,7 @@ export const amman = Amman.instance();
 describe("zeroboost", async () => {
   setProvider(AnchorProvider.env());
 
-  const program = workspace.Zeroboost as Program<Zeroboost>;
+  const program = workspace.Zeroboost as Program<typeof IDL>;
 
   const {
     metadataCreationFee,
@@ -145,7 +146,7 @@ describe("zeroboost", async () => {
 
     const signature = await (
       await swap(program, boundingCurveInfo.mint, program.provider.publicKey!, {
-        amount: boundingCurveInfo.maximumPairBalance,
+        amount: unsafeBN(safeBN(0.01).mul(new BN(10).pow(new BN(9)))),
         tradeDirection: 0,
       })
     ).rpc();
@@ -153,21 +154,21 @@ describe("zeroboost", async () => {
     console.log("buy=", signature);
   });
 
-  it("Migrate fund", async () => {
-    const instructions = await (
-      await migrateFund(program, boundingCurve, program.provider.publicKey!, {
-        openTime: new BN(0),
-      })
-    ).instruction();
+  // it("Migrate fund", async () => {
+  //   const instructions = await (
+  //     await migrateFund(program, boundingCurve, program.provider.publicKey!, {
+  //       openTime: new BN(0),
+  //     })
+  //   ).instruction();
 
-    const transaction = new web3.Transaction();
-    transaction.add(
-      web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 })
-    );
-    transaction.add(instructions);
+  //   const transaction = new web3.Transaction();
+  //   transaction.add(
+  //     web3.ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 })
+  //   );
+  //   transaction.add(instructions);
 
-    const tx = await program.provider.sendAndConfirm!(transaction);
+  //   const tx = await program.provider.sendAndConfirm!(transaction);
 
-    console.log("migrate=", tx);
-  });
+  //   console.log("migrate=", tx);
+  // });
 });

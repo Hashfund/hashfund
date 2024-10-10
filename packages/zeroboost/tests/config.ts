@@ -1,5 +1,5 @@
 import { web3, BN, Program } from "@coral-xyz/anchor";
-import { Zeroboost } from "../target/types/zeroboost";
+import type { IDL } from "../src";
 
 type ConfigParams = {
   metadataCreationFee: number;
@@ -17,7 +17,7 @@ type ConfigParams = {
 };
 
 export const buildConfig = (
-  program: Program<Zeroboost>,
+  program: Program<typeof IDL>,
   {
     liquidityPercentage,
     mint: { name, symbol, uri, decimals, ...mintParams },

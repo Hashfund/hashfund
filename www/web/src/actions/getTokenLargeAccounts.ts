@@ -3,7 +3,7 @@ import {
   ZERO_BOOST_PROGRAM,
   getBoundingCurveReservePda,
 } from "@hashfund/zeroboost";
-import { PublicKey } from "@solana/web3.js";
+import { web3 } from "@coral-xyz/anchor";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 import { connection } from "@/web3";
@@ -13,9 +13,9 @@ export const getTokenLargeAccounts = async ({
   id: mintId,
   creator: creatorId,
 }: MintWithExtra) => {
-  const mint = new PublicKey(mintId);
-  const creator = new PublicKey(creatorId);
-  const boundingCurve = new PublicKey(boundingCurveId);
+  const mint = new web3.PublicKey(mintId);
+  const creator = new web3.PublicKey(creatorId);
+  const boundingCurve = new web3.PublicKey(boundingCurveId);
 
   const boundingCurveAta = getAssociatedTokenAddressSync(
     mint,

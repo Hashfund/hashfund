@@ -1,8 +1,8 @@
-import { Connection } from "@solana/web3.js";
+import { web3 } from "@coral-xyz/anchor";
 
 import { RPC_URL } from "@/config";
 
-export const connection = new Connection(RPC_URL);
+export const connection = new web3.Connection(RPC_URL);
 
 export * from "./asset";
 export * from "./link";

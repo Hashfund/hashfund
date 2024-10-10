@@ -1,19 +1,27 @@
-// Migrations are an early feature. Currently, they're nothing more than this
-// single deploy script that's invoked from the CLI, injecting a provider
-// configured from the workspace's Anchor.toml.
+import "dotenv/config";
+import { readFileSync } from "fs";
+import { AnchorProvider, Program, Wallet, web3 } from "@coral-xyz/anchor";
 
-const anchor = require("@coral-xyz/anchor");
-import { AnchorProvider, Program } from "@coral-xyz/anchor";
-
-import { IDL } from "../target/types/zeroboost";
 import {
+  IDL,
   devnet,
   getEstimatedRaydiumCpPoolCreationFee,
   initializeConfig,
 } from "../src";
 
-module.exports = async function (provider: AnchorProvider) {
-  anchor.setProvider(provider);
+const main = async function () {
+  const connection = new web3.Connection(process.env.ANCHOR_PROVIDER_URL!);
+  const wallet = new Wallet(
+    web3.Keypair.fromSecretKey(
+      Uint8Array.from(
+        JSON.parse(readFileSync(process.env.ANCHOR_WALLET!, "utf-8"))
+      )
+    )
+  );
+
+  const provider = new AnchorProvider(connection, wallet, {
+    commitment: "confirmed",
+  });
   const program = new Program(IDL, devnet.ZERO_BOOST_PROGRAM, provider);
 
   const tx = await initializeConfig(program, program.provider.publicKey!, {
@@ -26,3 +34,5 @@ module.exports = async function (provider: AnchorProvider) {
 
   console.info("[info] zeroboost initialization signature=" + tx);
 };
+
+main().catch(console.log);

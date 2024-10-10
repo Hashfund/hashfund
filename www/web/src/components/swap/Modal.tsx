@@ -1,5 +1,5 @@
 "use client";
-import { PublicKey } from "@solana/web3.js";
+import { web3 } from "@coral-xyz/anchor";
 import { ConstantCurveCalculator, TradeDirection } from "@hashfund/zeroboost";
 
 import { useState } from "react";
@@ -18,7 +18,7 @@ import TransactionToast from "../TransactionToast";
 import TokenPriceInput from "../widgets/TokenPriceInput";
 
 type Side = {
-  mint: PublicKey;
+  mint: web3.PublicKey;
   balance: number;
   symbol: string;
   image: string;

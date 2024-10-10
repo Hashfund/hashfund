@@ -1,19 +1,17 @@
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { Connection, PublicKey, TokenAmount } from "@solana/web3.js";
+import { web3 } from "@coral-xyz/anchor";
 
-export default function useTokenBalance(
-  connection: Connection,
+export default async function useTokenBalance(
+  connection: web3.Connection,
   mint: string,
   address: string
 ) {
   const tokenAddress = getAssociatedTokenAddressSync(
-    new PublicKey(mint),
-    new PublicKey(address),
+    new web3.PublicKey(mint),
+    new web3.PublicKey(address),
     true
   );
 
-
-  return connection
-    .getTokenAccountBalance(tokenAddress)
-    .then(({ value }) => value);
+  const { value } = await connection.getTokenAccountBalance(tokenAddress);
+  return value;
 }

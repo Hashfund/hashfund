@@ -1,5 +1,5 @@
+import { web3 } from "@coral-xyz/anchor";
 import { useConnection } from "@solana/wallet-adapter-react";
-import { TransactionConfirmationStatus } from "@solana/web3.js";
 
 import { Id, toast } from "react-toastify";
 import { MdArrowOutward } from "react-icons/md";
@@ -34,7 +34,7 @@ function TransactionToastMessage({
 type TransactionToastProps = {
   toastId: Id;
   signature: string;
-  callback?: (status: TransactionConfirmationStatus | "error") => void;
+  callback?: (status: web3.TransactionConfirmationStatus | "error") => void;
 };
 
 export default function TransactionToast({
@@ -45,7 +45,7 @@ export default function TransactionToast({
   const { connection } = useConnection();
 
   const [status, setStatus] = useState<
-    [number, TransactionConfirmationStatus | "error"]
+    [number, web3.TransactionConfirmationStatus | "error"]
   >([0, "confirmed"]);
   const fragment = useRef<HTMLDivElement | null>(null);
 

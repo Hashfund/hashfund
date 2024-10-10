@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { PublicKey } from "@solana/web3.js";
+import { web3 } from "@coral-xyz/anchor";
 
 export function sumBN<
   T extends Array<any>,
@@ -19,7 +19,7 @@ export const safeStringify = <T extends Readonly<object>>(input: T) => {
     JSON.stringify(input, (key, value) => {
       if (value instanceof BN || typeof value === "bigint")
         return value.toString();
-      else if (value instanceof PublicKey) return value.toBase58();
+      else if (value instanceof web3.PublicKey) return value.toBase58();
       return value;
     })
   );

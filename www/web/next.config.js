@@ -32,7 +32,7 @@ const nextConfig = {
     outputFileTracingRoot: path.join(__dirname, "../../"),
     serverComponentsExternalPackages: [
       "bs58",
-      "@solana/web3.js",
+      "@coral-xyz/anchor",
       "@metaplex-foundation/umi",
       "@metaplex-foundation/umi-serializers-encodings",
       "@metaplex-foundation/umi-bundle-defaults",

@@ -3,16 +3,16 @@ import "react-toastify/dist/ReactToastify.css";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 import clsx from "clsx";
+import { devnet } from "@hashfund/zeroboost";
 
 import type { Metadata, Viewport } from "next";
 import { ToastContainer } from "react-toastify";
 
 import "@/globals.css";
+import { RPC_URL } from "@/config";
 import Provider from "@/providers";
 import { defaultFont } from "@/assets/font";
 import { Navigation, Toolbar } from "@/components/layout";
-import { RPC_URL } from "@/config";
-import { devnet } from "@hashfund/zeroboost";
 
 export const metadata: Metadata = {
   metadataBase: new URL(

@@ -52,9 +52,8 @@ export const processMintForm = async function (
 ) {
   const payer = program.provider.publicKey!;
   const [mint] = getMintPda(name, symbol, payer, program.programId);
-  const instructions = [];
 
-  const mintInstructions = await mintToken(
+  let instruction = mintToken(
     program,
     NATIVE_MINT,
     payer,
@@ -65,7 +64,7 @@ export const processMintForm = async function (
       decimals,
       liquidityPercentage,
       supply: unsafeBN(
-        safeBN(supply, decimals).mul(new BN(decimals)),
+        safeBN(supply, decimals).mul(new BN(10).pow(new BN(decimals))),
         decimals
       ),
       migrationTarget: {
@@ -73,33 +72,32 @@ export const processMintForm = async function (
       },
     },
     devnet.PYTH_SOL_USD_FEED
-  ).instruction();
-
-  instructions.push(mintInstructions);
+  ).preInstructions([
+    web3.ComputeBudgetProgram.setComputeUnitLimit({
+      units: 250_000,
+    }),
+  ]);
 
   if (initialBuyForm && initialBuyForm.pairAmount > 0) {
     const { pairAmount } = initialBuyForm;
-    const buyInstructions = await (
-      await rawSwap(program, mint, NATIVE_MINT, payer, {
-        amount: unsafeBN(safeBN(pairAmount).mul(new BN(Math.pow(10, 9)))),
-        tradeDirection: TradeDirection.BtoA,
-      })
-    ).instruction();
+    console.log(
+      unsafeBN(safeBN(pairAmount, 9).mul(new BN(10).pow(new BN(9))), 9).toString()
+    );
 
-    instructions.push(buyInstructions);
+    instruction = instruction.postInstructions([
+      await (
+        await rawSwap(program, mint, NATIVE_MINT, payer, {
+          amount: unsafeBN(
+            safeBN(pairAmount, 9).mul(new BN(10).pow(new BN(9))),
+            9
+          ),
+          tradeDirection: TradeDirection.BtoA,
+        })
+      ).instruction(),
+    ]);
   }
-  
-  const recentBlockhash = (await program.provider.connection.getLatestBlockhash()).blockhash;
-  
-  const message = new web3.TransactionMessage({
-    payerKey: payer,
-    instructions,
-    recentBlockhash,
-  }).compileToV0Message()
 
-  const signature = await program.provider.sendAndConfirm!(
-    new web3.VersionedTransaction(message)
-  );
+  const { signature, pubkeys } = await instruction.rpcAndKeys();
 
-  return [mint, signature] as const;
+  return [pubkeys.mint!, signature] as const;
 };

@@ -25,7 +25,6 @@
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",
-    "@solana/web3.js": "^1.93.0",
     "@unocss/reset": "^0.60.4",
     "autoprefixer": "^10.4.19",
     "axios": "^1.7.2",
@@ -43,6 +42,9 @@
     "turbo": "^2.0.14",
     "yup": "^1.4.0"
   },
+  "peerDependencies": {
+    "typescript": "latest"
+  },
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^18",
@@ -52,7 +54,6 @@
     "eslint": "^8",
     "eslint-config-next": "14.2.3",
     "postcss": "^8",
-    "typescript": "latest",
     "unocss": "^0.60.4"
   },
   "buildDependenciesFromSource": true,

@@ -9,6 +9,9 @@
     "dev": "bun src/index.ts",
     "serve": "node dist/index.js"
   },
+  "peerDependencies": {
+    "typescript": "latest"
+  },
   "dependencies": {
     "@coral-xyz/anchor": "^0.29.0",
     "@hashfund/api": "*",
