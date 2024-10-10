@@ -1,10 +1,10 @@
 # syntax = docker/dockerfile:1.2
 
-FROM node:22-alpine3.19 as base 
+FROM node:22-alpine3.19 as base
 
-RUN apk upgrade && \
-    apk add libgcc libstdc++ && \ 
-    apk add make gcc g++ python3
+RUN apk upgrade && apk update && \
+  apk add libgcc libstdc++ libc6-compat && \
+  apk add make gcc g++ python3
 
 RUN yarn global add turbo
 
@@ -26,9 +26,9 @@ RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn ins
 COPY --from=builder /usr/src/app/out/full/ .
 RUN yarn turbo run build --filter=watchdog
 
-FROM base as runner 
+FROM base as runner
 
-WORKDIR /usr/src/app 
+WORKDIR /usr/src/app
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs

@@ -2,8 +2,8 @@
 
 FROM node:22-alpine3.19 as base 
 
-RUN apk upgrade && \
-    apk add libgcc libstdc++ && \ 
+RUN apk upgrade && apk update && \
+    apk add libgcc libstdc++ libc6-compat && \ 
     apk add make gcc g++ python3
 
 RUN yarn global add turbo
