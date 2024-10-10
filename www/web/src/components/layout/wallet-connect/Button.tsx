@@ -4,6 +4,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Popover, PopoverButton, MenuButton, Menu } from "@headlessui/react";
 
 import { truncateAddress } from "@/web3/address";
+
 import Modal from "./Modal";
 import WalletPopover from "./Popover";
 

@@ -1,14 +1,14 @@
 import { Formik, Form } from "formik";
 import { TabPanel } from "@headlessui/react";
 
-import { MintMetadataForm, validateMetadataSchema } from "@/form/MintForm";
+import { type MetadataForm, validateMetadataSchema } from "@/form/MetadataForm";
 
 import Input from "../widgets/Input";
 import FileInput from "../widgets/FileInput";
 
 type CreateFormMetadataProps = {
-  form: MintMetadataForm;
-  onSubmit: (value: MintMetadataForm) => void;
+  form: MetadataForm;
+  onSubmit: (value: MetadataForm) => Promise<void>;
 };
 
 export default function CreateFormMetadata({
@@ -18,11 +18,10 @@ export default function CreateFormMetadata({
   return (
     <TabPanel>
       <Formik
-        validationSchema={validateMetadataSchema}
         initialValues={form}
+        validationSchema={validateMetadataSchema}
         onSubmit={(value, { setSubmitting }) => {
-          onSubmit(value);
-          setSubmitting(false);
+          onSubmit(value).finally(() => setSubmitting(false));
         }}
       >
         {({ isSubmitting }) => (
@@ -75,7 +74,9 @@ export default function CreateFormMetadata({
               type="submit"
               className="btn btn-primary"
             >
-              Continue
+              {
+                isSubmitting ? <div className="w-6 h-6 border-2 border-black border-t-transparent animate-spin rounded-full" /> :  <span>Continue</span>
+              }
             </button>
           </Form>
         )}

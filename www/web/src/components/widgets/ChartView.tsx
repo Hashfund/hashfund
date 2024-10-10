@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as TradeView from "@hashfund/chart";
 
-import Api from "@/lib/api";
-import { mapSwapToGraph } from "@/lib/api/models/graph.model";
+import { Api } from "@/lib/api";
 
 type ChartViewProps = {
   width: number;
@@ -44,7 +43,7 @@ export default function ChartView({
           },
           searchSymbols(userInput, exchange, symbolType, onResult) {
             Api.instance.mint
-              .getAllMints({ search: userInput, exchange, symbolType })
+              .list({ search: userInput, exchange, symbolType })
               .then(({ data }) =>
                 onResult(
                   data.results.map((mint) => ({
@@ -62,11 +61,11 @@ export default function ChartView({
           },
           async resolveSymbol(symbolName, onResolve, onError) {
             Api.instance.mint
-              .getMint(symbolName)
+              .retrieve(symbolName)
               .then(({ data }) =>
                 onResolve({
                   name: data.name,
-                  ticker: data.ticker,
+                  ticker: data.symbol,
                   unit_id: data.id,
                   description: data.metadata.description,
                   logo_urls: [data.metadata.image],
@@ -90,20 +89,25 @@ export default function ChartView({
             const to = new Date(periodParams.to * 1000);
 
             Api.instance.swap
-              .getSwapsByMint(symbolInfo.unit_id!, {
-                from: from.toISOString(),
-                to: to.toISOString(),
-                limit: periodParams.countBack,
+              .getSwapsGraph({
+                mint: symbolInfo.unit_id!,
+                timestamp__gte: from.toISOString(),
+                timestamp__lte: to.toISOString(),
+                limit: periodParams.countBack.toString(),
                 resolution,
               })
               .then(({ data }) => {
-                const graph = mapSwapToGraph(data.results).sort(
-                  (a, b) => a.time - b.time
+                const graph = data.results.map(
+                  ({}) =>
+                    ({
+                      time: 0,
+                      low: 0,
+                      high: 0,
+                      close: 0,
+                      open: 0,
+                    } as const)
                 );
-                console.log(graph);
-                if (graph.length > 0) {
-                  onResult(graph, { noData: false });
-                }
+                if (graph.length > 0) onResult(graph, { noData: false });
               })
               .catch(console.log);
           },

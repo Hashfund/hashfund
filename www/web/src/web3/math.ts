@@ -1,35 +1,16 @@
+import { BN } from "@coral-xyz/anchor";
+import { safeBN, unsafeBN } from "@hashfund/bn";
 import { Price } from "@pythnetwork/price-service-client";
-import { normalizeBN } from "./decimal";
-import { safeBN } from "@hashfund/bn";
-
-export const calculateBNPercentile = (a: string, b: string) => {
-  const value = normalizeBN(a) - normalizeBN(b);
-
-  return Number.isNaN(value) ? 0 : value;
-};
-
-export const calculateBNPercentage = (
-  a: string | number,
-  b: string | number
-) => {
-  const value = (Math.max(normalizeBN(a), 0) / normalizeBN(b)) * 100;
-
-  return Number.isNaN(value) ? 0 : value;
-};
-
-export const calculateMarketcapWeight = (
-  marketCap: string,
-  maximumMarketCap: string
-) => {
-  const value = normalizeBN(marketCap) / normalizeBN(maximumMarketCap);
-  return Number.isNaN(value) ? 0 : value;
-};
 
 export const priceToNumber = (price: Price) =>
   Number(price.price) * Math.pow(10, price.expo);
 
-export const toUiAmount = (
-  value: number,
-  tokenADecimal: number = 6,
-  tokenBDecimal: number = 9
-) =>  Number(value) / Math.pow(10, tokenBDecimal - tokenADecimal);
+export const percentageBN = (
+  a: string | number | bigint,
+  b: string | number | bigint
+) =>
+  unsafeBN(
+    safeBN(b)
+      .div(new BN(String(a)))
+      .mul(new BN(100))
+  );

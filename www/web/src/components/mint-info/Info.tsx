@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Mint, MintWithExtra } from "@hashfund/sdk/models";
 
 import { Explorer } from "@/web3/link";
 import { PythFeed } from "@/config/pyth";
@@ -8,12 +9,10 @@ import { formatPrice } from "@/web3/price";
 import { normalizeBN } from "@/web3/decimal";
 import { truncateAddress } from "@/web3/address";
 
-import { Mint } from "@/lib/api/models";
-import useFeedPrice from "@/lib/api/useFeedPrice";
-import { toUiAmount } from "@/web3/math";
+import { useFeedPrice } from "@/composables/useFeedPrice";
 
 type InfoProps = {
-  mint: Mint;
+  mint: MintWithExtra;
 };
 
 export function Info({ mint }: InfoProps) {
@@ -39,7 +38,7 @@ export function Info({ mint }: InfoProps) {
             </p>
             <p>
               {formatPrice(
-                solPrice * normalizeBN(mint.boundingCurve.maximumMarketCap)
+                solPrice * normalizeBN(mint.boundingCurve.maximumPairBalance, 9)
               )}
             </p>
           </div>
@@ -47,20 +46,20 @@ export function Info({ mint }: InfoProps) {
             <p className="flex-1 text-white/75 underline underline-dashed">
               Current Marketcap
             </p>
-            <p>{formatPrice(solPrice * normalizeBN(mint.virtualMarketCap))}</p>
+            <p>{formatPrice(solPrice * normalizeBN(mint.boundingCurve.virtualPairBalance, 9))}</p>
           </div>
 
           <div className="flex py-4">
             <p className="flex-1 text-white/75 underline underline-dashed">
               Bounding Curve
             </p>
-            <p className="sol">{normalizeBN(mint.marketCap)}</p>
+            <p className="sol">{normalizeBN(mint.boundingCurve.virtualPairBalance, 9)}</p>
           </div>
           <div className="flex py-4">
             <p className="flex-1 text-white/75 underline underline-dashed">
               Total Volume
             </p>
-            <p className="sol">{normalizeBN(mint.volumeIn)}</p>
+            <p className="sol">{normalizeBN(mint.boundingCurve.virtualPairBalance, 9)}</p>
           </div>
           <div className="flex py-4">
             <p className="flex-1 text-white/75 underline underline-dashed">
@@ -68,7 +67,7 @@ export function Info({ mint }: InfoProps) {
             </p>
             <p className="sol">
               {formatPrice(
-                solPrice * toUiAmount(mint.boundingCurve.initialPrice)
+                solPrice * mint.boundingCurve.initialPrice
               )}
             </p>
           </div>
@@ -77,8 +76,8 @@ export function Info({ mint }: InfoProps) {
               Total Supply
             </p>
             <p>
-              {normalizeBN(mint.boundingCurve.curveInitialSupply, 6)}{" "}
-              {mint.ticker}
+              {normalizeBN(mint.supply, 6)}&nbsp;
+              {mint.symbol}
             </p>
           </div>
         </div>

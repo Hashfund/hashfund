@@ -1,19 +1,21 @@
-import { RouteProps } from "@/types";
-import { useMints } from "@/composables/api/useMints";
+import { Api } from "@/lib/api";
+import type { RouteProps } from "@/types";
 import { Annoucement, RecentMint, RecentFreed, Token } from "@/components/home";
 
-export default async function HomePage({ searchParams }: RouteProps) {
-  const tokenSortBy = searchParams.token_sort_by ?? "market_cap";
-  const search = searchParams.token_search;
+type SearchParams = {
+  search: string;
+  orderBy: string;
+};
 
-  const { mints: recent } = await useMints({ orderBy: "timestamp" });
-  const { mints: freed } = await useMints({
-    orderBy: "timestamp",
-    canTrade: false,
-  });
-  let query: Record<string, any> = { orderBy: tokenSortBy };
-  if (search) query = { ...query, search };
-  const { mints } = await useMints(query);
+export default async function HomePage({
+  searchParams,
+}: RouteProps<any, SearchParams>) {
+  const { search, orderBy } = searchParams;
+  
+  const mints = await Api.instance.mint.list({
+    search,
+    orderBy,
+  }).then(({ data }) => data.results);
 
   return (
     <main className="flex flex-col space-y-8">
@@ -24,11 +26,11 @@ export default async function HomePage({ searchParams }: RouteProps) {
         md="space-x-6"
       >
         <RecentMint
-          mints={recent}
+          mints={mints}
           className="flex-1"
         />
         <RecentFreed
-          mints={freed}
+          mints={mints}
           className="flex-1"
         />
       </div>

@@ -1,86 +1,67 @@
-import { z } from "zod";
-import { desc, eq, getTableColumns, sql, SQL, sum } from "drizzle-orm";
+import type { z } from "zod";
+import { eq, getTableColumns, SQL, sum } from "drizzle-orm";
+import { TradeDirection } from "@hashfund/zeroboost";
 
-import { insertUserSchema } from "../../db/zod";
-import { mints, swaps, users } from "../../db/schema";
-import { caseWhen, coalesce, db, toBigInt } from "../../db";
+import { db } from "../../db";
+import { swaps, users } from "../../db/schema";
+import type { insertUserSchema } from "../../db/zod";
 
-export const getAllUsers = (
-  where: SQL | undefined,
-  limit: number,
-  offset: number
-) => {
-  return db.query.users.findMany({
-    where,
-    limit,
-    offset,
-    with: {
-      mints: {
-        columns: {
-          id: true,
-        },
-      },
-      swaps: {
-        columns: {
-          id: true,
-        },
-      },
-    },
-  });
-};
+export const createUser = (values: z.infer<typeof insertUserSchema>) =>
+  db.insert(users).values(values).returning().execute();
 
-export const getOrCreateUser = (id: string) => {
-  return db
+export const upsertUser = (values: z.infer<typeof insertUserSchema>) =>
+  db
     .insert(users)
-    .values({ id })
-    .onConflictDoUpdate({
-      target: users.id,
-      set: { id },
-    })
+    .values(values)
+    .onConflictDoNothing({ target: users.id })
     .returning()
     .execute();
-};
 
-export const updateUser = (
-  id: string,
-  values: z.infer<typeof insertUserSchema>
+export const getUsers = <TWhere extends SQL, TOrderBy extends SQL>(
+  limit: number,
+  offset: number,
+  where?: TWhere,
+  orderBy?: TOrderBy
 ) => {
-  return db
-    .update(users)
-    .set(values)
-    .where(eq(users.id, id))
-    .returning()
-    .execute();
-};
+  const qSwaps = db.$with("swaps").as(
+    db
+      .select({
+        pairAmount: sum(swaps.pairAmount).as("pair_amount"),
+      })
+      .from(swaps)
+      .where(eq(swaps.tradeDirection, TradeDirection.BtoA))
+      .groupBy(swaps.payer)
+  );
 
-export const getUsersLeaderboard = () => {
-  return db
+  const q = db
     .select({
-      user: users,
-      volumeIn: coalesce(
-        sum(caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))),
-        0
-      ).as("volume_in"),
-      volumeOut: coalesce(
-        sum(caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))),
-        0
-      ).as("volume_out"),
+      ...getTableColumns(users),
+      pairAmount: sum(qSwaps.pairAmount)
     })
-    .from(swaps)
-    .rightJoin(users, eq(users.id, swaps.payer))
-    .groupBy(swaps.payer, users.id)
-    .orderBy(desc(sql`volume_in`))
-    .execute();
-};
-
-export const getUserTokens = (id: string, limit: number, offset: number) => {
-  return db
-    .selectDistinctOn([swaps.mint], { ...getTableColumns(mints) })
-    .from(swaps)
-    .where(eq(swaps.payer, id))
-    .orderBy(swaps.mint)
-    .rightJoin(mints, eq(mints.id, swaps.mint))
+    .from(users)
+    .leftJoin(qSwaps, eq(swaps.payer, users.id))
     .limit(limit)
     .offset(offset)
-    .execute();
+    .groupBy(users.id)
+    .where(where);
+
+  if (orderBy) return q.orderBy(orderBy).execute();
+  else return q.execute();
 };
+
+export const getUserById = (id: string) =>
+  db.query.users
+    .findFirst({
+      where: eq(users.id, id),
+    })
+    .execute();
+
+export const updateUserById = (
+  id: string,
+  values: Partial<z.infer<typeof insertUserSchema>>
+) => db.update(users).set(values).where(eq(users.id, id)).returning().execute();
+
+export const deleteUserById = (id: string) =>
+  db.delete(users).where(eq(users.id, id)).returning().execute();
+
+

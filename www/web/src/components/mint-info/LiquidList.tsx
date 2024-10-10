@@ -1,30 +1,42 @@
 import clsx from "clsx";
-import LeaderboardItem from "../LeaderboardItem";
-import { Leaderboard } from "@/lib/api/models/user.model";
-import { normalizeBN } from "@/web3/decimal";
 import Link from "next/link";
+import type { Mint } from "@hashfund/sdk/models";
+import { TradeDirection } from "@hashfund/zeroboost";
+
+import { Api } from "@/lib/api";
+import { normalizeBN } from "@/web3/decimal";
+
+import LeaderboardItem from "../LeaderboardItem";
 
 type LiquidListProps = {
   className?: string;
-  leaderboard: Leaderboard[];
+  mint: Mint;
 };
 
-export function LiquidList({ className, leaderboard }: LiquidListProps) {
+export async function LiquidList({ className, mint }: LiquidListProps) {
+  const users = await Api.instance.user
+    .list({
+      mint: mint.id,
+      orderBy: "pair_amount",
+      tradeDirection: TradeDirection.AtoB,
+    })
+    .then(({ data }) => data.results);
+  
   return (
     <section className={clsx(className, "flex flex-col space-y-4")}>
       <div>
         <h1 className="text-lg">Top Liquidators</h1>
       </div>
       <div className="flex flex-col space-y-2">
-        {leaderboard.map((data, index) => (
+        {users.map((user, index) => (
           <Link
-            key={data.user.id}
-            href={`/profile/?address=${data.user.id}`}
+            key={user.id}
+            href={`/profile/?address=${user.id}`}
           >
             <LeaderboardItem
               index={index + 1}
-              user={data.user}
-              amount={-normalizeBN(data.volumeOut)}
+              user={user}
+              amount={-normalizeBN(user.pairAmount, 9)}
               ticker="SOL"
             />
           </Link>

@@ -1,16 +1,18 @@
 "use client";
-import { NATIVE_MINT } from "@solana/spl-token";
+import type { MintWithExtra } from "@hashfund/sdk/models";
 import { PublicKey } from "@solana/web3.js";
+import { NATIVE_MINT } from "@solana/spl-token";
 
 import { useState, useMemo } from "react";
 import { Popover, PopoverButton } from "@headlessui/react";
 
-import SwapModal from "./Modal";
-import { Mint } from "@/lib/api/models";
+import { normalizeBN } from "@/web3";
 import useBalance from "@/composables/useBalance";
 
+import SwapModal from "./Modal";
+
 type SwapButtonProps = {
-  mint: Mint;
+  mint: MintWithExtra;
 };
 
 export function SwapButton({ mint }: SwapButtonProps) {
@@ -19,10 +21,10 @@ export function SwapButton({ mint }: SwapButtonProps) {
   const solSide = useMemo(
     () => ({
       mint: NATIVE_MINT,
-      balance: solBalance / 1_000_000_000,
       decimals: 9,
-      ticker: "SOL",
+      symbol: "SOL",
       image: "/sol.png",
+      balance: normalizeBN(solBalance, 9),
       initialPrice: mint.boundingCurve.initialPrice,
     }),
     [solBalance]
@@ -30,11 +32,11 @@ export function SwapButton({ mint }: SwapButtonProps) {
 
   const mintSide = useMemo(
     () => ({
+      symbol: mint.symbol,
+      decimals: mint.decimals,
+      image: mint.metadata.image,
       mint: new PublicKey(mint.id),
       balance: mintBalance?.uiAmount ?? 0,
-      decimals: mintBalance?.decimals ?? 6,
-      ticker: mint.ticker,
-      image: mint.metadata?.image,
       initialPrice: mint.boundingCurve.initialPrice,
     }),
     [mintBalance]

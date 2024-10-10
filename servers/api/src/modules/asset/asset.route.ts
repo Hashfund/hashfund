@@ -1,12 +1,16 @@
 import ImageKit from "imagekit";
-import { FastifyInstance } from "fastify";
+import type { FastifyInstance } from "fastify";
 
-import { IMAGEKIT_PRIVATE_KEY, IMAGEKIT_PUBLIC_KEY } from "../../config";
+import {
+  IMAGEKIT_PRIVATE_KEY,
+  IMAGEKIT_PUBLIC_KEY,
+  IMAGEKIT_URL_ENDPOINT,
+} from "../../config";
 
 export const imagekit = new ImageKit({
   publicKey: IMAGEKIT_PUBLIC_KEY,
   privateKey: IMAGEKIT_PRIVATE_KEY,
-  urlEndpoint: "https://ik.imagekit.io/hashfund/",
+  urlEndpoint: IMAGEKIT_URL_ENDPOINT,
 });
 
 const imagekitAuthRoute = function () {
@@ -17,7 +21,7 @@ const uploadFileRoute = function () {
   return {};
 };
 
-export const assetRoutes = (fastify: FastifyInstance) => {
+export const registerAssetRoutes = (fastify: FastifyInstance) => {
   fastify
     .route({
       method: "GET",

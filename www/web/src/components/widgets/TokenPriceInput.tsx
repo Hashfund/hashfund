@@ -1,6 +1,6 @@
 import clsx from "clsx";
-import { Field, useFormik, useFormikContext } from "formik";
 import Image from "next/image";
+import { Field, useFormik, useFormikContext } from "formik";
 
 type TokenPriceInputProps = {
   name: string;

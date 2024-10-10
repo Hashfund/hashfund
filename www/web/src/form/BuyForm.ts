@@ -1,12 +1,10 @@
 import { BN } from "bn.js";
-import { safeBN, unsafeBN } from "@hashfund/bn";
-
-import { Connection, PublicKey } from "@solana/web3.js";
-import { WalletContextState } from "@solana/wallet-adapter-react";
-
 import { number, object } from "yup";
+import { safeBN, unsafeBN } from "@hashfund/bn";
+import { type Program, web3 } from "@coral-xyz/anchor";
 
-import { createSwapInTransaction } from "@/web3/trade";
+import { swap, TradeDirection, Zeroboost } from "@hashfund/zeroboost";
+
 
 export const createValidationSchema = (balance: number) =>
   object().shape({
@@ -16,26 +14,17 @@ export const createValidationSchema = (balance: number) =>
   });
 
 export async function processBuyForm(
-  wallet: WalletContextState,
-  connection: Connection,
-  mint: string,
-  amount: string,
-  decimals = 9
+  program: Program<Zeroboost>,
+  mint: web3.PublicKey,
+  amount: number
 ) {
-  const safeAmount = unsafeBN(
-    safeBN(Number.parseFloat(amount), decimals).mul(
-      new BN(10).pow(new BN(decimals))
-    ),
-    decimals
-  );
+  const payer = program.provider.publicKey!;
+  const safeAmount = unsafeBN(safeBN(amount).mul(new BN(Math.pow(10, 9))));
 
-  return wallet.sendTransaction(
-    await createSwapInTransaction(
-      connection,
-      wallet.publicKey!,
-      new PublicKey(mint),
-      safeAmount
-    ),
-    connection
-  );
+  return await (
+    await swap(program, mint, payer, {
+      amount: safeAmount,
+      tradeDirection: TradeDirection.BtoA,
+    })
+  ).rpc();
 }

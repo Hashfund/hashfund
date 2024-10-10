@@ -1,162 +1,96 @@
-import { z } from "zod";
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { z } from "zod";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 
-import { insertUserSchema, zIsAddress } from "../../db/zod";
+import { StatusError } from "../../error";
+import { orderByBuilder } from "../../utils/order";
+import { catchRuntimeError } from "../../utils/error";
+import { insertUserSchema, selectUserSchema } from "../../db/zod";
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
-  LimitOffsetPaginationQuery,
   limitOffsetPaginationSchema,
 } from "../../utils/pagination";
-import { safeRequest } from "../../utils/metadata";
-import { imagekit } from "../../modules/asset/asset.route";
+
+import { getUsers, updateUserById, upsertUser } from "./user.controller";
 
 import { userQuery } from "./user.query";
-import {
-  getAllUsers,
-  getOrCreateUser,
-  getUsersLeaderboard,
-  getUserTokens,
-  updateUser,
-} from "./user.controller";
-import { catchRuntimeError } from "../../utils/error";
 
-const idParamSchema = z.object({
-  id: zIsAddress,
-});
-
-const getAllUsersRoute = async (
-  req: FastifyRequest<{
-    Querystring: LimitOffsetPaginationQuery & Record<string, any>;
-  }>,
-  reply: FastifyReply
-) => {
-  const { limit, offset, ...query } = req.query;
-
-  return limitOffsetPaginationSchema
-    .parseAsync({ limit, offset })
+const getUsersRoute = (
+  request: FastifyRequest<{
+    Querystring: z.infer<typeof limitOffsetPaginationSchema> &
+      Record<string, string>;
+  }>
+) =>
+  limitOffsetPaginationSchema
+    .parseAsync(request.query)
     .then(async ({ limit, offset }) => {
-      const q = userQuery(query);
-      const paginator = new LimitOffsetPagination(
-        buildURLFromRequest(req),
-        limit ?? 16,
-        offset ?? 0
+      const query = userQuery(request.query);
+      const orderBy = orderByBuilder(request.query.orderBy);
+      const pagination = new LimitOffsetPagination(
+        buildURLFromRequest(request),
+        limit,
+        offset
       );
-
-      return paginator.getResponse(
-        await getAllUsers(q, paginator.limit, paginator.getOffset())
+      return pagination.getResponse(
+        await getUsers(pagination.limit, pagination.getOffset(), query, orderBy)
       );
-    })
-    .catch((error) => reply.status(400).send(error.format()));
-};
+    });
 
-const getOrCreateUserRoute = (
-  req: FastifyRequest<{ Params: z.infer<typeof idParamSchema> }>,
-  reply: FastifyReply
-) => {
-  return idParamSchema
-    .parseAsync(req.params)
-    .then(async (params) => {
-      const q = userQuery(params);
-      const [user] = await getOrCreateUser(params.id);
-      return user;
-    })
-    .catch((error) => reply.status(400).send(error.format()));
-};
-
-const updateUserRoute = async (
-  req: FastifyRequest<{
-    Params: z.infer<typeof idParamSchema>;
-    Body: z.infer<typeof insertUserSchema>;
-  }>,
-  reply: FastifyReply
-) => {
-  return idParamSchema
-    .parseAsync(req.params)
-    .then(async ({ id }) => {
-      const body = req.body;
-
-      if (body.avatar) {
-        const response = await imagekit.upload({
-          file: body.avatar,
-          fileName: "avatar/" + id + ".png",
-          useUniqueFileName: false,
-        });
-
-        body.avatar = response.url;
-      }
-
-      const users = await updateUser(id, body);
-
-      if (users.length > 0) return users.at(0)!;
-
-      return reply.status(404).send({
-        error: "user not found",
-      });
-    })
-    .catch((error) => reply.status(404).send(error));
-};
-
-const getUsersLeaderboardRoute = () => getUsersLeaderboard();
-
-const getUserTokensRoute = (
-  req: FastifyRequest<{
-    Params: z.infer<typeof idParamSchema> &
-      z.infer<typeof limitOffsetPaginationSchema>;
+const getUserRoute = (
+  request: FastifyRequest<{
+    Params: Pick<z.infer<typeof selectUserSchema>, "id">;
   }>
 ) => {
-  return idParamSchema.parseAsync(req.params).then(({ id }) =>
-    limitOffsetPaginationSchema
-      .parseAsync(req.query)
-      .then(async ({ limit, offset }) => {
-        const paginator = new LimitOffsetPagination(
-          buildURLFromRequest(req),
-          limit,
-          offset
-        );
-        const tokens = await getUserTokens(
-          id,
-          paginator.limit,
-          paginator.getOffset()
-        );
-
-        return paginator.getResponse(
-          await Promise.all(
-            tokens.map(async (token) => ({
-              ...token,
-              metadata: await safeRequest(token.uri),
-            }))
-          )
-        );
-      })
-  );
+  switch (request.params.id) {
+    default:
+      return selectUserSchema
+        .pick({ id: true })
+        .parseAsync(request.params)
+        .then(async ({ id }) => {
+          const user = await upsertUser({ id });
+          if (user) return user;
+          throw new StatusError(400, { message: "user not found." });
+        });
+  }
 };
 
-export const userRoutes = (fastify: FastifyInstance) => {
-  fastify
+const updateUserRoute = (
+  request: FastifyRequest<{
+    Params: Pick<z.infer<typeof selectUserSchema>, "id">;
+    Body: Partial<z.infer<typeof insertUserSchema>>;
+  }>
+) => {
+  insertUserSchema
+    .omit({ id: true })
+    .partial()
+    .parseAsync(request.body)
+    .then(async (body) => {
+      return selectUserSchema
+        .pick({ id: true })
+        .parseAsync(request.params)
+        .then(async ({ id }) => {
+          const user = await updateUserById(id, body);
+          if (user) return user;
+          throw new StatusError(400, { message: "user not found." });
+        });
+    });
+};
+
+export const registerUserRoutes = (server: FastifyInstance) => {
+  server
     .route({
       method: "GET",
       url: "/users/",
-      handler: catchRuntimeError(getAllUsersRoute),
+      handler: catchRuntimeError(getUsersRoute),
     })
     .route({
       method: "GET",
       url: "/users/:id/",
-      handler: catchRuntimeError(getOrCreateUserRoute),
+      handler: catchRuntimeError(getUserRoute),
     })
     .route({
-      method: "POST",
+      method: "PATCH",
       url: "/users/:id/",
       handler: catchRuntimeError(updateUserRoute),
-    })
-    .route({
-      method: "GET",
-      url: "/users/leaderboard",
-      handler: catchRuntimeError(getUsersLeaderboardRoute),
-    })
-    .route({
-      method: "GET",
-      url: "/users/:id/tokens",
-      handler: catchRuntimeError(getUserTokensRoute),
     });
 };

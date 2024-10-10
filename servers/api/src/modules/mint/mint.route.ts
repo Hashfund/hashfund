@@ -1,166 +1,103 @@
-import { z } from "zod";
-import moment from "moment";
-import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import type { z } from "zod";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 
-import { zIsAddress } from "../../db/zod";
-import { safeRequest } from "../../utils/metadata";
+import { StatusError } from "../../error";
+import { selectMintSchema } from "../../db/zod";
+import { orderByBuilder } from "../../utils/order";
 import { catchRuntimeError } from "../../utils/error";
-import { DateRangeQuery, dateRangeSchema } from "../../utils/date";
 import {
   buildURLFromRequest,
   LimitOffsetPagination,
   limitOffsetPaginationSchema,
 } from "../../utils/pagination";
 
-import {
-  mintQuery,
-  orderLeaderboardBy,
-  orderMintsBy,
-  withSearch,
-} from "./mint.query";
-import { getMint, getMintGraph, getMintLeaderboard } from "./mint.controller";
+import { mintQuery } from "./mint.query";
+import { getMintById, getMints, getMintsByUser } from "./mint.controller";
 
-type GetAllMintQuery = z.infer<typeof limitOffsetPaginationSchema> &
-  DateRangeQuery &
-  Record<string, string>;
-
-const getAllMintSchema = limitOffsetPaginationSchema.extend(dateRangeSchema);
-
-const getAllMintRoute = async (
-  req: FastifyRequest<{
-    Querystring: GetAllMintQuery;
-  }>,
-  reply: FastifyReply
-) => {
-  const { limit, offset, to, from, orderBy, search, ...rest } = req.query;
-
-  const query = mintQuery(rest);
-
-  return getAllMintSchema
-    .parseAsync({ limit, offset, to, from })
-    .then(async ({ limit, offset, to, from }) => {
-      const paginator = new LimitOffsetPagination(
-        buildURLFromRequest(req),
+const getMintsRoute = (
+  request: FastifyRequest<{
+    Querystring: z.infer<typeof limitOffsetPaginationSchema> &
+      Record<string, string>;
+  }>
+) =>
+  limitOffsetPaginationSchema
+    .parseAsync(request.query)
+    .then(async ({ limit, offset }) => {
+      const pagination = new LimitOffsetPagination(
+        buildURLFromRequest(request),
         limit,
         offset
       );
-
-      return paginator.getResponse(
-        await Promise.all(
-          (
-            await orderMintsBy(
-              orderBy,
-              withSearch(
-                search,
-                { to, from },
-                paginator.limit,
-                paginator.getOffset(),
-                query
-              )
-            ).execute()
-          ).map(async (mint) => ({
-            ...mint,
-            metadata: await safeRequest(mint.uri),
-          }))
+      return pagination.getResponse(
+        await getMints(
+          pagination.limit,
+          pagination.getOffset(),
+          mintQuery(request.query),
+          orderByBuilder(request.query.orderBy)
         )
       );
-    })
-    .catch((error) => reply.status(400).send(error));
-};
+    });
 
-type GetMintParams = {
-  id: string;
-};
-
-const getMintParamSchema = z.object({
-  id: zIsAddress,
-});
-
-const getMintQuerySchema = z.object(dateRangeSchema);
-
-const getMintRoute = async (
-  req: FastifyRequest<{ Params: GetMintParams; Querystring: DateRangeQuery }>,
-  reply: FastifyReply
-) => {
-  return getMintParamSchema
-    .parseAsync(req.params)
-    .then(async ({ id }) => {
-      return getMintQuerySchema.parseAsync(req.query).then(async (filter) => {
-        const mints = await getMint(id, filter);
-        if (mints.length === 0)
-          return reply.status(400).send({
-            message: "Mint with address not found",
-          });
-
-        const [mint] = mints;
-
-        return { ...mint, metadata: await safeRequest(mint.uri) };
-      });
-    })
-    .catch((error) => reply.status(400).send(error.format()));
-};
-
-const getMintLeaderboardRoute = async (
-  req: FastifyRequest<{
-    Params: z.infer<typeof getAllMintSchema>;
-    Querystring: { orderBy: string };
-  }>,
-  reply: FastifyReply
-) => {
-  return getMintParamSchema
-    .parseAsync(req.params)
-    .then(({ id }) =>
-      orderLeaderboardBy(req.query.orderBy, getMintLeaderboard(id)).execute()
-    )
-    .catch((error) => reply.status(400).send(error.format()));
-};
-
-const getDateRangeSchema = z.object(dateRangeSchema).extend({
-  unit: z.union([z.literal("day"), z.literal("time")]),
-});
-
-const getMintGraphRoute = async (
-  req: FastifyRequest<{
-    Params: z.infer<typeof getAllMintSchema>;
-    Querystring: DateRangeQuery;
-  }>,
-  reply: FastifyReply
+const getMintByIdRoute = (
+  request: FastifyRequest<{
+    Params: Pick<z.infer<typeof selectMintSchema>, "id">;
+  }>
 ) =>
-  getMintParamSchema
-    .parseAsync(req.params)
-    .then(({ id }) =>
-      getDateRangeSchema.parseAsync(req.query).then(async (filter) => {
-        const result = await getMintGraph(id, filter);
-        if (filter.unit === "time")
-          return result.map((data) => ({
-            ...data,
-            date: moment().subtract(data.date, "hour"),
-          }));
-        return result;
-      })
-    )
-    .catch((error) => reply.status(400).send(error));
+  selectMintSchema
+    .pick({ id: true })
+    .parseAsync(request.params)
+    .then(async ({ id }) => {
+      const mint = await getMintById(id);
 
-export const mintRoutes = (fastify: FastifyInstance) => {
-  fastify
+      if (mint) return mint;
+
+      throw new StatusError(404, { message: "mint with id not found." });
+    });
+
+const getMintByUserRoute = (
+  request: FastifyRequest<{
+    Params: Pick<z.infer<typeof selectMintSchema>, "id">;
+    Querystring: z.infer<typeof limitOffsetPaginationSchema> &
+      Record<string, string>;
+  }>
+) =>
+  limitOffsetPaginationSchema
+    .parseAsync(request.query)
+    .then(({ limit, offset }) =>
+      selectMintSchema
+        .pick({ id: true })
+        .parseAsync(request.params)
+        .then(async ({ id }) => {
+          const pagination = new LimitOffsetPagination(
+            buildURLFromRequest(request),
+            limit,
+            offset
+          );
+          const mints = await getMintsByUser(
+            id,
+            pagination.limit,
+            pagination.getOffset()
+          );
+
+          return pagination.getResponse(mints);
+        })
+    );
+
+export const registerMintRoutes = (server: FastifyInstance) => {
+  server
     .route({
       method: "GET",
       url: "/mints/",
-      handler: catchRuntimeError(getAllMintRoute),
+      handler: catchRuntimeError(getMintsRoute),
     })
     .route({
       method: "GET",
       url: "/mints/:id/",
-      handler: catchRuntimeError(getMintRoute),
+      handler: catchRuntimeError(getMintByIdRoute),
     })
     .route({
       method: "GET",
-      url: "/mints/:id/leaderboard/",
-      handler: catchRuntimeError(getMintLeaderboardRoute),
-    })
-    .route({
-      method: "GET",
-      url: "/mints/:id/graph",
-      handler: catchRuntimeError(getMintGraphRoute),
+      url: "/mints/users/:id/",
+      handler: catchRuntimeError(getMintByUserRoute),
     });
 };

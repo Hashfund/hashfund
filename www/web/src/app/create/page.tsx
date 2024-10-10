@@ -1,92 +1,96 @@
 "use client";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-
-import { Id, toast } from "react-toastify";
+import { useState } from "react";
+import { type Id, toast } from "react-toastify";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { TabGroup, TabList, TabPanels } from "@headlessui/react";
 
-import {
-  MintInitialBuyAmountForm,
-  MintMaximumMarketCapForm,
-  MintMetadataForm,
-  processForm,
-} from "@/form/MintForm";
 import BalanceProvider from "@/providers/BalanceProvider";
+import { processMetadataForm, type MetadataForm } from "@/form/MetadataForm";
+import {
+  type MintInitialBuyForm,
+  type MintSupplyForm,
+  processMintForm,
+} from "@/form/MintForm";
+
+import { useSDK } from "@/composables/useSDK";
+import { useProgram } from "@/composables/useProgram";
 import StepButton from "@/components/widgets/StepButton";
-import CreateFormMetadata from "@/components/create/CreateFormMetadata";
-import CreateFormMarketCap from "@/components/create/CreateFormMarketCap";
-import CreateFormDeposit from "@/components/create/CreateFormDeposit";
 import TransactionToast from "@/components/TransactionToast";
+import CreateFormMintSupply from "@/components/create/CreateFormMintSupply";
+import CreateFormMetadata from "@/components/create/CreateFormMetadata";
+import CreateFormInitialBuy from "@/components/create/CreateFormInitialBuy";
+
+const Toast = ({ result }: { result: [Id, string, string] }) => {
+  const router = useRouter();
+  const [toastId, mint, signature] = result;
+
+  return (
+    <TransactionToast
+      toastId={toastId}
+      signature={signature}
+      callback={(status) => {
+        if (status === "confirmed") router.push("/" + mint);
+      }}
+    />
+  );
+};
 
 export default function CreatePage() {
-  const router = useRouter();
-
-  const walletState = useWallet();
-  const { connection } = useConnection();
+  const { api } = useSDK();
+  const { program } = useProgram();
 
   const [tabIndex, setTabIndex] = useState(0);
-  const [formMetadata, setFormMetadata] = useState<MintMetadataForm>({
+  const [formMetadata, setFormMetadata] = useState<MetadataForm>({
+    uri: "",
     name: "",
     symbol: "",
-    image: "" as unknown as File,
     description: "",
     website: "",
     telegram: "",
     twitter: "",
+    decimals: 6,
+    image: undefined as unknown as File,
   });
-  const [formMaxMarketCap, setFormMaxMarketCap] =
-    useState<MintMaximumMarketCapForm>({
-      totalSupply: "" as unknown as number,
-      maximumMarketCap: "" as unknown as number,
-      maximumMarketCapPc: "" as unknown as number,
-      liquidityPercentage: "" as unknown as number
-    });
-  const [formInitialBuyAmount, setFormInitialBuyAmount] =
-    useState<MintInitialBuyAmountForm>({
-      initialBuyAmount: "" as unknown as number,
-      initialBuyAmountPc: "" as unknown as number,
-    });
+  const [formMintSupply, setFormMintSupply] = useState<MintSupplyForm>({
+    supply: 0,
+    liquidityPercentage: 0,
+  });
+  const [formInitialBuy, setFormInitialBuy] = useState<MintInitialBuyForm>({
+    pairAmount: 0,
+    tokenAmount: 0,
+  });
 
-  const [formResult, setFormResult] = useState<[Id, string, string] | null>(
-    null
-  );
-  const processTx = async () => {
+  const [result, setResult] = useState<[Id, string, string] | null>(null);
+  const processTx = async (lazyFormInitialBuy: MintInitialBuyForm) => {
     const toastId = toast.loading("Sending transaction", {
       theme: "dark",
       autoClose: false,
     });
     try {
-      const [mint, signature] = await processForm(
-        connection,
-        walletState,
+      const [mint, signature] = await processMintForm(
+        program,
         formMetadata,
-        formMaxMarketCap,
-        formInitialBuyAmount
+        formMintSupply,
+        lazyFormInitialBuy
       );
-      setFormResult([toastId, mint, signature]);
-    } catch (error: any) {
-      toast.update(toastId, {
-        isLoading: false,
-        type: "error",
-        render: error.message,
-        autoClose: 5000,
-      });
+      setResult([toastId, mint.toBase58(), signature]);
+    } catch (error) {
+      if (error instanceof Error)
+        toast.update(toastId, {
+          type: "error",
+          autoClose: 5000,
+          isLoading: false,
+          render: error.message,
+        });
     }
   };
-
-  useEffect(() => {
-    if (formInitialBuyAmount.initialBuyAmount) processTx();
-  }, [formInitialBuyAmount]);
 
   return (
     <>
       <TabGroup
         selectedIndex={tabIndex}
         onChange={(index) => {
-          if (index < tabIndex) {
-            setTabIndex(index);
-          }
+          if (index < tabIndex) setTabIndex(index);
         }}
         className="flex flex-1 flex-col lg:flex-row md:justify-center lt-md:px-4 md:px-8 lg:space-x-4 lt-lg:space-y-8"
       >
@@ -109,42 +113,34 @@ export default function CreatePage() {
           <TabPanels className="h-full flex flex-col lg:w-xl">
             <CreateFormMetadata
               form={formMetadata}
-              onSubmit={(value) => {
-                setFormMetadata(value);
-                setTabIndex(tabIndex + 1);
-              }}
-            />
-            <CreateFormMarketCap
-              ticker={formMetadata.symbol}
-              form={formMaxMarketCap}
-              onSubmit={(value) => {
-                setFormMaxMarketCap(value);
-                setTabIndex(tabIndex + 1);
-              }}
-            />
-            <CreateFormDeposit
-              mint={formMetadata}
-              maximumMarketcap={formMaxMarketCap}
-              ticker={formMetadata.symbol}
-              form={formInitialBuyAmount}
               onSubmit={async (value) => {
-                setFormInitialBuyAmount(value);
+                return processMetadataForm(program, api, value).then((uri) => {
+                  setFormMetadata(Object.assign(value, {uri}));
+                  setTabIndex(tabIndex + 1);
+                });
+              }}
+            />
+
+            <CreateFormMintSupply
+              form={formMintSupply}
+              onSubmit={(value) => {
+                setFormMintSupply(value);
+                setTabIndex(tabIndex + 1);
+              }}
+            />
+            <CreateFormInitialBuy
+              form={formInitialBuy}
+              metadataForm={formMetadata}
+              mintSupplyForm={formMintSupply}
+              onSubmit={async (value) => {
+                setFormInitialBuy(value);
+                return processTx(value);
               }}
             />
           </TabPanels>
         </BalanceProvider>
       </TabGroup>
-      {formResult && (
-        <TransactionToast
-          toastId={formResult[0]}
-          signature={formResult[2]}
-          callback={(status) => {
-            if (status === "confirmed") {
-              router.push("/" + formResult[1]);
-            }
-          }}
-        />
-      )}
+      {result && <Toast result={result} />}
     </>
   );
 }

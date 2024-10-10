@@ -10,8 +10,11 @@
     "serve": "node dist/index.js"
   },
   "dependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
     "@hashfund/api": "*",
-    "@hashfund/program": "*",
-    "dotenv": "^16.4.5"
+    "@hashfund/zeroboost": "*",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.5",
+    "xior": "^0.6.1"
   }
 }

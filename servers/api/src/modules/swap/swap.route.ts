@@ -1,8 +1,9 @@
-import { z } from "zod";
+import type { z } from "zod";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
-import { zIsAddress } from "../../db/zod";
-import { dateRangeSchema } from "../../utils/date";
+import { StatusError } from "../../error";
+import { selectSwapSchema } from "../../db/zod";
+import { orderByBuilder } from "../../utils/order";
 import { catchRuntimeError } from "../../utils/error";
 import {
   buildURLFromRequest,
@@ -10,105 +11,96 @@ import {
   limitOffsetPaginationSchema,
 } from "../../utils/pagination";
 
-import {
-  getAllSwapByMint,
-  getAllSwaps,
-  getUserSwapByMint,
-} from "./swap.controller";
 import { swapQuery } from "./swap.query";
+import {
+  getSwapById,
+  getSwaps,
+  getSwapsGraph,
+  getSwapsVolume,
+} from "./swap.controller";
 
-const getAllSwapsRoute = async function (
-  req: FastifyRequest<{
+export const getSwapsRoute = (
+  request: FastifyRequest<{
     Querystring: z.infer<typeof limitOffsetPaginationSchema> &
       Record<string, string>;
   }>
-) {
-  const { limit, offset, ...rest } = req.query;
-
-  return limitOffsetPaginationSchema
-    .parseAsync({ limit, offset })
+) =>
+  limitOffsetPaginationSchema
+    .parseAsync(request.query)
     .then(async ({ limit, offset }) => {
-      const paginator = new LimitOffsetPagination(
-        buildURLFromRequest(req),
+      const pagination = new LimitOffsetPagination(
+        buildURLFromRequest(request),
         limit,
         offset
       );
-      return paginator.getResponse(
-        await getAllSwaps(
-          paginator.limit,
-          paginator.getOffset(),
-          swapQuery(rest)
-        )
+      const query = swapQuery(request.query);
+      const orderBy = orderByBuilder(request.query.orderBy);
+      return pagination.getResponse(
+        await getSwaps(pagination.limit, pagination.getOffset(), query, orderBy)
       );
     });
-};
 
-const getAllSwapByMintParamsSchema = z.object({
-  mint: zIsAddress,
-});
-
-const getAllSwapsByMintQuerySchema =
-  limitOffsetPaginationSchema.extend(dateRangeSchema);
-
-const getAllSwapByMintRoute = async function (
-  req: FastifyRequest<{
-    Params: z.infer<typeof getAllSwapByMintParamsSchema>;
-    Querystring: z.infer<typeof getAllSwapsByMintQuerySchema>;
+export const getSwapRoute = (
+  request: FastifyRequest<{
+    Params: Pick<z.infer<typeof selectSwapSchema>, "id">;
   }>
-) {
-  return getAllSwapByMintParamsSchema
-    .parseAsync(req.params)
-    .then(({ mint }) => {
-      return getAllSwapsByMintQuerySchema
-        .parseAsync(req.query)
-        .then(async ({ from, to, limit, offset }) => {
-          const paginator = new LimitOffsetPagination(
-            buildURLFromRequest(req),
-            limit,
-            offset
-          );
-          return paginator.getResponse(
-            await getAllSwapByMint(
-              mint,
-              paginator.limit,
-              paginator.getOffset(),
-              from,
-              to
-            )
-          );
-        });
+) =>
+  selectSwapSchema
+    .pick({ id: true })
+    .parseAsync(request.params)
+    .then(async ({ id }) => {
+      const swap = await getSwapById(id);
+      if (swap) return swap;
+      throw new StatusError(404, { message: "swap not found." });
     });
-};
 
-const getUserSwapByMintParamsSchema = getAllSwapByMintParamsSchema.extend({
-  user: zIsAddress,
-});
-
-const getUserSwapByMintRoute = async function (
-  req: FastifyRequest<{
-    Params: z.infer<typeof getUserSwapByMintParamsSchema>;
+export const getSwapsGraphRoute = (
+  request: FastifyRequest<{
+    Querystring: z.infer<typeof limitOffsetPaginationSchema> &
+      Record<string, string>;
   }>
-) {
-  return getUserSwapByMintParamsSchema
-    .parseAsync(req.params)
-    .then((params) => getUserSwapByMint(params.mint, params.user).execute());
+) =>
+  limitOffsetPaginationSchema
+    .parseAsync(request.query)
+    .then(async ({ limit, offset }) => {
+      const pagination = new LimitOffsetPagination(
+        buildURLFromRequest(request),
+        limit,
+        offset
+      );
+      const filter = swapQuery(request.query);
+      return pagination.getResponse(
+        await getSwapsGraph(pagination.limit, pagination.getOffset(), filter)
+      );
+    });
+
+export const getSwapsVolumeRoute = (
+  request: FastifyRequest<{ Querystring: Record<string, string> }>
+) => {
+  const query = swapQuery(request.query);
+  return getSwapsVolume(query);
 };
 
-export const swapRoutes = (fastify: FastifyInstance) => {
-  fastify
+export const registerSwapRoutes = (server: FastifyInstance) => {
+  server
     .route({
       method: "GET",
       url: "/swaps/",
-      handler: catchRuntimeError(getAllSwapsRoute),
+      handler: catchRuntimeError(getSwapsRoute),
     })
     .route({
       method: "GET",
-      url: "/swaps/:mint/",
-      handler: catchRuntimeError(getAllSwapByMintRoute),
+      url: "/swaps/:id/",
+      handler: catchRuntimeError(getSwapRoute),
     })
     .route({
       method: "GET",
-      url: "/swaps/:mint/:user/",
-      handler: catchRuntimeError(getUserSwapByMintRoute),
+      url: "/swaps/graph/",
+      handler: catchRuntimeError(getSwapsGraphRoute),
+    })
+    .route({
+      method: "GET",
+      url: "/swaps/volume/",
+      handler: catchRuntimeError(getSwapsVolumeRoute),
     });
 };

@@ -1,36 +1,37 @@
 import { TbArrowsExchange } from "react-icons/tb";
 import { ErrorMessage, useFormikContext } from "formik";
+import { ConstantCurveCalculator, TradeDirection } from "@hashfund/zeroboost";
 
+import { PythFeed } from "@/config/pyth";
+import { MintSupplyForm } from "@/form/MintForm";
+import { MetadataForm } from "@/form/MetadataForm";
 import useBalance from "@/composables/useBalance";
-import ConstantCurve, { TradeDirection } from "@/web3/bounding_curve";
-import { MintMaximumMarketCapForm, MintMetadataForm } from "@/form/MintForm";
+import { useProgram } from "@/composables/useProgram";
+import { useFeedPrice } from "@/composables/useFeedPrice";
+import { denormalizeBN, normalizeBN } from "@/web3/decimal";
 
 import TokenPriceInput from "../widgets/TokenPriceInput";
-import MintInfo from "./MintInfo";
 
-type CollateralInputProps = {
-  mint: MintMetadataForm;
-  maximumMarketCap: MintMaximumMarketCapForm;
+type Props = {
+  metadataForm: MetadataForm;
+  supplyForm: MintSupplyForm;
 };
 
-export default function CollateralInput({
-  mint,
-  maximumMarketCap,
-}: CollateralInputProps) {
+export default function CollateralInput({ metadataForm, supplyForm }: Props) {
+  const { config } = useProgram();
+  const solPrice = useFeedPrice(PythFeed.SOL_USD);
   const { solBalance } = useBalance();
   const { setFieldValue } = useFormikContext<{
-    [key: string]: number;
+    pairAmount: number;
+    tokenAmount: number;
   }>();
-
-  const supplyFraction = 100 - Number(maximumMarketCap.liquidityPercentage);
-  const boundingCurve = maximumMarketCap.totalSupply * (supplyFraction / 100);
-
-  const curve = new ConstantCurve(
-    boundingCurve,
-    maximumMarketCap.maximumMarketCap
+  const curve = new ConstantCurveCalculator(
+    denormalizeBN(supplyForm.supply, 6),
+    denormalizeBN(config.maximumCurveUsdValuation / solPrice, 9),
+    supplyForm.liquidityPercentage
   );
 
-  const balance = Number(Number(solBalance / 1_000_000_000).toFixed(4));
+  const balance = normalizeBN(solBalance, 9);
   const initialPrice = curve.calculateInitialPrice();
 
   return (
@@ -40,22 +41,30 @@ export default function CollateralInput({
           <div className="self-end text-xs text-white/75">{balance}</div>
           <TokenPriceInput
             balance={balance}
-            name="initialBuyAmount"
+            name="pairAmount"
             image="/sol.png"
             ticker={"SOL"}
             onChange={(value) => {
-              const tokenAmount = ConstantCurve.calculateTokenOut(
-                initialPrice,
-                value,
-                0,
-                TradeDirection.BToA
+              console.log(
+                "onchange",
+                [
+                  denormalizeBN(supplyForm.supply, 6),
+                  denormalizeBN(config.maximumCurveUsdValuation / solPrice, 9),
+                  denormalizeBN(value, 9),
+                ].map((bn) => bn.toString())
               );
-              setFieldValue("initialBuyAmount", value);
-              setFieldValue("initialBuyAmountPc", tokenAmount);
+
+              const tokenAmount = ConstantCurveCalculator.calculateAmountOut(
+                initialPrice,
+                denormalizeBN(Number(value), 9),
+                TradeDirection.BtoA
+              );
+              setFieldValue("pairAmount", value);
+              setFieldValue("tokenAmount", normalizeBN(tokenAmount, 6));
             }}
           />
           <small className="text-xs text-red">
-            <ErrorMessage name="initialBuyAmount" />
+            <ErrorMessage name="pairAmount" />
           </small>
         </div>
         <div className="self-center">
@@ -65,37 +74,25 @@ export default function CollateralInput({
         </div>
         <div className="flex flex-col">
           <TokenPriceInput
-            name="initialBuyAmountPc"
-            image={URL.createObjectURL(mint.image)}
-            ticker={mint.symbol}
+            name="tokenAmount"
+            image={URL.createObjectURL(metadataForm.image)}
+            ticker={metadataForm.symbol}
             onChange={(value) => {
-              const solAmount = ConstantCurve.calculateTokenOut(
+              console.log("onchange", denormalizeBN(value, 6).toString());
+              const solAmount = ConstantCurveCalculator.calculateAmountOut(
                 initialPrice,
-                value,
-                0,
-                TradeDirection.AToB
+                denormalizeBN(value, 6),
+                TradeDirection.AtoB
               );
-              setFieldValue("initialBuyAmount", solAmount);
-              setFieldValue("initialBuyAmountPc", value);
+              setFieldValue("pairAmount", solAmount);
+              setFieldValue("tokenAmount", value);
             }}
           />
           <small className="text-xs text-red">
-            <ErrorMessage name="initialBuyAmountPc" />
+            <ErrorMessage name="tokenAmount" />
           </small>
         </div>
       </div>
-      <MintInfo
-        mint={mint}
-        maximumMarketCap={maximumMarketCap}
-        initialPrice={initialPrice}
-        boundingCurve={boundingCurve}
-        boundingCurveSOL={ConstantCurve.calculateTokenOut(
-          initialPrice,
-          boundingCurve,
-          0,
-          TradeDirection.AToB
-        )}
-      />
     </div>
   );
 }

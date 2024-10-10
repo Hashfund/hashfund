@@ -1,3 +1,4 @@
+import Api from "@hashfund/sdk";
 import { uploadFile } from "@/lib/imagekit";
 
 type CreateTokenMetadata = {
@@ -11,6 +12,7 @@ type CreateTokenMetadata = {
 };
 
 export const createTokenRichMetadata = async (
+  api: Api,
   {
     name,
     symbol,
@@ -23,26 +25,26 @@ export const createTokenRichMetadata = async (
   nonce: string
 ) => {
   const path = (value: string) => `tokens/${value}/${nonce}`;
-  const imageLink = (await uploadFile(image, path("images") + ".png")).url;
+  const imageLink = (await uploadFile(api, image, path("images") + ".png")).url;
 
   const richMetadata = JSON.stringify({
     name,
     symbol,
     description,
     image: imageLink,
-    external_link: website,
     properties: {
       files: [],
     },
-    socials: {
-      telegram,
-      twitter,
-    },
+    websites: [{ label: "Website", url: website }],
+    socials: [
+      { type: "Telegram", url: telegram },
+      { type: "twitter", url: twitter },
+    ],
   });
 
   const file = new Blob([richMetadata], { type: "application/json" });
 
-  return (await uploadFile(file, path("metadata") + ".json")).url;
+  return (await uploadFile(api, file, path("metadata") + ".json")).url;
 };
 
 export const avatarOrDefault = function (src: string | null | undefined) {

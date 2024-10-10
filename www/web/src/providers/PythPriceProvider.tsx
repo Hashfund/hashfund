@@ -9,6 +9,7 @@ import {
   useMemo,
   useState,
 } from "react";
+
 import { PYTH_ENPOINT_URL } from "@/config";
 import { priceToNumber } from "@/web3/math";
 
@@ -41,7 +42,10 @@ export default function PythPriceProvider({
     const amount = priceToNumber(priceFeed.getEmaPriceUnchecked());
 
     setPrice((price) => {
-      price.set(id, Number(amount.toFixed(2)));
+      const value = price.get(id);
+      const newValue = Number(amount.toFixed(2));
+      if (value && value === newValue) return price;
+      price.set(id, newValue);
       return new Map(price);
     });
   };

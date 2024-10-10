@@ -6,14 +6,12 @@ export default function useTokenBalance(
   mint: string,
   address: string
 ) {
-  console.log(address);
   const tokenAddress = getAssociatedTokenAddressSync(
     new PublicKey(mint),
     new PublicKey(address),
     true
   );
 
-  console.log(tokenAddress.toBase58());
 
   return connection
     .getTokenAccountBalance(tokenAddress)

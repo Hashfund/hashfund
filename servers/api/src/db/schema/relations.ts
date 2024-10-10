@@ -1,10 +1,9 @@
 import { relations } from "drizzle-orm";
 
-import { mints } from "./mint";
-import { users } from "./user";
-import { swaps } from "./swap";
-import { hashes } from "./hash";
-import { boundingCurves } from "./bounding_curve";
+import { mints } from "./mints";
+import { users } from "./users";
+import { swaps } from "./swaps";
+import { boundingCurves } from "./boundingCurves";
 
 export const usersRelations = relations(users, ({ many }) => ({
   mints: many(mints),
@@ -21,10 +20,6 @@ export const mintsRelations = relations(mints, ({ one, many }) => ({
     references: [boundingCurves.mint],
   }),
   swaps: many(swaps),
-  hash: one(hashes, {
-    fields: [mints.id],
-    references: [hashes.mint],
-  }),
 }));
 
 export const swapsRelations = relations(swaps, ({ one }) => ({
@@ -34,13 +29,6 @@ export const swapsRelations = relations(swaps, ({ one }) => ({
   }),
   mint: one(mints, {
     fields: [swaps.mint],
-    references: [mints.id],
-  }),
-}));
-
-export const hashesRelations = relations(hashes, ({ one }) => ({
-  mint: one(mints, {
-    fields: [hashes.mint],
     references: [mints.id],
   }),
 }));

@@ -2,22 +2,24 @@ import { z } from "zod";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 import { isAddress } from "../utils/web3";
-
-import { hashes } from "./schema/hash";
 import { users, mints, boundingCurves, swaps } from "./schema";
 
 export const zIsAddress = z.custom<string>((value) => isAddress(value));
+export const jsonMetadata = z.object({
+  name: z.string(),
+  image: z.string(),
+  symbol: z.string(),
+  description: z.string(),
+});
 
 export const selectUserSchema = createSelectSchema(users);
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-});
+export const insertUserSchema = createInsertSchema(users);
 
 export const selectMintSchema = createSelectSchema(mints);
 export const insertMintSchema = createInsertSchema(mints, {
   uri: (schema) => schema.uri.url(),
   creator: zIsAddress,
-  reserve: zIsAddress,
+  metadata: jsonMetadata,
 });
 export const updateMintSchema = insertMintSchema.omit({ id: true }).partial();
 
@@ -31,10 +33,4 @@ export const selectSwapSchema = createSelectSchema(swaps);
 export const insertSwapSchema = createInsertSchema(swaps, {
   mint: zIsAddress,
   payer: zIsAddress,
-});
-
-export const hashSchema = createSelectSchema(hashes);
-export const insertHashSchema = createInsertSchema(hashes, {
-  marketId: zIsAddress.optional(),
-  ammId: zIsAddress,
 });

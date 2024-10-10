@@ -1,13 +1,13 @@
 import clsx from "clsx";
+import type { MintWithExtra } from "@hashfund/sdk/models";
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from "@headlessui/react";
 
-import { Mint } from "@/lib/api/models";
 import { TokenList } from "../TokenList";
 
 type ProfileTabProps = {
   className?: string;
-  mints: Mint[];
-  tokens: Mint[];
+  mints: MintWithExtra[];
+  tokens: MintWithExtra[];
 };
 
 export function ProfileTab({ className, mints, tokens }: ProfileTabProps) {

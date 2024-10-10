@@ -1,8 +1,9 @@
 "use client";
 import clsx from "clsx";
-import { useSearchParams, useRouter } from "next/navigation";
+
 import { useRef } from "react";
 import { MdSearch } from "react-icons/md";
+import { useSearchParams, useRouter } from "next/navigation";
 
 type SearchInputProps = {
   qKey: string;

@@ -1,41 +1,44 @@
 import "dotenv/config";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import multipart from "@fastify/multipart";
+import fastifyCookie from "@fastify/cookie";
+import fastifySession from "@fastify/session";
+import fastifyPassport from "@fastify/passport";
+import fastifyMultipart from "@fastify/multipart";
 
-import { mintRoutes } from "./modules/mint/mint.route";
-import { swapRoutes } from "./modules/swap/swap.route";
-import { userRoutes } from "./modules/user/user.route";
-import { assetRoutes } from "./modules/asset/asset.route";
+import { registerRoutes } from "./modules";
+import { HOST, PORT, SECRET_KEY } from "./config";
 
 const main = async () => {
-  const app = Fastify({
+  const server = Fastify({
     logger: true,
     ignoreTrailingSlash: true,
   });
 
-  await app.register(cors, {
+  server.register(fastifyCookie);
+  server.register(fastifySession, { secret: SECRET_KEY });
+
+  server.register(fastifyPassport.initialize());
+  server.register(fastifyPassport.secureSession());
+
+  await server.register(cors, {
     origin: "*",
   });
 
-  await app.register(multipart, {
+  await server.register(fastifyMultipart, {
     attachFieldsToBody: "keyValues",
   });
 
-  userRoutes(app);
-  mintRoutes(app);
-  swapRoutes(app);
-  assetRoutes(app);
 
-  app
-    .listen({ port: Number(process.env.PORT!), host: process.env.HOST! })
-    .then((address) => {
-      console.log("server started at", address);
-    })
-    .catch((error) => {
-      app.log.error(error);
-      process.exit(1);
-    });
+  registerRoutes(server);
+
+  process.on("SIGINT", async () => await server.close());
+  process.on("SIGTERM", async () => await server.close());
+
+  await server.listen({ port: PORT, host: HOST }).catch((error) => {
+    server.log.error(error);
+    process.exit(1);
+  });
 };
 
 main().catch(console.log);

@@ -1,240 +1,88 @@
-import { z } from "zod";
-import moment from "moment";
-import {
-  and,
-  desc,
-  eq,
-  getTableColumns,
-  gt,
-  gte,
-  like,
-  lte,
-  or,
-  sql,
-  SQL,
-  sum,
-} from "drizzle-orm";
+import type { z } from "zod";
+import { TradeDirection } from "@hashfund/zeroboost";
+import { and, count, eq, getTableColumns, SQL, sum } from "drizzle-orm";
 
-import { buildRange, type TimeUnit } from "../../utils/date";
+import { db } from "../../db";
+import { boundingCurves, mints, swaps } from "../../db/schema";
+import { caseWhen, coalesce } from "../../db/functions";
+import type { insertMintSchema, updateMintSchema } from "../../db/zod";
 
-import { hashes } from "../../db/schema/hash";
-import { insertMintSchema, updateMintSchema } from "../../db/zod";
-import { boundingCurves, mints, swaps, users } from "../../db/schema";
-import { caseWhen, coalesce, date, db, hour, toBigInt } from "../../db";
+export const createMint = (values: z.infer<typeof insertMintSchema>) =>
+  db.insert(mints).values(values).returning().execute();
 
-export const createMint = function (values: z.infer<typeof insertMintSchema>) {
-  return db.insert(mints).values(values).returning().execute();
-};
+export const updateMint = (values: Partial<z.infer<typeof updateMintSchema>>) =>
+  db.update(mints).set(values).returning().execute();
 
-export const updateMint = function (
-  id: string,
-  values: z.infer<typeof updateMintSchema>
-) {
-  return db
-    .update(mints)
-    .set(values)
-    .where(eq(mints.id, id))
-    .returning()
-    .execute();
-};
+export const getMints = <TWhere extends SQL, TOrderBy extends SQL>(
+  limit: number,
+  offset: number,
+  where?: TWhere,
+  orderBy?: TOrderBy
+) => {
+  const qSwap = db.$with("qSwap").as(
+    db
+      .select({
+        mint: swaps.mint,
+        pairVolume: sum(swaps.pairAmount).as("pair_amount"),
+        tokenVolume: sum(swaps.tokenAmount).as("token_amount"),
+        buyVolume: caseWhen(
+          eq(swaps.tradeDirection, TradeDirection.BtoA),
+          sum(swaps.pairAmount)
+        ).as("buy_volume"),
+        sellVolume: caseWhen(
+          eq(swaps.tradeDirection, TradeDirection.AtoB),
+          sum(swaps.pairAmount)
+        ).as("sell_volume"),
+        count: count(swaps.id).as("count"),
+      })
+      .from(swaps)
+      .groupBy(swaps.mint, swaps.tradeDirection)
+  );
 
-type Filter = {
-  to?: string;
-  from?: string;
-  unit?: TimeUnit;
-};
-
-export const createMintsQuery = (filter?: Filter) => {
-  const to = filter?.to ? moment(filter.to).toDate() : new Date();
-  const from = filter?.from
-    ? moment(filter.from).toDate()
-    : moment().subtract(1, "day").toDate();
-
-  const qLastSwap = db
-    .selectDistinctOn([swaps.mint],{
-      mint: swaps.mint,
-      marketCap: swaps.marketCap,
-      virtualMarketCap: swaps.virtualMarketCap,
-    })
-    .from(swaps)
-    .orderBy(swaps.mint, desc(swaps.timestamp))
-    .as("qLastSwap");
-
-  const qSwaps = db
-    .select({
-      mint: swaps.mint,
-      volumeIn: coalesce(
-        sum(
-          caseWhen(
-            and(or(eq(swaps.tradeDirection, 0))),
-            toBigInt(swaps.amountIn)
-          )
-        ),
-        0
-      ).as("volume_in"),
-      volumeOut: coalesce(
-        sum(
-          caseWhen(and(eq(swaps.tradeDirection, 1)), toBigInt(swaps.amountOut))
-        ),
-        0
-      ).as("volume_out"),
-      volumeInFrom: coalesce(
-        sum(
-          caseWhen(
-            and(
-              eq(swaps.tradeDirection, 0),
-              gte(swaps.timestamp, from),
-              lte(swaps.timestamp, to)
-            ),
-            toBigInt(swaps.amountIn)
-          )
-        ),
-        0
-      ).as("volume_in_from"),
-      volumeOutFrom: coalesce(
-        sum(
-          caseWhen(
-            and(
-              eq(swaps.tradeDirection, 1),
-              gte(swaps.timestamp, from),
-              lte(swaps.timestamp, to)
-            ),
-            toBigInt(swaps.amountOut)
-          )
-        ),
-        0
-      ).as("volume_out_from"),
-    })
-    .from(swaps)
-    .groupBy(swaps.mint)
-    .as("qSwaps");
-
-  return db
+  const query = db
+    .with(qSwap)
     .select({
       ...getTableColumns(mints),
-      volumeIn: qSwaps.volumeIn,
-      volumeOut: qSwaps.volumeOut,
-      volumeInFrom: qSwaps.volumeInFrom,
-      volumeOutFrom: qSwaps.volumeOutFrom,
-      virtualMarketCap: toBigInt(qLastSwap.virtualMarketCap).as(
-        "virtual_market_cap"
-      ),
-      marketCap: toBigInt(qLastSwap.marketCap).as("market_cap"),
-      boundingCurve: {
-        ...getTableColumns(boundingCurves),
-        initialPrice: sql<number>`${boundingCurves.initialPrice}`.as(
-          "initial_price"
-        ),
-        initialMarketCap: boundingCurves.initialMarketCap,
-        curveInitialSupply: toBigInt(boundingCurves.curveInitialSupply).as(
-          "curve_initial_marketcap"
-        ),
-        maximumMarketCap: toBigInt(boundingCurves.maximumMarketCap).as(
-          "maximum_market_cap"
-        ),
-      },
-      hash: {
-        id: hashes.id,
-        ammId: hashes.ammId,
-        marketId: hashes.marketId,
+      boundingCurve: getTableColumns(boundingCurves),
+      market: {
+        txnCount: sum(qSwap.count).mapWith(Number),
+        buyVolume: coalesce(sum(qSwap.buyVolume), 0).mapWith(BigInt),
+        sellVolume: coalesce(sum(qSwap.sellVolume), 0).mapWith(BigInt),
+        pairVolume: coalesce(sum(qSwap.pairVolume), 0).mapWith(BigInt),
+        tokenVolume: coalesce(sum(qSwap.tokenVolume), 0).mapWith(BigInt),
       },
     })
     .from(mints)
+    .limit(limit)
+    .offset(offset)
+    .where(where)
+    .leftJoin(qSwap, eq(qSwap.mint, mints.id))
     .innerJoin(boundingCurves, eq(boundingCurves.mint, mints.id))
-    .innerJoin(qSwaps, eq(qSwaps.mint, mints.id))
-    .innerJoin(qLastSwap, eq(qLastSwap.mint, mints.id))
-    .leftJoin(hashes, eq(hashes.mint, mints.id));
+    .groupBy(mints.id, qSwap.mint, boundingCurves.id);
+
+  return orderBy ? query.orderBy(orderBy).execute() : query.execute();
 };
 
-export const getAllMint = (
-  filter: Filter,
-  limit: number,
-  offset: number,
-  where?: SQL
-) => {
-  return createMintsQuery(filter).where(where).limit(limit).offset(offset);
-};
-
-export const getMint = (id: string, filter: Filter) =>
-  createMintsQuery(filter).where(eq(mints.id, id)).limit(1).execute();
-
-export const getMintLeaderboard = (id: string) => {
-  return db
-    .select({
-      user: users,
-      volumeIn: coalesce(
-        sum(caseWhen(eq(swaps.tradeDirection, 0), toBigInt(swaps.amountIn))),
-        0
-      ).as("volume_in"),
-      volumeOut: coalesce(
-        sum(caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))),
-        0
-      ).as("volume_out"),
+export const getMintById = (id: string) =>
+  db.query.mints
+    .findFirst({
+      where: eq(mints.id, id),
+      with: {
+        boundingCurve: true,
+      },
     })
-    .from(swaps)
-    .rightJoin(users, eq(users.id, swaps.payer))
-    .where(eq(swaps.mint, id))
-    .groupBy(swaps.payer, users.id);
-};
+    .execute();
 
-export const getMintGraph = (id: string, filter: NonNullable<Filter>) => {
-  const to = moment(filter.to);
-  const from = moment(filter.from);
-
-  const range = buildRange(from, to, filter.unit!).map(
-    ([from, to]) =>
-      [from, and(lte(swaps.timestamp, from), gt(swaps.timestamp, to))] as const
-  );
-
-  const dateColumn =
-    filter.unit === "time" ? hour(swaps.timestamp) : date(swaps.timestamp);
-
-  return Promise.all(
-    range.map(async ([date, where]) => ({
-      date: date.toISOString(),
-      ...((
-        await db
-          .select({
-            volumeIn: coalesce(
-              sum(
-                caseWhen(
-                  or(eq(swaps.tradeDirection, 0), eq(swaps.tradeDirection, 2)),
-                  toBigInt(swaps.amountIn)
-                )
-              ),
-              0
-            ),
-            volumeOut: coalesce(
-              sum(
-                caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))
-              ),
-              0
-            ),
-          })
-          .from(swaps)
-          .where(and(eq(swaps.mint, id), where))
-          .orderBy(dateColumn)
-          .groupBy(dateColumn)
-          .execute()
-      ).at(0) ?? {
-        date: date.toISOString(),
-        volumeIn: "0",
-        volumeOut: "0",
-      }),
-    }))
-  );
-};
-
-export const searchMint = (search: string) => {
-  return createMintsQuery().where(
-    or(
-      like(mints.name, `%${search}%`),
-      like(mints.ticker, `%${search}%`),
-      eq(mints.id, search),
-      sql`market_cap=${search}`,
-      sql`maximum_market_cap=${search}`,
-      sql`volume_in=${search}`,
-      sql`volume_out=${search}`
-    )
-  );
+export const getMintsByUser = (user: string, limit: number, offset: number) => {
+  const qSwaps = db
+    .$with("qSwaps")
+    .as(db.selectDistinctOn([swaps.payer]).from(swaps));
+  return db
+    .with(qSwaps)
+    .selectDistinctOn([mints.id], getTableColumns(mints))
+    .from(mints)
+    .limit(limit)
+    .offset(offset)
+    .innerJoin(qSwaps, and(eq(qSwaps.mint, mints.id), eq(qSwaps.payer, user)))
+    .execute();
 };

@@ -1,4 +1,4 @@
-import { users } from "../../db/schema";
+import { users } from "db/schema";
 import { mapFilters, queryBuilder } from "../../utils/query";
 
 export const userQuery = queryBuilder({

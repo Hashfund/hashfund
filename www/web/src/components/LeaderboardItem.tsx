@@ -1,7 +1,8 @@
-import { User } from "@/lib/api/models/user.model";
-import { truncateAddress } from "@/web3/address";
 import clsx from "clsx";
+import { User } from "@hashfund/sdk/models";
 import { MdAccountCircle } from "react-icons/md";
+
+import { truncateAddress } from "@/web3/address";
 
 type LeaderboardItemProps = {
   index: number;
@@ -22,7 +23,11 @@ export default function LeaderboardItem({
         <div
           className={clsx(
             "h-6 w-6 flex items-center justify-center rounded-full bg-dark-100 text-sm",
-            { "bg-gold text-black": index === 1, "bg-sliver text-black": index === 2, "bg-bronze": index === 3 }
+            {
+              "bg-gold text-black": index === 1,
+              "bg-sliver text-black": index === 2,
+              "bg-bronze": index === 3,
+            }
           )}
         >
           {index}

@@ -1,25 +1,19 @@
 "use client";
 import clsx from "clsx";
+import type { MintWithExtra } from "@hashfund/sdk/models";
 
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import { MdSearch } from "react-icons/md";
 
-import { Mint } from "@/lib/api/models";
-import useFeedPrice from "@/lib/api/useFeedPrice";
-
-import { normalizeBN } from "@/web3/decimal";
 import { PythFeed } from "@/config/pyth";
 import { formatPrice } from "@/web3/price";
-import {
-  calculateMarketcapWeight,
-  calculateBNPercentile,
-  toUiAmount,
-} from "@/web3/math";
+import { normalizeBN } from "@/web3/decimal";
+import { useFeedPrice } from "@/composables/useFeedPrice";
 
 type TokenProps = {
   className?: string;
-  mints: Mint[];
+  mints: MintWithExtra[];
 };
 
 export function TokenList({ className, mints }: TokenProps) {
@@ -37,12 +31,12 @@ export function TokenList({ className, mints }: TokenProps) {
           <tr>
             <th>Token</th>
             <th>Price</th>
-            <th>24h Change</th>
-            <th>24h Volume</th>
+            <th>Buy Volume</th>
+            <th>Sell Volume</th>
             <th>Volume</th>
             <th>Max Marketcap</th>
-            <th>Collateral Weight</th>
             <th>Marketcap</th>
+            <th>Tnx</th>
           </tr>
         </thead>
         <tbody>
@@ -55,7 +49,7 @@ export function TokenList({ className, mints }: TokenProps) {
                 >
                   <div className="h-12 w-12">
                     <Image
-                      src={mint.metadata?.image}
+                      src={mint.metadata.image}
                       alt={mint.name}
                       width={64}
                       height={64}
@@ -65,34 +59,31 @@ export function TokenList({ className, mints }: TokenProps) {
                   <p>{mint.name}</p>
                 </Link>
               </td>
-              <td className="sol">
+              <td>
                 <Link href={mint.id}>
-                  {formatPrice(
-                    solPrice * toUiAmount(mint.boundingCurve.initialPrice)
-                  )}
+                  {formatPrice(solPrice * mint.boundingCurve.initialPrice)}
                 </Link>
               </td>
-              <td className="per">
-                {calculateBNPercentile(mint.volumeIn, mint.volumeInFrom) ?? 0}
+              <td>{formatPrice(normalizeBN(mint.market.buyVolume, 9))}</td>
+              <td>
+                {formatPrice(solPrice * normalizeBN(mint.market.sellVolume, 9))}
               </td>
-              <td>{formatPrice(solPrice * normalizeBN(mint.volumeInFrom))}</td>
-              <td>{formatPrice(solPrice * normalizeBN(mint.volumeIn))}</td>
+              <td>
+                {formatPrice(solPrice * normalizeBN(mint.market.pairVolume, 9))}
+              </td>
               <td>
                 {formatPrice(
                   solPrice *
-                    normalizeBN(mint.boundingCurve?.maximumMarketCap ?? 0)
+                    normalizeBN(mint.boundingCurve.maximumPairBalance, 9)
                 )}
               </td>
               <td>
-                {calculateMarketcapWeight(
-                  mint.marketCap,
-                  mint.boundingCurve?.maximumMarketCap ?? 0
+                {formatPrice(
+                  solPrice *
+                    normalizeBN(mint.boundingCurve.virtualPairBalance, 9)
                 )}
-                x
               </td>
-              <td>
-                {formatPrice(solPrice * normalizeBN(mint.virtualMarketCap))}
-              </td>
+              <td>{mint.market.txnCount}</td>
             </tr>
           ))}
         </tbody>

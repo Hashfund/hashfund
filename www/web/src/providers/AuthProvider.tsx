@@ -1,8 +1,8 @@
+import { useSDK } from "@/composables/useSDK";
+import { Api } from "@/lib/api";
+import type { User } from "@hashfund/sdk/models";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { createContext, useEffect, useState } from "react";
-
-import Api from "@/lib/api";
-import { User } from "@/lib/api/models/user.model";
 
 type AuthContext = {
   user: User | null;
@@ -15,14 +15,13 @@ export const AuthContext = createContext<AuthContext>({
 });
 
 export default function AuthProvider({ children }: React.PropsWithChildren) {
+  const { api } = useSDK();
   const { publicKey } = useWallet();
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     if (publicKey)
-      Api.instance.user
-        .getUser(publicKey.toBase58())
-        .then(({ data }) => setUser(data));
+      api.user.retrieve(publicKey.toBase58()).then(({ data }) => setUser(data));
   }, [publicKey]);
 
   return (

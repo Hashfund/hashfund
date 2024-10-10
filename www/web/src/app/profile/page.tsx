@@ -1,15 +1,14 @@
 import { RouteProps } from "@/types";
-import useUser from "@/composables/api/useUser";
-import { useMints } from "@/composables/api/useMints";
-import useUserTokens from "@/composables/api/useUserTokens";
+
 import { ProfileHeader, ProfileTab } from "@/components/profile";
+import { Api } from "@/lib/api";
 
 export default async function ProfilePage({
   searchParams: { address },
 }: RouteProps) {
-  const user = await useUser(address);
-  const { mints } = await useMints({ creator: address });
-  const { tokens } = await useUserTokens(address);
+  const user = await Api.instance.user.retrieve(address).then(({data}) => data);
+  const mints = await Api.instance.mint.list({ creator: address }).then(({data}) => data.results);
+  const tokens  = await Api.instance.mint.getMintByUser( address).then(({data}) => data.results);
 
   return (
     <main className="flex flex-col space-y-8">

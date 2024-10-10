@@ -11,6 +11,7 @@ import {
   or,
   SQL,
 } from "drizzle-orm";
+import { normalizeValue } from "./normalize";
 
 export const Grammer = {
   eq,
@@ -26,13 +27,13 @@ export const mapFilters = function (column: Column) {
   return (filters: string[], value: any) => {
     const queries: SQL[] = [];
 
-    if (filters.length === 0) return eq(column, value);
+    if (filters.length === 0) return eq(column, normalizeValue(column, value));
 
     for (const filter of filters) {
       if (filter in Grammer) {
         const grammer = Grammer[filter as unknown as keyof typeof Grammer](
           column,
-          value
+          normalizeValue(column, value)
         );
         queries.push(grammer);
       } else {
@@ -46,11 +47,11 @@ export const mapFilters = function (column: Column) {
 };
 
 export type QueryBuilder = {
-  [key: string]: (filter: string[], value: any) => SQL | undefined;
+  [key: string]: (filter: string[], value: string) => SQL | undefined;
 };
 
 export const queryBuilder = <T extends QueryBuilder>(builder: T) => {
-  return (query: Record<string, any>) => {
+  return (query: Record<string, string>) => {
     const sqlWrappers: (SQL | undefined)[] = [];
 
     for (const [key, value] of Object.entries(query)) {

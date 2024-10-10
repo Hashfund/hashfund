@@ -1,106 +1,105 @@
-import BN from "bn.js";
-
-import { Connection } from "@solana/web3.js";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { safeBN, unsafeBN } from "@hashfund/bn";
-import { WalletContextState } from "@solana/wallet-adapter-react";
+import { type Program, BN, web3 } from "@coral-xyz/anchor";
+import {
+  TradeDirection,
+  type Zeroboost,
+  devnet,
+  getMintPda,
+  mintToken,
+  rawSwap,
+} from "@hashfund/zeroboost";
 
-import { mixed, object, string, InferType, number } from "yup";
+import { object, number } from "yup";
 
-import { findMintAddress } from "@/web3/address";
-import { createTokenRichMetadata } from "@/web3/asset";
-import { createMintTokenTransaction } from "@/web3/mint";
+import type { MetadataForm } from "./MetadataForm";
 
-export const validateMetadataSchema = object().shape({
-  name: string().max(16).required(),
-  symbol: string().max(10).required(),
-  description: string().required().min(32),
-  website: string().url(),
-  telegram: string().url(),
-  twitter: string().url(),
-  image: mixed().required("Image is required"),
-});
-
-export const validateMaximumMarketCapSchema = object().shape({
-  maximumMarketCap: number()
-    .min(0, "Invalid amount")
-    .lessThan(10 * Math.pow(10, 9))
-    .required(),
+export const validateMintSupplySchema = object().shape({
+  supply: number().min(1),
   liquidityPercentage: number().min(0).required(),
-  totalSupply: number().min(1),
 });
 
-export const createInitialDepositSchema = (balance: number) =>
+export const createInitialBuySchema = (balance: number) =>
   object().shape({
     amount: number()
       .max(balance, "Insufficient Balance")
       .min(0, "At least decimal greater then 0"),
   });
 
-export type MintMetadataForm = InferType<typeof validateMetadataSchema> & {
-  image: File;
-};
-
-export type MintMaximumMarketCapForm = {
-  maximumMarketCap: number;
-  maximumMarketCapPc: number;
-  totalSupply: number;
+export type MintSupplyForm = {
+  supply: number;
   liquidityPercentage: number;
 };
 
-export type MintInitialBuyAmountForm = {
-  initialBuyAmount: number;
-  initialBuyAmountPc: number;
+export type MintInitialBuyForm = {
+  pairAmount: number;
+  tokenAmount: number;
 };
 
-export const processForm = async function (
-  connection: Connection,
-  { publicKey, sendTransaction }: WalletContextState,
+export const processMintForm = async function (
+  program: Program<Zeroboost>,
   {
     name,
     symbol,
-    image,
-    description,
-    website,
-    telegram,
-    twitter,
-  }: MintMetadataForm,
-  {
-    maximumMarketCap,
-    totalSupply,
-    liquidityPercentage,
-  }: MintMaximumMarketCapForm,
-  { initialBuyAmount }: MintInitialBuyAmountForm
+    uri,
+    decimals,
+  }: Pick<MetadataForm, "name" | "symbol"> & {
+    uri: string;
+    decimals: number;
+  },
+  { supply, liquidityPercentage }: MintSupplyForm,
+  initialBuyForm?: MintInitialBuyForm
 ) {
-  const mint = findMintAddress(name, symbol, publicKey!);
+  const payer = program.provider.publicKey!;
+  const [mint] = getMintPda(name, symbol, payer, program.programId);
+  const instructions = [];
 
-  let uri = await createTokenRichMetadata(
+  const mintInstructions = await mintToken(
+    program,
+    NATIVE_MINT,
+    payer,
     {
+      uri,
       name,
-      description,
-      website,
-      telegram,
-      twitter,
-      image,
       symbol,
+      decimals,
+      liquidityPercentage,
+      supply: unsafeBN(
+        safeBN(supply, decimals).mul(new BN(decimals)),
+        decimals
+      ),
+      migrationTarget: {
+        raydium: {},
+      },
     },
-    mint.toBase58()
+    devnet.PYTH_SOL_USD_FEED
+  ).instruction();
+
+  instructions.push(mintInstructions);
+
+  if (initialBuyForm && initialBuyForm.pairAmount > 0) {
+    const { pairAmount } = initialBuyForm;
+    const buyInstructions = await (
+      await rawSwap(program, mint, NATIVE_MINT, payer, {
+        amount: unsafeBN(safeBN(pairAmount).mul(new BN(Math.pow(10, 9)))),
+        tradeDirection: TradeDirection.BtoA,
+      })
+    ).instruction();
+
+    instructions.push(buyInstructions);
+  }
+  
+  const recentBlockhash = (await program.provider.connection.getLatestBlockhash()).blockhash;
+  
+  const message = new web3.TransactionMessage({
+    payerKey: payer,
+    instructions,
+    recentBlockhash,
+  }).compileToV0Message()
+
+  const signature = await program.provider.sendAndConfirm!(
+    new web3.VersionedTransaction(message)
   );
 
-  const [tokenMint, transaction] = await createMintTokenTransaction({
-    name,
-    ticker: symbol,
-    uri,
-    totalSupply: new BN(totalSupply).mul(new BN(10).pow(new BN(6))),
-    maximumMarketCap: unsafeBN(
-      safeBN(maximumMarketCap).mul(new BN(10).pow(new BN(9)))
-    ),
-    initialBuyAmount: unsafeBN(
-      safeBN(initialBuyAmount).mul(new BN(10).pow(new BN(9)))
-    ),
-    supplyFraction: new BN(100 - liquidityPercentage),
-    payer: publicKey!,
-    connection,
-  });
-
-  return [tokenMint.toBase58(), await sendTransaction(transaction, connection)];
+  return [mint, signature] as const;
 };

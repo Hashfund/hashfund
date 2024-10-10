@@ -1,6 +1,11 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.WSS_RPC_ENDPOINT = exports.HTTP_RPC_ENDPOINT = void 0;
+exports.ANCHOR_WALLET = exports.ANCHOR_PROVIDER_URL = void 0;
 require("dotenv/config");
-exports.HTTP_RPC_ENDPOINT = process.env.HTTP_RPC_ENDPOINT;
-exports.WSS_RPC_ENDPOINT = process.env.WSS_RPC_ENDPOINT;
+const bs58_1 = __importDefault(require("bs58"));
+const anchor_1 = require("@coral-xyz/anchor");
+exports.ANCHOR_PROVIDER_URL = process.env.ANCHOR_PROVIDER_URL;
+exports.ANCHOR_WALLET = anchor_1.web3.Keypair.fromSecretKey(Uint8Array.from(bs58_1.default.decode(process.env.ANCHOR_WALLET)));

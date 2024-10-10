@@ -1,26 +1,26 @@
 "use client";
 import { PublicKey } from "@solana/web3.js";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-
-import { PopoverPanel } from "@headlessui/react";
+import { ConstantCurveCalculator, TradeDirection } from "@hashfund/zeroboost";
 
 import { useState } from "react";
 import { Id, toast } from "react-toastify";
 import { MdArrowDownward } from "react-icons/md";
+import { PopoverPanel } from "@headlessui/react";
 
 import { Formik, Form, ErrorMessage } from "formik";
 
 import { processSellForm } from "@/form/SellForm";
+import { denormalizeBN, normalizeBN } from "@/web3";
+import { useProgram } from "@/composables/useProgram";
 import { createValidationSchema, processBuyForm } from "@/form/BuyForm";
-import ConstantCurve, { TradeDirection } from "@/web3/bounding_curve";
 
-import TokenPriceInput from "../widgets/TokenPriceInput";
 import TransactionToast from "../TransactionToast";
+import TokenPriceInput from "../widgets/TokenPriceInput";
 
 type Side = {
   mint: PublicKey;
   balance: number;
-  ticker: string;
+  symbol: string;
   image: string;
   decimals: number;
   initialPrice: number;
@@ -39,8 +39,7 @@ export default function SwapModal({
   sideB,
   onSwapSide,
 }: SwapModalProps) {
-  const wallet = useWallet();
-  const { connection } = useConnection();
+  const { program } = useProgram();
   const validationSchema = createValidationSchema(sideA.balance);
   const [formResult, setFormResult] = useState<[Id, string] | null>(null);
 
@@ -54,17 +53,14 @@ export default function SwapModal({
       let signature =
         side === "buy"
           ? await processBuyForm(
-              wallet,
-              connection,
-              sideB.mint.toBase58(),
-              buyAmount,
-              sideA.decimals
+              program,
+              sideB.mint,
+              Number.parseFloat(buyAmount)
             )
           : await processSellForm(
-              wallet,
-              connection,
-              sideA.mint.toBase58(),
-              buyAmount,
+              program,
+              sideA.mint,
+              Number.parseFloat(sellAmount),
               sideA.decimals
             );
       setFormResult([toastId, signature]);
@@ -111,31 +107,33 @@ export default function SwapModal({
                   <TokenPriceInput
                     name="buyAmount"
                     image={sideA.image}
-                    ticker={sideA.ticker}
+                    ticker={sideA.symbol}
                     balance={sideA.balance}
                     onChange={(value) => {
-                      if (side === "buy") {
-                        const tokenOut = ConstantCurve.toUIAmount(
-                          ConstantCurve.calculateTokenOut(
-                            sideA.initialPrice,
-                            value,
-                            sideA.decimals,
-                            TradeDirection.BToA
-                          ),
-                          sideB.decimals
-                        );
-                        setFieldValue("sellAmount", tokenOut);
-                      } else {
-                        const tokenOut = ConstantCurve.toUIAmount(
-                          ConstantCurve.calculateTokenOut(
-                            sideA.initialPrice,
-                            value,
-                            sideA.decimals,
-                            TradeDirection.AToB
-                          ),
-                          sideB.decimals
-                        );
-                        setFieldValue("sellAmount", tokenOut);
+                      switch (side) {
+                        case "buy":
+                          const tokenAmount = normalizeBN(
+                            ConstantCurveCalculator.calculateAmountOut(
+                              sideA.initialPrice,
+                              denormalizeBN(value, sideA.decimals),
+                              TradeDirection.BtoA
+                            ),
+                            sideB.decimals
+                          );
+                          setFieldValue("sellAmount", tokenAmount);
+                          break;
+                        case "sell":
+                          const pairAmount = normalizeBN(
+                            ConstantCurveCalculator.calculateAmountOut(
+                              sideA.initialPrice,
+                              denormalizeBN(value, sideA.decimals),
+                              TradeDirection.AtoB
+                            ),
+                            sideB.decimals
+                          );
+
+                          setFieldValue("sellAmount", pairAmount);
+                          break;
                       }
                     }}
                   />
@@ -157,30 +155,30 @@ export default function SwapModal({
                   <TokenPriceInput
                     name="sellAmount"
                     image={sideB.image}
-                    ticker={sideB.ticker}
+                    ticker={sideB.symbol}
                     onChange={(value) => {
-                      if (side === "buy") {
-                        const tokenOut = ConstantCurve.toUIAmount(
-                          ConstantCurve.calculateTokenOut(
-                            sideB.initialPrice,
-                            value,
-                            sideB.decimals,
-                            TradeDirection.AToB
-                          ),
-                          sideA.decimals
-                        );
-                        setFieldValue("buyAmount", tokenOut);
-                      } else {
-                        const tokenOut = ConstantCurve.toUIAmount(
-                          ConstantCurve.calculateTokenOut(
-                            sideB.initialPrice,
-                            value,
-                            sideB.decimals,
-                            TradeDirection.BToA
-                          ),
-                          sideA.decimals
-                        );
-                        setFieldValue("buyAmount", tokenOut);
+                      switch (side) {
+                        case "buy":
+                          const pairAmount = normalizeBN(
+                            ConstantCurveCalculator.calculateAmountOut(
+                              sideB.initialPrice,
+                              denormalizeBN(value, sideB.decimals),
+                              TradeDirection.AtoB
+                            ),
+                            sideA.decimals
+                          );
+                          setFieldValue("buyAmount", pairAmount);
+                          break;
+                        case "sell":
+                          const tokenAmount = normalizeBN(
+                            ConstantCurveCalculator.calculateAmountOut(
+                              sideB.initialPrice,
+                              denormalizeBN(value, sideB.decimals),
+                              TradeDirection.BtoA
+                            ),
+                            sideA.decimals
+                          );
+                          setFieldValue("buyAmount", tokenAmount);
                       }
                     }}
                   />

@@ -7,8 +7,8 @@ export type LimitOffsetPaginationQuery = {
 };
 
 export const limitOffsetPaginationSchema = z.object({
-  limit: z.any().optional(),
-  offset: z.any().optional(),
+  limit: z.number().optional(),
+  offset: z.number().optional(),
 });
 
 export class LimitOffsetPagination {

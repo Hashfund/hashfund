@@ -1,13 +1,10 @@
-import { createHash } from "./hash/hash.controller";
-import { getOrCreateUser } from "./user/user.controller";
-import { createMint, updateMint } from "./mint/mint.controller";
-import { createBoundingCurve, createSwap } from "./swap/swap.controller";
+import { FastifyInstance } from "fastify";
+import { registerMintRoutes } from "./mint/mint.route";
+import { registerUserRoutes } from "./user/user.route";
+import { registerSwapRoutes } from "./swap/swap.route";
+import { registerAssetRoutes } from "./asset/asset.route";
 
-export default {
-  createHash,
-  getOrCreateUser,
-  createMint,
-  updateMint,
-  createBoundingCurve,
-  createSwap,
+export const registerRoutes = (server: FastifyInstance) => {
+  const fns = [registerAssetRoutes, registerUserRoutes, registerMintRoutes, registerSwapRoutes];
+  return fns.map((fn) => fn(server));
 };

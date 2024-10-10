@@ -1,5 +1,5 @@
 {
-  "id": "a46f3db2-a947-44af-8eb9-977cee6f839f",
+  "id": "be18d5d7-8412-48f7-8312-acca98b5796a",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -54,14 +54,32 @@
           "primaryKey": false,
           "notNull": true
         },
-        "ticker": {
-          "name": "ticker",
+        "symbol": {
+          "name": "symbol",
           "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "reserve": {
-          "name": "reserve",
+        "supply": {
+          "name": "supply",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decimals": {
+          "name": "decimals",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creator": {
+          "name": "creator",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -72,30 +90,12 @@
           "primaryKey": false,
           "notNull": true
         },
-        "total_supply": {
-          "name": "total_supply",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
         "timestamp": {
           "name": "timestamp",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": true
-        },
-        "creator": {
-          "name": "creator",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "can_trade": {
-          "name": "can_trade",
-          "type": "boolean",
-          "primaryKey": false,
           "notNull": true,
-          "default": true
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -123,44 +123,38 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "uuid",
           "primaryKey": true,
-          "notNull": true
+          "notNull": true,
+          "default": "gen_random_uuid()"
         },
-        "amount_in": {
-          "name": "amount_in",
-          "type": "text",
+        "token_amount": {
+          "name": "token_amount",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
-        "amount_out": {
-          "name": "amount_out",
-          "type": "text",
+        "pair_amount": {
+          "name": "pair_amount",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
         "market_cap": {
           "name": "market_cap",
-          "type": "text",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
-        "virtual_market_cap": {
-          "name": "virtual_market_cap",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'0'"
-        },
-        "signature": {
-          "name": "signature",
-          "type": "text",
+        "virtual_token_balance": {
+          "name": "virtual_token_balance",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp",
+        "virtual_pair_balance": {
+          "name": "virtual_pair_balance",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
@@ -181,6 +175,19 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "signature": {
+          "name": "signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -225,46 +232,51 @@
           "primaryKey": true,
           "notNull": true
         },
-        "signature": {
-          "name": "signature",
-          "type": "text",
+        "migrated": {
+          "name": "migrated",
+          "type": "boolean",
           "primaryKey": false,
           "notNull": true
         },
-        "tradable": {
-          "name": "tradable",
+        "tradeable": {
+          "name": "tradeable",
           "type": "boolean",
-          "primaryKey": false,
-          "notNull": false,
-          "default": true
-        },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp",
           "primaryKey": false,
           "notNull": true
         },
         "initial_price": {
           "name": "initial_price",
-          "type": "text",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
-        "initial_market_cap": {
-          "name": "initial_market_cap",
-          "type": "text",
+        "liquidity_percentage": {
+          "name": "liquidity_percentage",
+          "type": "numeric",
           "primaryKey": false,
           "notNull": true
         },
-        "curve_initial_supply": {
-          "name": "curve_initial_supply",
-          "type": "text",
+        "minimum_pair_balance": {
+          "name": "minimum_pair_balance",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
-        "maximum_market_cap": {
-          "name": "maximum_market_cap",
-          "type": "text",
+        "maximum_pair_balance": {
+          "name": "maximum_pair_balance",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "virtual_token_balance": {
+          "name": "virtual_token_balance",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "virtual_pair_balance": {
+          "name": "virtual_pair_balance",
+          "type": "bigint",
           "primaryKey": false,
           "notNull": true
         },
@@ -273,6 +285,20 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
@@ -280,68 +306,6 @@
         "boundingCurve_mint_mints_id_fk": {
           "name": "boundingCurve_mint_mints_id_fk",
           "tableFrom": "boundingCurve",
-          "tableTo": "mints",
-          "columnsFrom": [
-            "mint"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "boundingCurve_mint_unique": {
-          "name": "boundingCurve_mint_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "mint"
-          ]
-        }
-      }
-    },
-    "public.hashes": {
-      "name": "hashes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "mint": {
-          "name": "mint",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "market_id": {
-          "name": "market_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "amm_id": {
-          "name": "amm_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "timestamp": {
-          "name": "timestamp",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "hashes_mint_mints_id_fk": {
-          "name": "hashes_mint_mints_id_fk",
-          "tableFrom": "hashes",
           "tableTo": "mints",
           "columnsFrom": [
             "mint"

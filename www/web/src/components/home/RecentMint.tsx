@@ -3,18 +3,17 @@
 import clsx from "clsx";
 import Link from "next/link";
 import Image from "next/image";
+import type { MintWithExtra } from "@hashfund/sdk/models";
 import { MdBolt, MdChevronRight } from "react-icons/md";
 
-import type { Mint } from "@/lib/api/models";
-import useFeedPrice from "@/lib/api/useFeedPrice";
 
 import { PythFeed } from "@/config/pyth";
 import { formatPrice } from "@/web3/price";
-import { toUiAmount } from "@/web3/math";
+import { useFeedPrice } from "@/composables/useFeedPrice";
 
 type RecentMintProps = {
   className?: string;
-  mints: Mint[];
+  mints: MintWithExtra[];
 };
 
 export function RecentMint({ className, mints }: RecentMintProps) {
@@ -62,7 +61,7 @@ export function RecentMint({ className, mints }: RecentMintProps) {
               <div className="flex items-center space-x-2">
                 <p className="text-sm">
                   {formatPrice(
-                    solPrice * toUiAmount(mint.boundingCurve.initialPrice)
+                    solPrice * mint.boundingCurve.initialPrice
                   )}
                 </p>
                 <MdChevronRight className="text-xl" />

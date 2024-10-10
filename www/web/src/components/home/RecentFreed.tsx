@@ -5,16 +5,14 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { FaHashtag } from "react-icons/fa";
-
-import { Mint } from "@/lib/api/models";
-import useFeedPrice from "@/lib/api/useFeedPrice";
+import type {MintWithExtra } from "@hashfund/sdk/models";
 
 import { PythFeed } from "@/config/pyth";
 import { formatPrice } from "@/web3/price";
-import { toUiAmount } from "@/web3/math";
+import { useFeedPrice } from "@/composables/useFeedPrice";
 
 type RecentFreedProps = {
-  mints: Mint[];
+  mints: MintWithExtra[];
   className?: string;
 };
 
@@ -44,7 +42,7 @@ export function RecentFreed({ className, mints }: RecentFreedProps) {
             >
               <div className="flex flex-1 items-center space-x-2">
                 <Image
-                  src={mint.metadata?.image}
+                  src={mint.metadata.image}
                   alt={mint.name}
                   width={48}
                   height={48}
@@ -54,9 +52,7 @@ export function RecentFreed({ className, mints }: RecentFreedProps) {
               </div>
               <div>
                 <p className="text-sm">
-                  {formatPrice(
-                    solPrice * toUiAmount(mint.boundingCurve.initialPrice)
-                  )}
+                  {formatPrice(solPrice * mint.boundingCurve.initialPrice)}
                 </p>
               </div>
             </Link>

@@ -1,23 +1,25 @@
-"use client";
-
 import clsx from "clsx";
 import Link from "next/link";
+import type { MintWithExtra } from "@hashfund/sdk/models";
 
-import { Mint } from "@/lib/api/models";
 import { Explorer } from "@/web3/link";
-import useTokenHolders from "@/composables/useTokenHolders";
+import { truncateAddress } from "@/web3";
+import { normalizeBN } from "@/web3/decimal";
+import { getTokenLargeAccounts } from "@/actions/getTokenLargeAccounts";
 
 import LeaderboardItem from "../LeaderboardItem";
-import { normalizeBN } from "@/web3/decimal";
 
 type MintHoldListProps = {
-  mint: Mint;
+  mint: MintWithExtra;
   className?: string;
 };
 
-export default function MintHoldList({ mint, className }: MintHoldListProps) {
-  const holders = useTokenHolders(mint);
-  const totalSupply = normalizeBN(mint.boundingCurve.curveInitialSupply, 6);
+export default async function MintHoldList({
+  mint,
+  className,
+}: MintHoldListProps) {
+  const supply = normalizeBN(mint.supply, 6);
+  const holders = await getTokenLargeAccounts(mint);
 
   return (
     <div className={clsx(className, "flex flex-col space-y-4")}>
@@ -44,10 +46,12 @@ export default function MintHoldList({ mint, className }: MintHoldListProps) {
                     ? "(Dev)"
                     : holder.isBoundingCurve
                     ? "Bounding Curve"
-                    : "",
+                    : holder.isBoundingCurveReserve
+                    ? "Bounding Curve Reserve"
+                    : truncateAddress(holder.address.toBase58()),
                   avatar: "",
                 }}
-                amount={(holder.uiAmount! / totalSupply) * 100}
+                amount={(holder.uiAmount! / supply) * 100}
                 ticker={"%"}
               />
             </Link>

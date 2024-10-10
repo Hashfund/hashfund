@@ -1,6 +1,6 @@
 import { PublicKey, TokenAmount } from "@solana/web3.js";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { useConnection } from "@solana/wallet-adapter-react";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 import { useState, useEffect } from "react";
 
@@ -24,5 +24,5 @@ export default function useBalances(
     }
   }, [publicKey, mint, connection]);
 
-  return { solBalance, mintBalance };
+  return { solBalance, mintBalance, setSolBalance, setMintBalance };
 }

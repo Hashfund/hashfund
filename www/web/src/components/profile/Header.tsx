@@ -1,11 +1,12 @@
 "use client";
+import type { User } from "@hashfund/sdk/models";
 
 import Image from "next/image";
+import { useMemo } from "react";
 import { MdSquare, MdDiamond } from "react-icons/md";
 
 import useAuth from "@/composables/useAuth";
 import { avatarOrDefault } from "@/web3/asset";
-import { User } from "@/lib/api/models/user.model";
 
 import EditProfile from "./EditProfile";
 
@@ -17,7 +18,7 @@ type ProfileHeaderProps = {
 
 export function ProfileHeader({ user, mints, tokens }: ProfileHeaderProps) {
   const { user: me } = useAuth();
-  const isMe = me?.id === user.id;
+  const isMe = useMemo(() => me?.id === user.id, [me, user]);
 
   return (
     <section
@@ -26,16 +27,16 @@ export function ProfileHeader({ user, mints, tokens }: ProfileHeaderProps) {
     >
       <div>
         <Image
-          src={avatarOrDefault(isMe ? me.avatar : user.avatar)}
+          src={avatarOrDefault(user.avatar)}
           width={128}
           height={128}
-          alt={user.name}
+          alt={user.name!}
           className="h-12 w-12 rounded-full"
         />
       </div>
       <div className="flex flex-col space-y-2">
         <div>
-          <h1>{isMe ? me.name : user.name}</h1>
+          <h1>{user.name}</h1>
           <div className="flex space-x-4">
             <div className="flex items-center text-green space-x-1">
               <MdSquare />

@@ -1,9 +1,9 @@
+import Link from "next/link";
 import { MenuItems, MenuItem } from "@headlessui/react";
 import { useWallet } from "@solana/wallet-adapter-react";
 
 import { truncateAddress } from "@/web3/address";
 import { MdAccountCircle, MdLogout } from "react-icons/md";
-import Link from "next/link";
 
 export default function WalletPopover() {
   const { disconnect, publicKey } = useWallet();

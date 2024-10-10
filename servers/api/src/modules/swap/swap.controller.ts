@@ -1,130 +1,92 @@
-import { BN } from "bn.js";
-import moment from "moment";
 import type { z } from "zod";
-import { and, desc, eq, not, or, SQL, sum } from "drizzle-orm";
+import { avg, eq, SQL, sum } from "drizzle-orm";
 
-import { buildRange } from "../../utils/date";
-import { boundingCurves, swaps } from "../../db/schema";
-import { caseWhen, coalesce, db, toBigInt } from "../../db";
-import type { insertBoundingCurveSchema, insertSwapSchema } from "../../db/zod";
+import { db } from "../../db";
+import { swaps } from "../../db/schema";
+import { extract } from "../../db/functions";
+import type { insertSwapSchema } from "../../db/zod";
 
-export const createBoundingCurve = function (
-  value: z.infer<typeof insertBoundingCurveSchema>
-) {
-  return db.insert(boundingCurves).values(value).returning();
-};
+export const createSwap = (values: z.infer<typeof insertSwapSchema>) =>
+  db.insert(swaps).values(values).returning().execute();
 
-export const createSwap = function (value: z.infer<typeof insertSwapSchema>) {
-  return db.insert(swaps).values(value).returning();
-};
-
-export const getAllSwaps = function (
+export const getSwaps = <TWhere extends SQL, TOrderBy extends SQL>(
   limit: number,
   offset: number,
-  where?: SQL
-) {
-  return db.query.swaps.findMany({
-    where: and(where, not(eq(swaps.tradeDirection, 2))),
-    limit,
-    offset,
-    with: {
-      payer: true,
-    },
-    extras: {
-      amountIn: toBigInt(swaps.amountIn).as("amount_in"),
-      amountOut: toBigInt(swaps.amountOut).as("amount_out"),
-      marketCap: toBigInt(swaps.marketCap).as("market_cap"),
-    },
-    orderBy: desc(swaps.timestamp),
-  });
-};
-
-/// todo chunk
-export const getAllSwapByMint = async function (
-  mint: string,
-  limit: number,
-  offset: number,
-  from?: string,
-  to?: string
-) {
-  let toDate = moment(to);
-  let fromDate = from ? moment(from) : moment(from).subtract(1, "day");
-
-  const qSwaps = await db
-    .select()
-    .from(swaps)
-    .where(and(eq(swaps.mint, mint)))
-    .orderBy(desc(swaps.timestamp))
-    .limit(limit)
-    .offset(offset)
+  where?: TWhere,
+  orderBy?: TOrderBy
+) =>
+  db.query.swaps
+    .findMany({
+      limit,
+      offset,
+      where,
+      orderBy,
+      with: {
+        payer: true,
+      },
+      columns: {
+        id: true,
+        pairAmount: true,
+        tokenAmount: true,
+        marketCap: true,
+        mint: true,
+        timestamp: true,
+        signature: true,
+        tradeDirection: true,
+      },
+    })
     .execute();
 
-  const lastSwap = qSwaps.at(qSwaps.length - 1);
-
-  if (qSwaps.length === 0 || toDate.diff(lastSwap?.timestamp) < 0) {
-    return [];
-  }
-
-  const range = buildRange(fromDate, toDate, "time");
-
-  return range
-    .map(([to, from]) => {
-      const swaps = qSwaps.filter((swap) => {
-        const timestamp = moment(swap.timestamp);
-        return timestamp.isSameOrAfter(from) && timestamp.isSameOrBefore(to);
-      });
-
-      const buys = swaps.filter(({ tradeDirection }) => tradeDirection !== 1);
-      const sells = swaps.filter(({ tradeDirection }) => tradeDirection === 1);
-
-      const amountIn = buys.reduceRight(
-        (a, b) => new BN(a).add(new BN(b.amountIn, "hex")),
-        new BN(0)
-      );
-      const amountOut = sells.reduce(
-        (a, b) => new BN(a).add(new BN(b.amountOut, "hex")),
-        new BN(0)
-      );
-
-      /// account if no swap in date
-      const closestSwap = qSwaps.reduce((prev, curr) => {
-        const prevDiff = Math.abs(from.getTime() - prev.timestamp.getTime());
-        const currDiff = Math.abs(from.getTime() - curr.timestamp.getTime());
-        return currDiff < prevDiff ? curr : prev;
-      }, qSwaps[0]);
-
-      const swap = swaps.length > 0 ? swaps[0] : closestSwap;
-
-      return swap
-        ? {
-            buy: amountIn.toString(),
-            sold: amountOut.toString(),
-            time: from,
-            marketCap: new BN(swap!.marketCap, "hex").toString(),
-          }
-        : null;
+export const getSwapById = (id: string) =>
+  db.query.swaps
+    .findFirst({
+      where: eq(swaps.id, id),
+      with: {
+        mint: true,
+        payer: true,
+      },
+      columns: {
+        id: true,
+        marketCap: true,
+        signature: true,
+        timestamp: true,
+        pairAmount: true,
+        tokenAmount: true,
+        tradeDirection: true,
+        virtualPairBalance: true,
+        virtualTokenBalance: true,
+      },
     })
-    .filter((swap) => swap !== null);
-};
+    .execute();
 
-export const getUserSwapByMint = function (mint: string, userId: string) {
-  return db
+export const getSwapsGraph = <TWhere extends SQL>(
+  limit: number,
+  offset: number,
+  where?: TWhere
+) =>
+  db
     .select({
-      bought: coalesce(
-        sum(
-          caseWhen(
-            or(eq(swaps.tradeDirection, 0), eq(swaps.tradeDirection, 2)),
-            toBigInt(swaps.amountIn)
-          )
-        ),
-        0
-      ),
-      sold: coalesce(
-        sum(caseWhen(eq(swaps.tradeDirection, 1), toBigInt(swaps.amountOut))),
-        0
-      ),
+      marketCap: avg(swaps.marketCap),
+      pairAmount: sum(swaps.pairAmount),
+      tokenAmount: sum(swaps.tokenAmount),
+      virtualPairBalance: avg(swaps.virtualPairBalance),
+      virtualTokenBalance: avg(swaps.virtualTokenBalance),
+      tradeDirection: swaps.tradeDirection,
     })
     .from(swaps)
-    .where(and(eq(swaps.mint, mint), eq(swaps.payer, userId)))
-    .groupBy(swaps.payer, swaps.tradeDirection);
-};
+    .limit(limit)
+    .offset(offset)
+    .where(where)
+    .groupBy(extract("MINUTES", swaps.timestamp), swaps.tradeDirection);
+
+export const getSwapsVolume = <TWhere extends SQL>(where?: TWhere) =>
+  db
+    .select({
+      pairVolume: sum(swaps.pairAmount),
+      tokenVolume: sum(swaps.tokenAmount),
+      tradeDirection: swaps.tradeDirection,
+    })
+    .from(swaps)
+    .where(where)
+    .groupBy(swaps.mint, swaps.tradeDirection)
+    .execute();

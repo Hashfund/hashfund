@@ -1,13 +1,14 @@
 import clsx from "clsx";
+import type { MintWithExtra } from "@hashfund/sdk/models";
 
-import { Mint } from "@/lib/api/models";
-import { TokenList } from "../TokenList";
+
 import TokenSort from "../TokenSort";
+import { TokenList } from "../TokenList";
 import SearchInput from "../widgets/Search";
 
 type TokenProps = {
   className?: string;
-  mints: Mint[];
+  mints: MintWithExtra[];
 };
 
 export function Token({ className, mints }: TokenProps) {

@@ -3,7 +3,6 @@ import clsx from "clsx";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-import { TimeFrame } from "@/composables/api/useGraph";
 
 type TimeFilterProps = {
   className?: string;
@@ -15,7 +14,7 @@ export default function TimeFilter({ className }: TimeFilterProps) {
 
   return (
     <div className={clsx(className, "flex text-sm font-light space-x-4")}>
-      {Object.keys(TimeFrame).map((time) => {
+      {Object.keys({}).map((time) => {
         const isActive = timeFrame ? time === timeFrame : time === "24h";
         return (
           <Link

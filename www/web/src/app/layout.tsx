@@ -11,6 +11,8 @@ import "@/globals.css";
 import Provider from "@/providers";
 import { defaultFont } from "@/assets/font";
 import { Navigation, Toolbar } from "@/components/layout";
+import { RPC_URL } from "@/config";
+import { devnet } from "@hashfund/zeroboost";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -41,7 +43,10 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
         )}
         lt-md="flex-col"
       >
-        <Provider>
+        <Provider
+          rpcEndpoint={RPC_URL}
+          zeroboostProgram={devnet.ZERO_BOOST_PROGRAM.toBase58()}
+        >
           <Navigation className="border-dark lt-md:order-last lt-md:border-t-1 md:border-r-1" />
           <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-scroll space-y-8">
             <Toolbar />

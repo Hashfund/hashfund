@@ -18,7 +18,6 @@
   "workspaces": [
     "www/**",
     "servers/**",
-    "programs/**/js",
     "packages/**"
   ]
 }

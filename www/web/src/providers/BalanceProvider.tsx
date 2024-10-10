@@ -1,15 +1,15 @@
 "use client";
 
-import { TokenAmount } from "@solana/web3.js";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { web3 } from "@coral-xyz/anchor";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 
-import { createContext } from "react";
+import { createContext, useEffect, useRef } from "react";
 
 import useBalances from "@/composables/useBalances";
 
 type BalanceContext = {
   solBalance: number;
-  mintBalance: TokenAmount | null;
+  mintBalance: web3.TokenAmount | null;
 };
 
 export const BalanceContext = createContext<BalanceContext>({
@@ -26,10 +26,27 @@ export default function BalanceProvider({
   children,
 }: BalanceProviderProps) {
   const { publicKey } = useWallet();
-  const balance = useBalances(publicKey, mint);
+  const { connection } = useConnection();
+  
+  const subscriptionId = useRef<number | null>();
+  const {solBalance, mintBalance} = useBalances(publicKey, mint);
+
+  useEffect(() => {
+    if (mint)
+      subscriptionId.current = connection.onAccountChange(
+        new web3.PublicKey(mint),
+        (accountInfo) => {
+        }
+      );
+
+    return () => {
+      if (subscriptionId.current)
+        connection.removeAccountChangeListener(subscriptionId.current);
+    };
+  }, [mint]);
 
   return (
-    <BalanceContext.Provider value={balance}>
+    <BalanceContext.Provider value={{solBalance, mintBalance}}>
       {children}
     </BalanceContext.Provider>
   );

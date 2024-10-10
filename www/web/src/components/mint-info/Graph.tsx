@@ -1,8 +1,10 @@
 "use client";
-import { Mint } from "@/lib/api/models";
+
+import  type { Mint } from "@hashfund/sdk/models";
+
+import useScreen from "@/composables/useScreen";
 
 import ChartView from "../widgets/ChartView";
-import useScreen from "@/composables/useScreen";
 
 type GraphProps = {
   mint: Mint;

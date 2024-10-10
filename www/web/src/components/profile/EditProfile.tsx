@@ -1,16 +1,17 @@
 "use client";
-import { ErrorMessage, Form, Formik } from "formik";
-import { mixed, object, string } from "yup";
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 import { toast } from "react-toastify";
+import { mixed, object, string } from "yup";
+import { ErrorMessage, Form, Formik } from "formik";
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/react";
 
-import Api from "@/lib/api";
 import useAuth from "@/composables/useAuth";
+import { useSDK } from "@/composables/useSDK";
 
 import Input from "../widgets/Input";
 import AvatarInput from "../widgets/AvatarInput";
 
 export default function EditProfile() {
+  const {api} = useSDK();
   const { user, setUser } = useAuth();
 
   const validationSchema = object().shape({
@@ -18,11 +19,10 @@ export default function EditProfile() {
     name: string().max(20).min(2).required(),
   });
 
-  const processForm = (values: Record<string, any>) => {
-    if (typeof values.avatar === "string") delete values["avatar"];
-    return Api.instance.user
-      .updateUser(user!.id, values)
-      .then(({ data }) => setUser(data));
+  const processForm = async (values: Record<string, any>) => {
+    const { data } = await api.user
+      .update(user!.id, values);
+    return setUser(data);
   };
 
   return (
@@ -40,7 +40,7 @@ export default function EditProfile() {
             avatar: user?.avatar as unknown as File,
             name: user?.name,
           }}
-          onSubmit={(values, { setSubmitting, setFieldValue }) => {
+          onSubmit={(values, { setSubmitting }) => {
             toast
               .promise(processForm({ ...values }), {
                 pending: "Updating profile",

@@ -1,103 +1,67 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onLogs = void 0;
-const web3_js_1 = require("@solana/web3.js");
-const program_1 = require("@hashfund/program");
-const api_1 = __importDefault(require("@hashfund/api"));
+exports.getOrInsertBoundingCurve = void 0;
+require("dotenv/config");
+const zeroboost_1 = require("@hashfund/zeroboost");
+const anchor_1 = require("@coral-xyz/anchor");
+const api_1 = require("@hashfund/api");
+const error_1 = require("./error");
+const utils_1 = require("./utils");
 const config_1 = require("./config");
-const { createMint, updateMint, getOrCreateUser, createBoundingCurve, createSwap, createHash, } = api_1.default;
-const onLogs = async ({ logs, signature }) => {
-    const events = (0, program_1.parseLogs)(logs);
-    for (const event of events) {
-        if (event.Mint && event.MintTo) {
-            let mintData = event.Mint;
-            let mintToData = event.MintTo;
-            await getOrCreateUser(mintData.creator.toBase58());
-            await createMint({
-                id: mintData.mint.toBase58(),
-                name: mintData.name,
-                creator: mintData.creator.toBase58(),
-                uri: mintData.uri,
-                ticker: mintData.ticker,
-                timestamp: new Date(),
-                reserve: mintToData.reserve.toBase58(),
-                totalSupply: mintToData.amount.toString("hex"),
-                signature,
-            });
-            continue;
-        }
-        if ("InitializeCurve" in event && event.InitializeCurve) {
-            const data = event.InitializeCurve;
-            await createBoundingCurve({
-                id: data.bounding_curve.toBase58(),
-                mint: data.mint.toBase58(),
-                initialMarketCap: data.initial_market_cap.toString("hex"),
-                curveInitialSupply: data.curve_initial_supply.toString("hex"),
-                initialPrice: String(program_1.SafeMath.unwrap(data.initial_price)),
-                maximumMarketCap: data.maximum_market_cap.toString("hex"),
-                timestamp: new Date(),
-                signature,
-            });
-            continue;
-        }
-        if ("Swap" in event && event.Swap) {
-            const data = event.Swap;
-            await getOrCreateUser(data.payer.toBase58());
-            await createSwap({
-                mint: data.mint.toBase58(),
-                tradeDirection: data.trade_direction,
-                amountIn: data.amount_in.toString("hex"),
-                amountOut: data.amount_out.toString("hex"),
-                marketCap: data.market_cap.toString("hex"),
-                virtualMarketCap: data.virtual_market_cap.toString("hex"),
-                timestamp: new Date(),
-                payer: data.payer.toBase58(),
-                signature,
-            });
-            continue;
-        }
-        if ("HashMature" in event && event.HashMature) {
-            const data = event.HashMature;
-            await updateMint(data.mint.toBase58(), {
-                canTrade: false,
-            });
-            continue;
-        }
-        if ("HashToken" in event && event.HashToken) {
-            const data = event.HashToken;
-            if (data.market)
-                await createHash({
-                    marketId: data.market.toBase58(),
-                    mint: data.token_a_mint.toBase58(),
-                    ammId: data.amm.toBase58(),
-                    timestamp: new Date(),
-                });
-            else
-                await createHash({
-                    mint: data.token_b_mint.toBase58(),
-                    ammId: data.amm.toBase58(),
-                    timestamp: new Date(),
-                });
-            continue;
-        }
-    }
+const provider = new anchor_1.AnchorProvider(new anchor_1.web3.Connection(config_1.ANCHOR_PROVIDER_URL), new anchor_1.Wallet(config_1.ANCHOR_WALLET), {
+    commitment: "finalized",
+});
+const program = new anchor_1.Program(zeroboost_1.IDL, zeroboost_1.devnet.ZERO_BOOST_PROGRAM, provider);
+const getOrInsertBoundingCurve = async (program, boundingCurveId) => {
+    const boundingCurve = (0, utils_1.safeParse)(Object.assign({ id: boundingCurveId }, await program.account.boundingCurve.fetch(boundingCurveId)));
+    return (0, api_1.upsertBoundingCurve)(boundingCurve);
 };
-exports.onLogs = onLogs;
-async function run() {
-    const connection = new web3_js_1.Connection(config_1.HTTP_RPC_ENDPOINT, {
-        wsEndpoint: config_1.WSS_RPC_ENDPOINT,
-    });
-    connection.onLogs(program_1.HASHFUND_PROGRAM_ID, async (logs) => {
-        console.log("signature=", logs.signature);
-        (0, exports.onLogs)(logs).catch(console.log);
-    }, "confirmed");
-}
-run()
-    .catch((error) => {
-    console.error(error);
-    process.exit(1);
-})
-    .then(() => console.log("Running worker in background..."));
+exports.getOrInsertBoundingCurve = getOrInsertBoundingCurve;
+const main = async (program) => {
+    program.addEventListener("MintEvent", (0, error_1.catchAndRetryRuntimeError)(async (data, _slot, signature) => {
+        await (0, api_1.upsertUser)({
+            id: data.creator.toBase58(),
+        });
+        const mint = (0, utils_1.omit)((0, utils_1.safeParse)({ id: data.mint, ...data }), "decimals", "timestamp", "mint", "boundingCurve");
+        const metadata = await (0, utils_1.safeFetch)(mint.uri);
+        await (0, api_1.createMint)({
+            ...mint,
+            metadata,
+            signature,
+            decimals: data.decimals,
+        });
+        await (0, exports.getOrInsertBoundingCurve)(program, data.boundingCurve);
+    }));
+    program.addEventListener("SwapEvent", (0, error_1.catchAndRetryRuntimeError)(async (data, _slot, signature) => {
+        await (0, api_1.upsertUser)({
+            id: data.payer.toBase58(),
+        });
+        const [boundingCurve] = (0, zeroboost_1.getBoundingCurvePda)(data.mint, program.programId);
+        const swap = (0, utils_1.omit)((0, utils_1.safeParse)(data), "timestamp", "tradeDirection");
+        await (0, api_1.createSwap)({
+            ...swap,
+            signature,
+            tradeDirection: data.tradeDirection,
+        });
+        await (0, exports.getOrInsertBoundingCurve)(program, boundingCurve);
+    }));
+    program.addEventListener("MigrateTriggerEvent", (0, error_1.catchAndRetryRuntimeError)(async (data) => {
+        const [boundingCurve] = (0, zeroboost_1.getBoundingCurvePda)(data.mint, program.programId);
+        await (0, api_1.updateBoundingCurveById)(boundingCurve.toBase58(), {
+            tradeable: false,
+        });
+        await program.methods
+            .migrateFund({
+            openTime: null,
+        })
+            .accounts({})
+            .rpc();
+    }));
+    program.addEventListener("MigrateEvent", (0, error_1.catchAndRetryRuntimeError)(async (data) => {
+        const [boundingCurve] = (0, zeroboost_1.getBoundingCurvePda)(data.mint, program.programId);
+        await (0, exports.getOrInsertBoundingCurve)(program, boundingCurve);
+    }));
+};
+main(program)
+    .then(() => console.log("Running worker in background..."))
+    .catch(console.error);

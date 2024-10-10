@@ -1,30 +1,22 @@
 "use client";
+import type { MintWithExtra } from "@hashfund/sdk/models";
 
 import Link from "next/link";
 import Image from "next/image";
 
-import { TokenAmount } from "@solana/web3.js";
-
-import { Mint } from "@/lib/api/models";
-import useFeedPrice from "@/lib/api/useFeedPrice";
-
 import { PythFeed } from "@/config/pyth";
-
-import { Explorer } from "@/web3/link";
-import { formatPrice } from "@/web3/price";
-import { normalizeBN } from "@/web3/decimal";
-import { calculateBNPercentage } from "@/web3/math";
+import { useFeedPrice } from "@/composables/useFeedPrice";
+import { percentageBN, formatPrice, normalizeBN, Explorer } from "@/web3";
 
 import { SwapButton } from "../swap";
 import ProgressBar from "../ProgressBar";
 import SocialList from "./SocialList";
 
 type HeaderProps = {
-  mint: Mint;
-  boundingCurveBalance: TokenAmount;
+  mint: MintWithExtra;
 };
 
-export function Header({ mint, boundingCurveBalance }: HeaderProps) {
+export function Header({ mint }: HeaderProps) {
   const solPrice = useFeedPrice(PythFeed.SOL_USD);
 
   return (
@@ -73,48 +65,54 @@ export function Header({ mint, boundingCurveBalance }: HeaderProps) {
               <p>
                 {formatPrice(
                   solPrice *
-                    normalizeBN(
-                      mint.canTrade
-                        ? mint.marketCap
-                        : mint.boundingCurve.maximumMarketCap
-                    )
+                    normalizeBN(mint.boundingCurve.virtualPairBalance, 9)
                 )}
               </p>
               <ProgressBar
                 className="w-48 lt-md:flex-1"
-                value={calculateBNPercentage(
-                  mint.canTrade
-                    ? mint.marketCap
-                    : mint.boundingCurve.maximumMarketCap,
-                  mint.boundingCurve.maximumMarketCap
+                value={normalizeBN(
+                  percentageBN(
+                    mint.boundingCurve.maximumPairBalance,
+                    mint.boundingCurve.virtualPairBalance
+                  ),
+                  9
                 )}
               />
               <p lt-md="self-end">
                 {formatPrice(
-                  solPrice * normalizeBN(mint.boundingCurve.maximumMarketCap)
+                  solPrice *
+                    normalizeBN(mint.boundingCurve.maximumPairBalance, 9)
                 )}
               </p>
             </div>
             <div className="max-w-md flex flex-1 flex-col text-xs text-white/75 space-y-2">
               <p>
-                When the market cap reaches{" "}
+                When the market cap reaches&nbsp;
                 {formatPrice(
-                  solPrice * normalizeBN(mint.boundingCurve.maximumMarketCap)
-                )}{" "}
-                all the liquidity from the bonding curve will be deposited into
-                Raydium and burned. progression increases as the price goes up.
+                  solPrice *
+                    normalizeBN(mint.boundingCurve.minimumPairBalance, 9)
+                )}
+                &nbsp; all the liquidity from the bonding curve will be
+                deposited into Raydium and burned. progression increases as the
+                price goes up.
               </p>
               <p>
-                There are {boundingCurveBalance.uiAmountString} tokens still
-                available for sale in the bonding curve and there is{" "}
-                {normalizeBN(mint.marketCap)} SOL in the bonding curve.
+                There are{" "}
+                {normalizeBN(
+                  mint.boundingCurve.virtualTokenBalance,
+                  mint.decimals
+                )}{" "}
+                tokens still available for sale in the bonding curve and there
+                is&nbsp;
+                {normalizeBN(mint.boundingCurve.virtualPairBalance, 9)} SOL in
+                the bonding curve.
               </p>
             </div>
           </div>
         </div>
         <div>
-          {mint.canTrade && <SwapButton mint={mint} />}
-          {mint.hash && (
+          {mint.boundingCurve.tradeable && <SwapButton mint={mint} />}
+          {mint.boundingCurve.migrated && (
             <Link
               href={Explorer.buildRaydium(mint.id)}
               target="_blank"

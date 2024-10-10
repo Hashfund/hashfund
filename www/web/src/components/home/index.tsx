@@ -1,4 +1,4 @@
-export * from "./Announcement";
+export * from "./Token";
 export * from "./RecentMint";
 export * from "./RecentFreed";
-export * from "./Token";
+export * from "./Announcement";

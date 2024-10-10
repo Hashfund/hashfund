@@ -1,4 +1,7 @@
-export type RouteProps = {
-  params: Record<string, string>;
-  searchParams: Record<string, string>;
+export type RouteProps<
+  T extends Record<string, string> = Record<string, string>,
+  U extends Record<string, string> = Record<string, string>
+> = {
+  params: T;
+  searchParams: U;
 };
