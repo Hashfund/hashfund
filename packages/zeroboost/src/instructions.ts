@@ -12,8 +12,7 @@ import {
   MPL_TOKEN_METADATA_PROGRAM_ID,
 } from "@metaplex-foundation/mpl-token-metadata";
 
-import { devnet } from ".";
-import type { Zeroboost } from "../target/types/zeroboost";
+import { devnet, type Zeroboost } from ".";
 import {
   getBoundingCurveConfig,
   getBoundingCurvePda,
@@ -75,7 +74,7 @@ export const swap = async (
   program: Program<Zeroboost>,
   mint: web3.PublicKey,
   payer: web3.PublicKey,
-  params: Parameters<(typeof program)["methods"]["swap"]>[number],
+  params: Parameters<(typeof program)["methods"]["swap"]>[number]
 ) => {
   const programId = program.programId;
 
@@ -110,7 +109,7 @@ export const rawSwap = async (
   mint: web3.PublicKey,
   pair: web3.PublicKey,
   payer: web3.PublicKey,
-  params: Parameters<(typeof program)["methods"]["swap"]>[number],
+  params: Parameters<(typeof program)["methods"]["swap"]>[number]
 ) => {
   const programId = program.programId;
   const [config] = getConfigPda(programId);
@@ -145,7 +144,7 @@ export const migrateFund = async (
   payer: web3.PublicKey,
   params: Parameters<(typeof program)["methods"]["migrateFund"]>[number],
   raydiumCpPoolProgram = devnet.RAYDIUM_CP_POOL_PROGRAM,
-  raydiumCpPoolFeeReciever = devnet.RAYDIUM_CP_FEE_RECIEVER,
+  raydiumCpPoolFeeReciever = devnet.RAYDIUM_CP_FEE_RECIEVER
 ) => {
   const programId = program.programId;
 

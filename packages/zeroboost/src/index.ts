@@ -7,4 +7,5 @@ export * from "./config";
 export * from "./instructions";
 export type { Zeroboost } from "./types/zeroboost";
 
-export const IDL = Zeroboost as unknown as typeof import("./types/zeroboost").IDL;
+export const IDL =
+  Zeroboost as unknown as typeof import("./types/zeroboost").IDL;

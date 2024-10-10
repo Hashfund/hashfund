@@ -25,14 +25,14 @@ describe("Test constant curve js impl", () => {
       amountOut,
       TradeDirection.AtoB
     );
-    
-    expect(amountOut.eq(curve.boundingCurveSupply.div(new  BN(10).pow(new BN(6))))).equal(
-      true,
-      "Expect exert bounding curve supply"
-    );
-    expect(pairAmountOut.eq(curve.tokenBReserveBalance.div(new  BN(10).pow(new BN(6))))).equal(
-      true,
-      "Expect exert pair maxiumum reserve value"
-    );
+
+    expect(
+      amountOut.eq(curve.boundingCurveSupply.div(new BN(10).pow(new BN(6))))
+    ).equal(true, "Expect exert bounding curve supply");
+    expect(
+      pairAmountOut.eq(
+        curve.tokenBReserveBalance.div(new BN(10).pow(new BN(6)))
+      )
+    ).equal(true, "Expect exert pair maxiumum reserve value");
   });
 });

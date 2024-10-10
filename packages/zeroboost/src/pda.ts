@@ -12,7 +12,10 @@ export const getMintPda = (
   programId = ZERO_BOOST_PROGRAM
 ) => {
   const seeds = [name, symbol].map(Buffer.from);
-  return web3.PublicKey.findProgramAddressSync([...seeds, creator.toBytes()], programId);
+  return web3.PublicKey.findProgramAddressSync(
+    [...seeds, creator.toBytes()],
+    programId
+  );
 };
 
 export const getBoundingCurvePda = (

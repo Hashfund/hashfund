@@ -31,7 +31,11 @@ export const buildConfig = (
   const supply = BigInt(mintParams.supply) * BigInt(Math.pow(10, 9));
 
   const [mint] = web3.PublicKey.findProgramAddressSync(
-    [Buffer.from(name), Buffer.from(symbol), program.provider.publicKey!.toBytes()],
+    [
+      Buffer.from(name),
+      Buffer.from(symbol),
+      program.provider.publicKey!.toBytes(),
+    ],
     program.programId
   );
 
