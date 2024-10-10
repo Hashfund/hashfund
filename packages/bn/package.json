@@ -1,0 +1,53 @@
+{
+  "name": "@hashfund/bn",
+  "version": "0.0.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solocker-app/solocker-safe-bn.js"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "test": "jest",
+    "build": "tsc"
+  },
+  "author": "Oguntunde Caleb Fiyinfoluwa <payouk.msytre@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "@tsconfig/recommended": "^1.0.7",
+    "@coral-xyz/anchor": "^0.29.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "bn.js",
+    "solocker",
+    "solana",
+    "bignumber",
+    "decimals",
+    "safe-bn",
+    "large",
+    "float"
+  ],
+  "files": [
+    "dist/**"
+  ]
+}
