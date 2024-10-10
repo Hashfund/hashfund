@@ -1,6 +1,6 @@
 import { Column } from "drizzle-orm";
-import { StatusError } from "error";
 import moment from "moment";
+import { StatusError } from "../error";
 
 export const normalizeBoolean = (column: Column, value: string) => {
   if (Number.isNaN(Number(value))) {
