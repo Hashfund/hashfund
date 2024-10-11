@@ -267,7 +267,7 @@ impl<'info> MigrateFund<'info> {
                 ]],
             ),
             init_amount,
-            pair.decimals,
+            mint.decimals,
         )?;
 
         initialize(

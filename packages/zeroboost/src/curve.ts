@@ -1,5 +1,5 @@
 import { BN } from "@coral-xyz/anchor";
-import { safeBN, unsafeBN, unsafeBnToNumber } from "@hashfund/bn";
+const { safeBN, unsafeBN, unsafeBnToNumber } = require("@hashfund/bn");
 
 export enum TradeDirection {
   AtoB = 0,

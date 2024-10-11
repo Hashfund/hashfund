@@ -29,7 +29,7 @@ const Toast = ({ result }: { result: [Id, string, string] }) => {
       toastId={toastId}
       signature={signature}
       callback={(status) => {
-        if (status === "confirmed") router.push("/" + mint);
+        if (status === "finalized") router.push("/" + mint);
       }}
     />
   );

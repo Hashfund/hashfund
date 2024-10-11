@@ -1,4 +1,5 @@
 import "dotenv/config";
+import  bs58  from "bs58";
 import { readFileSync } from "fs";
 import { AnchorProvider, Program, Wallet, web3 } from "@coral-xyz/anchor";
 
@@ -14,7 +15,7 @@ const main = async function () {
   const wallet = new Wallet(
     web3.Keypair.fromSecretKey(
       Uint8Array.from(
-        JSON.parse(readFileSync(process.env.ANCHOR_WALLET!, "utf-8"))
+        bs58.decode(process.env.ANCHOR_WALLET!)
       )
     )
   );
