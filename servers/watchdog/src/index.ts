@@ -135,11 +135,8 @@ export const buildEventListeners = (parser: EventParser) => {
   return async (logs: web3.Logs, context: web3.Context) => {
     const events = Array.from(parser.parseLogs(logs.logs));
     for (const event of events) {
-      await eventListeners[event.name as keyof typeof eventListeners](
-        event.data as any,
-        context.slot,
-        logs.signature
-      );
+      const method = eventListeners[event.name as keyof typeof eventListeners];
+      if (Boolean(method)) await method(event.data as any, context.slot, logs.signature);
     }
 
     return Array.from(events).map((event) => event.name);
@@ -161,7 +158,7 @@ const main = async (program: Program<Zeroboost>) => {
 
       onLogs(logs, context)
         .then(() => console.log("[success] signature=", logs.signature))
-        .catch(() => console.log("[error] signature=", logs.signature));
+        .catch((error) => console.log("[error] signature=", logs.signature, error));
     },
     "finalized"
   );
