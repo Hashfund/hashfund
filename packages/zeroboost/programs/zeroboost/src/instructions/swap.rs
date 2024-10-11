@@ -102,8 +102,8 @@ impl<'info> Swap<'info> {
         }
 
         let trade_direction = (match params.trade_direction {
-            0 => Ok(TradeDirection::BtoA),
-            1 => Ok(TradeDirection::AtoB),
+            0 => Ok(TradeDirection::AtoB),
+            1 => Ok(TradeDirection::BtoA),
             _ => err!(SwapTokenError::InvalidTradeDirection),
         })?;
 

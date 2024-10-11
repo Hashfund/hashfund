@@ -13,7 +13,7 @@ zeroboost = "HW7sPVEXwDyZ7WjmS52dLi6WYiWALnVbSvXYjZ9jErZq"
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "/Users/macbookpro/.config/solana/id.json"
 
 [scripts]

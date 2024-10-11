@@ -80,17 +80,11 @@ export const processMintForm = async function (
 
   if (initialBuyForm && initialBuyForm.pairAmount > 0) {
     const { pairAmount } = initialBuyForm;
-    console.log(
-      unsafeBN(safeBN(pairAmount, 9).mul(new BN(10).pow(new BN(9))), 9).toString()
-    );
 
     instruction = instruction.postInstructions([
       await (
         await rawSwap(program, mint, NATIVE_MINT, payer, {
-          amount: unsafeBN(
-            safeBN(pairAmount, 9).mul(new BN(10).pow(new BN(9))),
-            9
-          ),
+          amount: unsafeBN(safeBN(pairAmount).mul(new BN(10).pow(new BN(9)))),
           tradeDirection: TradeDirection.BtoA,
         })
       ).instruction(),
