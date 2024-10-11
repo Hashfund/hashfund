@@ -6,8 +6,8 @@ import { swaps } from "../../db/schema";
 import { extract } from "../../db/functions";
 import type { insertSwapSchema } from "../../db/zod";
 
-export const createSwap = (values: z.infer<typeof insertSwapSchema>) =>
-  db.insert(swaps).values(values).returning().execute();
+export const createSwap = (values: z.infer<typeof insertSwapSchema>, database=db) =>
+  database.insert(swaps).values(values).returning().execute();
 
 export const getSwaps = <TWhere extends SQL, TOrderBy extends SQL>(
   limit: number,

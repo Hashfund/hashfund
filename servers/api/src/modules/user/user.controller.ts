@@ -9,8 +9,8 @@ import type { insertUserSchema } from "../../db/zod";
 export const createUser = (values: z.infer<typeof insertUserSchema>) =>
   db.insert(users).values(values).returning().execute();
 
-export const upsertUser = (values: z.infer<typeof insertUserSchema>) =>
-  db
+export const upsertUser = (values: z.infer<typeof insertUserSchema>, database = db) =>
+  database
     .insert(users)
     .values(values)
     .onConflictDoNothing({ target: users.id })

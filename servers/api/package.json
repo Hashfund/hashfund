@@ -2,14 +2,14 @@
   "name": "@hashfund/api",
   "version": "0.0.0",
   "private": "true",
-  "main": "./dist/modules/external.js",
-  "types": "src/modules/external.ts",
-  "module": "./src/modules/index.ts",
+  "main": "./dist/external.js",
+  "types": "src/external.ts",
+  "module": "./src/index.ts",
   "exports": {
     ".": {
-      "types": "./src/modules/external.ts",
-      "require": "./dist/modules/external.js",
-      "default": "./src/modules/external.ts"
+      "types": "./src/external.ts",
+      "require": "./dist/external.js",
+      "default": "./src/external.ts"
     }
   },
   "scripts": {

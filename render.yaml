@@ -37,6 +37,7 @@ services:
         - packages/program/**/*.ts
     envVars:
       - fromGroup: api
+      - fromGroup: watchdog
       - key: DATABASE_URL
         fromDatabase:
           name: hashfund

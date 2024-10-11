@@ -13,6 +13,7 @@ import {
   initializeConfig,
   migrateFund,
   mintToken,
+  rawSwap,
   swap,
 } from "../src";
 import { buildConfig } from "./config";
@@ -89,7 +90,7 @@ describe("zeroboost", async () => {
   });
 
   it("Create mint and curve info", async () => {
-    const instructions = await mintToken(
+    const signature = await mintToken(
       program,
       NATIVE_MINT,
       program.provider.publicKey!,
@@ -105,16 +106,27 @@ describe("zeroboost", async () => {
         },
       },
       SOL_USD_FEED
-    ).instruction();
-
-    const transaction = new web3.Transaction()
-      .add(
+    )
+      .preInstructions([
         web3.ComputeBudgetProgram.setComputeUnitLimit({
-          units: 250_000,
-        })
-      )
-      .add(instructions);
-    const signature = await program.provider!.sendAndConfirm!(transaction);
+          units: 400_000,
+        }),
+      ])
+      .postInstructions([
+        await (
+          await rawSwap(
+            program,
+            mint,
+            NATIVE_MINT,
+            program.provider.publicKey!,
+            {
+              amount: unsafeBN(safeBN(0.01).mul(new BN(10).pow(new BN(9)))),
+              tradeDirection: 0,
+            }
+          )
+        ).instruction(),
+      ])
+      .rpc();
 
     console.log("mint=", signature);
 
@@ -139,20 +151,20 @@ describe("zeroboost", async () => {
     );
   });
 
-  it("Buy minted token", async () => {
-    const boundingCurveInfo = await program.account.boundingCurve.fetch(
-      boundingCurve
-    );
+  // it("Buy minted token", async () => {
+  //   const boundingCurveInfo = await program.account.boundingCurve.fetch(
+  //     boundingCurve
+  //   );
 
-    const signature = await (
-      await swap(program, boundingCurveInfo.mint, program.provider.publicKey!, {
-        amount: unsafeBN(safeBN(0.01).mul(new BN(10).pow(new BN(9)))),
-        tradeDirection: 0,
-      })
-    ).rpc();
+  //   const signature = await (
+  //     await swap(program, boundingCurveInfo.mint, program.provider.publicKey!, {
+  //       amount: unsafeBN(safeBN(0.01).mul(new BN(10).pow(new BN(9)))),
+  //       tradeDirection: 0,
+  //     })
+  //   ).rpc();
 
-    console.log("buy=", signature);
-  });
+  //   console.log("buy=", signature);
+  // });
 
   // it("Migrate fund", async () => {
   //   const instructions = await (

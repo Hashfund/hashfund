@@ -74,7 +74,7 @@ export const processMintForm = async function (
     devnet.PYTH_SOL_USD_FEED
   ).preInstructions([
     web3.ComputeBudgetProgram.setComputeUnitLimit({
-      units: 250_000,
+      units: 500_000,
     }),
   ]);
 

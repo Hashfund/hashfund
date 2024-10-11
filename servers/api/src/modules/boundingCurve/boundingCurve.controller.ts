@@ -11,9 +11,10 @@ export const createBoundingCurve = (
 
 export const updateBoundingCurveById = (
   id: string,
-  values: Partial<z.infer<typeof insertBoundingCurveSchema>>
+  values: Partial<z.infer<typeof insertBoundingCurveSchema>>,
+  database = db
 ) =>
-  db
+  database
     .update(boundingCurves)
     .set(values)
     .where(eq(boundingCurves.id, id))
@@ -21,9 +22,10 @@ export const updateBoundingCurveById = (
     .execute();
 
 export const upsertBoundingCurve = (
-  values: z.infer<typeof insertBoundingCurveSchema>
+  values: z.infer<typeof insertBoundingCurveSchema>,
+  database = db
 ) =>
-  db
+  database
     .insert(boundingCurves)
     .values(values)
     .onConflictDoUpdate({ target: [boundingCurves.id], set: values })
