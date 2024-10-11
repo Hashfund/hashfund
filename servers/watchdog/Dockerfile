@@ -38,4 +38,4 @@ COPY --from=installer --chown=nodejs:nodejs /usr/src/app/ .
 
 WORKDIR /usr/src/app/servers/watchdog
 
-CMD node dist/index.js
+CMD node dist/main.js

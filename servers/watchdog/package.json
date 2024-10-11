@@ -6,8 +6,8 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "bun src/index.ts",
-    "serve": "node dist/index.js"
+    "dev": "bun src/main.ts",
+    "serve": "node dist/main.js"
   },
   "peerDependencies": {
     "typescript": "latest"
