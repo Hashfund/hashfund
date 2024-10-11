@@ -7,7 +7,7 @@ services:
     dockerfilePath: servers/api/Dockerfile
     buildFilter:
       paths:
-        - servers/api/*.ts
+        - servers/api/**/*.ts
         - servers/api/**/*.json
         - servers/api/Dockerfile
         - packages/program/*.json
@@ -28,7 +28,7 @@ services:
     dockerfilePath: servers/watchdog/Dockerfile
     buildFilter:
       paths:
-        - servers/api/*.ts
+        - servers/api/**/*.ts
         - servers/api/**/*.json
         - servers/api/Dockerfile
         - servers/watchdog/*.json
