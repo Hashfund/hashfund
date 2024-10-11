@@ -4,8 +4,8 @@ import { TradeDirection } from "@hashfund/zeroboost";
 
 import { db } from "../../db";
 import { swaps, users } from "../../db/schema";
+import { coalesce } from "../../db/functions";
 import type { insertUserSchema } from "../../db/zod";
-import { coalesce } from "db/functions";
 
 export const createUser = (values: z.infer<typeof insertUserSchema>) =>
   db.insert(users).values(values).returning().execute();
