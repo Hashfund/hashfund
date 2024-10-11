@@ -194,7 +194,7 @@ impl<'info> Swap<'info> {
 
         // One off mutation, If trade is maked as non tradeable all swap is stop until token migrated to a dex
         // when migrated token holders can continue trade with dex
-        if self.bounding_curve.maximum_pair_balance >= self.bounding_curve_reserve_pair_ata.amount {
+        if self.bounding_curve_reserve_pair_ata.amount >= self.bounding_curve.maximum_pair_balance  {
             self.bounding_curve.tradeable = false;
             let clock = Clock::get()?;
             emit!(MigrateTriggerEvent { mint: self.mint.key(), timestamp: clock.unix_timestamp });
