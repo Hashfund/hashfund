@@ -5,11 +5,15 @@ import { TradeDirection } from "@hashfund/zeroboost";
 import { db } from "../../db";
 import { swaps, users } from "../../db/schema";
 import type { insertUserSchema } from "../../db/zod";
+import { coalesce } from "db/functions";
 
 export const createUser = (values: z.infer<typeof insertUserSchema>) =>
   db.insert(users).values(values).returning().execute();
 
-export const upsertUser = (values: z.infer<typeof insertUserSchema>, database = db) =>
+export const upsertUser = (
+  values: z.infer<typeof insertUserSchema>,
+  database = db
+) =>
   database
     .insert(users)
     .values(values)
@@ -36,7 +40,7 @@ export const getUsers = <TWhere extends SQL, TOrderBy extends SQL>(
   const q = db
     .select({
       ...getTableColumns(users),
-      pairAmount: sum(qSwaps.pairAmount)
+      pairAmount: coalesce(sum(qSwaps.pairAmount), 0).as("pair_amount"),
     })
     .from(users)
     .leftJoin(qSwaps, eq(swaps.payer, users.id))
@@ -63,5 +67,3 @@ export const updateUserById = (
 
 export const deleteUserById = (id: string) =>
   db.delete(users).where(eq(users.id, id)).returning().execute();
-
-
