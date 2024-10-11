@@ -1,6 +1,13 @@
-import { sleep } from "./utils";
+import { Program } from "@coral-xyz/anchor";
+import { Zeroboost } from "@hashfund/zeroboost";
 
 export const catchAndRetryRuntimeError =
-  <T>(fn: (data: T, slot: number, signature: string) => Promise<any>) =>
-  async (data: T, slot: number, signature: string) =>
-    await fn(data, slot, signature);
+  <T>(
+    fn: (
+      program: Program<Zeroboost>,
+      data: T,
+      signature: string
+    ) => Promise<any>
+  ) =>
+  async (program: Program<Zeroboost>, data: T, signature: string) =>
+    await fn(program, data, signature);

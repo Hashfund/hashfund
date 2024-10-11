@@ -1,23 +1,18 @@
 import "dotenv/config";
 import {
-  IDL,
   type Zeroboost,
   getBoundingCurvePda,
-  devnet,
   migrateFund,
 } from "@hashfund/zeroboost";
 import {
-  AnchorProvider,
   Program,
-  Wallet,
   web3,
-  BorshCoder,
   EventParser,
   IdlEvents,
   BN,
+  BorshCoder,
 } from "@coral-xyz/anchor";
 import {
-  db,
   createMint,
   createSwap,
   upsertBoundingCurve,
@@ -27,16 +22,6 @@ import {
 
 import { catchAndRetryRuntimeError } from "./error";
 import { omit, safeFetch, safeParse } from "./utils";
-import { ANCHOR_PROVIDER_URL, ANCHOR_WALLET } from "./config";
-
-const provider = new AnchorProvider(
-  new web3.Connection(ANCHOR_PROVIDER_URL),
-  new Wallet(ANCHOR_WALLET),
-  {
-    commitment: "confirmed",
-  }
-);
-const program = new Program(IDL, devnet.ZERO_BOOST_PROGRAM, provider);
 
 export const getOrInsertBoundingCurve = async (
   program: Program<Zeroboost>,
@@ -57,7 +42,7 @@ type Event<
 > = IdlEvents<Zeroboost>[E];
 
 const onMintEvent = catchAndRetryRuntimeError<Event<"MintEvent">>(
-  async (data, _slot, signature) => {
+  async (program, data, signature) => {
     await upsertUser({
       id: data.creator.toBase58(),
     });
@@ -80,7 +65,7 @@ const onMintEvent = catchAndRetryRuntimeError<Event<"MintEvent">>(
 );
 
 const onSwapEvent = catchAndRetryRuntimeError<Event<"SwapEvent">>(
-  async (data, _slot, signature) => {
+  async (program, data, signature) => {
     await upsertUser({
       id: data.payer.toBase58(),
     });
@@ -99,7 +84,7 @@ const onSwapEvent = catchAndRetryRuntimeError<Event<"SwapEvent">>(
 
 const onMigrateTriggerEvent = catchAndRetryRuntimeError<
   Event<"MigrateTriggerEvent">
->(async (data) => {
+>(async (program, data) => {
   const [boundingCurve] = getBoundingCurvePda(data.mint, program.programId);
   await updateBoundingCurveById(boundingCurve.toBase58(), {
     tradeable: false,
@@ -118,13 +103,17 @@ const onMigrateTriggerEvent = catchAndRetryRuntimeError<
 });
 
 const onMigrateEvent = catchAndRetryRuntimeError<Event<"MigrateEvent">>(
-  async (data) => {
+  async (program, data) => {
     const [boundingCurve] = getBoundingCurvePda(data.mint, program.programId);
     await getOrInsertBoundingCurve(program, boundingCurve);
   }
 );
 
-export const buildEventListeners = (parser: EventParser) => {
+export const buildEventListeners = (program: Program<Zeroboost>) => {
+  const parser = new EventParser(
+    program.programId,
+    new BorshCoder(program.idl)
+  );
   const eventListeners = {
     MintEvent: onMintEvent,
     SwapEvent: onSwapEvent,
@@ -132,38 +121,15 @@ export const buildEventListeners = (parser: EventParser) => {
     MigrateTriggerEvent: onMigrateTriggerEvent,
   };
 
-  return async (logs: web3.Logs, context: web3.Context) => {
+  return async (logs: web3.Logs) => {
     const events = Array.from(parser.parseLogs(logs.logs));
+    console.log(events.map((event) => event.name));
+
     for (const event of events) {
       const method = eventListeners[event.name as keyof typeof eventListeners];
-      if (Boolean(method)) await method(event.data as any, context.slot, logs.signature);
+      await method(program, event.data as any, logs.signature);
     }
 
-    return Array.from(events).map((event) => event.name);
+    return events.map((event) => event.name);
   };
 };
-
-const main = async (program: Program<Zeroboost>) => {
-  const parser = new EventParser(
-    program.programId,
-    new BorshCoder(program.idl)
-  );
-
-  const onLogs = buildEventListeners(parser);
-
-  program.provider.connection.onLogs(
-    program.programId,
-    (logs, context) => {
-      console.log("[pending] signature=", logs.signature);
-
-      onLogs(logs, context)
-        .then(() => console.log("[success] signature=", logs.signature))
-        .catch((error) => console.log("[error] signature=", logs.signature, error));
-    },
-    "finalized"
-  );
-};
-
-main(program)
-  .then(() => console.log("Running worker in background..."))
-  .catch(console.error);
