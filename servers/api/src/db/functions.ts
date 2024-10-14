@@ -1,5 +1,5 @@
 import { Column, sql, SQL } from "drizzle-orm";
-import { StatusError } from "error";
+import { StatusError } from "../error";
 
 export const toBigInt = <T extends Column>(column: T) =>
   sql`('x' || lpad(${column}, 16, '0'))::bit(64)::bigint`;

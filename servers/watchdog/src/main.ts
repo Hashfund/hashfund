@@ -2,8 +2,8 @@ import { devnet, IDL, Zeroboost } from "@hashfund/zeroboost";
 import { Program, AnchorProvider, Wallet, web3 } from "@coral-xyz/anchor";
 
 import { buildEventListeners } from ".";
+import { MultipleError } from "./error";
 import { ANCHOR_PROVIDER_URL, ANCHOR_WALLET } from "./config";
-import { MultipleError } from "error";
 
 const provider = new AnchorProvider(
   new web3.Connection(ANCHOR_PROVIDER_URL),

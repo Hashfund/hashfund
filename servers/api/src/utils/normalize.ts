@@ -1,5 +1,6 @@
-import { Column } from "drizzle-orm";
 import moment from "moment";
+import { Column } from "drizzle-orm";
+
 import { StatusError } from "../error";
 
 export const normalizeBoolean = (column: Column, value: string) => {
