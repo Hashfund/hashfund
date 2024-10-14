@@ -1,13 +1,13 @@
 import type { z } from "zod";
-import { avg, eq, SQL, sum } from "drizzle-orm";
+import { eq, max, min, sql, SQL, sum } from "drizzle-orm";
 
 import { db } from "../../db";
 import { swaps } from "../../db/schema";
-import { extract } from "../../db/functions";
+import { first, interval, IntervalUnit, last } from "../../db/functions";
 import type { insertSwapSchema } from "../../db/zod";
 
-export const createSwap = (values: z.infer<typeof insertSwapSchema>, database=db) =>
-  database.insert(swaps).values(values).returning().execute();
+export const createSwap = (values: z.infer<typeof insertSwapSchema>) =>
+  db.insert(swaps).values(values).returning().execute();
 
 export const getSwaps = <TWhere extends SQL, TOrderBy extends SQL>(
   limit: number,
@@ -20,7 +20,6 @@ export const getSwaps = <TWhere extends SQL, TOrderBy extends SQL>(
       limit,
       offset,
       where,
-      orderBy,
       with: {
         payer: true,
       },
@@ -62,22 +61,24 @@ export const getSwapById = (id: string) =>
 export const getSwapsGraph = <TWhere extends SQL>(
   limit: number,
   offset: number,
+  resolution: IntervalUnit,
+  duration: number,
   where?: TWhere
 ) =>
   db
     .select({
-      marketCap: avg(swaps.marketCap),
-      pairAmount: sum(swaps.pairAmount),
-      tokenAmount: sum(swaps.tokenAmount),
-      virtualPairBalance: avg(swaps.virtualPairBalance),
-      virtualTokenBalance: avg(swaps.virtualTokenBalance),
-      tradeDirection: swaps.tradeDirection,
+      open: first(swaps.virtualPairBalance),
+      close: last(swaps.virtualPairBalance),
+      high: max(swaps.virtualPairBalance),
+      low: min(swaps.virtualPairBalance),
+      time: interval(resolution, duration, swaps.timestamp).as("time"),
     })
     .from(swaps)
     .limit(limit)
     .offset(offset)
     .where(where)
-    .groupBy(extract("MINUTES", swaps.timestamp), swaps.tradeDirection);
+    .orderBy(sql`time`)
+    .groupBy(sql`time`);
 
 export const getSwapsVolume = <TWhere extends SQL>(where?: TWhere) =>
   db

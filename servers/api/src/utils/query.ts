@@ -36,9 +36,7 @@ export const mapFilters = function (column: Column) {
           normalizeValue(column, value)
         );
         queries.push(grammer);
-      } else {
-        queries.push(eq(column, value));
-      }
+      } else queries.push(eq(column, value));
     }
 
     if (queries.length > 0) return or(...queries);
@@ -50,7 +48,10 @@ export type QueryBuilder = {
   [key: string]: (filter: string[], value: string) => SQL | undefined;
 };
 
-export const queryBuilder = <T extends QueryBuilder>(builder: T) => {
+export const queryBuilder = <T extends QueryBuilder>(
+  builder: T,
+  condition: typeof and | typeof or = and
+) => {
   return (query: Record<string, string>) => {
     const sqlWrappers: (SQL | undefined)[] = [];
 
@@ -61,7 +62,7 @@ export const queryBuilder = <T extends QueryBuilder>(builder: T) => {
         sqlWrappers.push(results);
       }
     }
-    if (sqlWrappers.length > 0) return and(...sqlWrappers);
+    if (sqlWrappers.length > 0) return condition(...sqlWrappers);
 
     return sqlWrappers.at(0);
   };

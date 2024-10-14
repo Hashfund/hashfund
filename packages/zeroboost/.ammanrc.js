@@ -48,15 +48,15 @@ module.exports = {
     ledgerDir: "./.amman/ledger",
     verifyFees: false,
     detached: false,
-    resetLedger: true,
+    resetLedger: false,
   },
   relay: {
     enabled: true,
-    killlRunningRelay: true,
+    killlRunningRelay: false,
   },
   storage: {
     enabled: true,
     storageId: "mock-storage",
-    clearOnStart: true,
+    clearOnStart: false,
   },
 };

@@ -4,11 +4,13 @@ import { safeBN, unsafeBN, unsafeBnToNumber } from "@hashfund/bn";
 export const normalizeBN = (
   input: string | number | bigint | BN,
   decimals: number
-) =>
-  unsafeBnToNumber(
+) => {
+  const bn = unsafeBN(
     safeBN(input, decimals).div(new BN(10).pow(new BN(decimals))),
     decimals
   );
+  return bn.toNumber();
+};
 
 export const denormalizeBN = (
   value: string | number | bigint | BN,

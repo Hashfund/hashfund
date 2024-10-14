@@ -1,6 +1,6 @@
 {
-  "id": "ca0f1650-3048-40e7-b02f-00f906c43aec",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "750cccc7-38f5-40e4-9c5a-e7fcc19d8690",
+  "prevId": "ca0f1650-3048-40e7-b02f-00f906c43aec",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -103,15 +103,15 @@
         "mints_creator_users_id_fk": {
           "name": "mints_creator_users_id_fk",
           "tableFrom": "mints",
-          "tableTo": "users",
           "columnsFrom": [
             "creator"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -195,39 +195,39 @@
         "swaps_mint_mints_id_fk": {
           "name": "swaps_mint_mints_id_fk",
           "tableFrom": "swaps",
-          "tableTo": "mints",
           "columnsFrom": [
             "mint"
           ],
+          "tableTo": "mints",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         },
         "swaps_payer_users_id_fk": {
           "name": "swaps_payer_users_id_fk",
           "tableFrom": "swaps",
-          "tableTo": "users",
           "columnsFrom": [
             "payer"
           ],
+          "tableTo": "users",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "signature_trade_direction": {
           "name": "signature_trade_direction",
-          "nullsNotDistinct": false,
           "columns": [
             "signature",
             "trade_direction"
-          ]
+          ],
+          "nullsNotDistinct": false
         }
       }
     },
@@ -315,15 +315,15 @@
         "boundingCurve_mint_mints_id_fk": {
           "name": "boundingCurve_mint_mints_id_fk",
           "tableFrom": "boundingCurve",
-          "tableTo": "mints",
           "columnsFrom": [
             "mint"
           ],
+          "tableTo": "mints",
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
+          "onUpdate": "no action",
+          "onDelete": "cascade"
         }
       },
       "compositePrimaryKeys": {},

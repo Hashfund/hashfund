@@ -3,6 +3,7 @@ import { Program, AnchorProvider, Wallet, web3 } from "@coral-xyz/anchor";
 
 import { buildEventListeners } from ".";
 import { ANCHOR_PROVIDER_URL, ANCHOR_WALLET } from "./config";
+import { MultipleError } from "error";
 
 const provider = new AnchorProvider(
   new web3.Connection(ANCHOR_PROVIDER_URL),
@@ -23,9 +24,10 @@ const main = async (program: Program<Zeroboost>) => {
 
       onLogs(logs)
         .then(() => console.log("[success] signature=", logs.signature))
-        .catch((error) =>
-          console.log("[error] signature=", logs.signature, error)
-        );
+        .catch((error: MultipleError) => {
+          console.log("[error] signature=", logs.signature);
+          error.log();
+        });
     },
     "finalized"
   );

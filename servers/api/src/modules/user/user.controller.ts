@@ -12,9 +12,8 @@ export const createUser = (values: z.infer<typeof insertUserSchema>) =>
 
 export const upsertUser = (
   values: z.infer<typeof insertUserSchema>,
-  database = db
 ) =>
-  database
+  db
     .insert(users)
     .values(values)
     .onConflictDoNothing({ target: users.id })

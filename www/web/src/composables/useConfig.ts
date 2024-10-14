@@ -12,7 +12,6 @@ export const useConfig = (program?: Program<Zeroboost>) => {
   useEffect(() => {
     if (program) {
       const [config] = getConfigPda(program.programId);
-      console.log(config.toBase58())
       program.account.config.fetch(config).then(setConfig);
     }
   }, [program]);

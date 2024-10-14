@@ -50,7 +50,7 @@ export function Header({ mint }: HeaderProps) {
             <div>
               <p className="text-2xl font-bold">{mint.name}</p>
               <small className="text-white/75">
-                {mint.metadata?.description}
+                {mint.metadata.description}
               </small>
             </div>
             <SocialList
@@ -97,13 +97,13 @@ export function Header({ mint }: HeaderProps) {
                 price goes up.
               </p>
               <p>
-                There are{" "}
+                There are&nbsp;
                 {normalizeBN(
                   mint.boundingCurve.virtualTokenBalance,
                   mint.decimals
-                )}{" "}
-                tokens still available for sale in the bonding curve and there
-                is&nbsp;
+                )}
+                &nbsp;tokens still available for sale in the bonding curve and
+                there is&nbsp;
                 {normalizeBN(mint.boundingCurve.virtualPairBalance, 9)} SOL in
                 the bonding curve.
               </p>

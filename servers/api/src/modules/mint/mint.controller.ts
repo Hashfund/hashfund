@@ -7,8 +7,8 @@ import { boundingCurves, mints, swaps } from "../../db/schema";
 import { caseWhen, coalesce } from "../../db/functions";
 import type { insertMintSchema, updateMintSchema } from "../../db/zod";
 
-export const createMint = (values: z.infer<typeof insertMintSchema>, database = db) =>
-  database.insert(mints).values(values).returning().execute();
+export const createMint = (values: z.infer<typeof insertMintSchema>) =>
+  db.insert(mints).values(values).returning().execute();
 
 export const updateMint = (values: Partial<z.infer<typeof updateMintSchema>>) =>
   db.update(mints).set(values).returning().execute();

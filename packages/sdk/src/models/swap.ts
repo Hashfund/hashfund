@@ -33,3 +33,18 @@ export type SwapWithVolume = {
   tokenVolume: string;
   tradeDirection: TradeDirection;
 };
+
+export type SwapWithGraph = {
+  open: string;
+  close: string;
+  low: string;
+  high: string;
+  time: string;
+};
+
+export type RefinedSwapWithGraph = {
+  open: BN;
+  close: BN;
+  low: BN;
+  high: BN;
+};

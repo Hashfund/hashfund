@@ -1,4 +1,3 @@
-"use client";
 import { web3 } from "@coral-xyz/anchor";
 import { ConstantCurveCalculator, TradeDirection } from "@hashfund/zeroboost";
 
@@ -110,31 +109,30 @@ export default function SwapModal({
                     ticker={sideA.symbol}
                     balance={sideA.balance}
                     onChange={(value) => {
+                      let amount: number;
+
                       switch (side) {
                         case "buy":
-                          const tokenAmount = normalizeBN(
-                            ConstantCurveCalculator.calculateAmountOut(
+                          amount =
+                            ConstantCurveCalculator.calculateAmountOutNumber(
                               sideA.initialPrice,
-                              denormalizeBN(value, sideA.decimals),
+                              Number(value),
                               TradeDirection.BtoA
-                            ),
-                            sideB.decimals
-                          );
-                          setFieldValue("sellAmount", tokenAmount);
+                            );
                           break;
                         case "sell":
-                          const pairAmount = normalizeBN(
-                            ConstantCurveCalculator.calculateAmountOut(
+                          amount =
+                            ConstantCurveCalculator.calculateAmountOutNumber(
                               sideA.initialPrice,
-                              denormalizeBN(value, sideA.decimals),
+                              Number(value),
                               TradeDirection.AtoB
-                            ),
-                            sideB.decimals
-                          );
+                            );
 
-                          setFieldValue("sellAmount", pairAmount);
                           break;
                       }
+
+                      console.log("sellAmount=", side, amount);
+                      setFieldValue("sellAmount", amount);
                     }}
                   />
                   <small className="text-red first-letter:uppercase">
@@ -157,29 +155,28 @@ export default function SwapModal({
                     image={sideB.image}
                     ticker={sideB.symbol}
                     onChange={(value) => {
+                      let amount: number;
+
                       switch (side) {
                         case "buy":
-                          const pairAmount = normalizeBN(
-                            ConstantCurveCalculator.calculateAmountOut(
+                          amount =
+                            ConstantCurveCalculator.calculateAmountOutNumber(
                               sideB.initialPrice,
-                              denormalizeBN(value, sideB.decimals),
+                              Number(value),
                               TradeDirection.AtoB
-                            ),
-                            sideA.decimals
-                          );
-                          setFieldValue("buyAmount", pairAmount);
+                            );
                           break;
                         case "sell":
-                          const tokenAmount = normalizeBN(
-                            ConstantCurveCalculator.calculateAmountOut(
+                          amount =
+                            ConstantCurveCalculator.calculateAmountOutNumber(
                               sideB.initialPrice,
-                              denormalizeBN(value, sideB.decimals),
+                              Number(value),
                               TradeDirection.BtoA
-                            ),
-                            sideA.decimals
-                          );
-                          setFieldValue("buyAmount", tokenAmount);
+                            );
                       }
+
+                      console.log("buyAmount=", amount);
+                      setFieldValue("buyAmount", amount);
                     }}
                   />
                 </div>

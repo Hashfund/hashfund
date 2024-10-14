@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { and } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import { StatusError } from "../../error";
@@ -13,7 +14,7 @@ import {
 
 import { getUsers, updateUserById, upsertUser } from "./user.controller";
 
-import { userQuery } from "./user.query";
+import { userQuery, userSearch } from "./user.query";
 
 const getUsersRoute = (
   request: FastifyRequest<{
@@ -24,7 +25,11 @@ const getUsersRoute = (
   limitOffsetPaginationSchema
     .parseAsync(request.query)
     .then(async ({ limit, offset }) => {
-      const query = userQuery(request.query);
+      let query = userQuery(request.query);
+      if (request.query.search) {
+        let search = userSearch(request.query.search);
+        query = query ? and(query, search) : search;
+      }
       const orderBy = orderByBuilder(request.query.orderBy);
       const pagination = new LimitOffsetPagination(
         buildURLFromRequest(request),

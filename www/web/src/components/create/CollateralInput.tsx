@@ -78,12 +78,12 @@ export default function CollateralInput({ metadataForm, supplyForm }: Props) {
             image={URL.createObjectURL(metadataForm.image)}
             ticker={metadataForm.symbol}
             onChange={(value) => {
-              console.log("onchange", denormalizeBN(value, 6).toString());
-              const solAmount = ConstantCurveCalculator.calculateAmountOut(
-                initialPrice,
-                denormalizeBN(value, 6),
-                TradeDirection.AtoB
-              );
+              const solAmount =
+                ConstantCurveCalculator.calculateAmountOutNumber(
+                  initialPrice,
+                  Number(value),
+                  TradeDirection.AtoB
+                );
               setFieldValue("pairAmount", solAmount);
               setFieldValue("tokenAmount", value);
             }}

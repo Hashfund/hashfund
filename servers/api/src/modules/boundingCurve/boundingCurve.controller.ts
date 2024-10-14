@@ -22,10 +22,9 @@ export const updateBoundingCurveById = (
     .execute();
 
 export const upsertBoundingCurve = (
-  values: z.infer<typeof insertBoundingCurveSchema>,
-  database = db
+  values: z.infer<typeof insertBoundingCurveSchema>
 ) =>
-  database
+  db
     .insert(boundingCurves)
     .values(values)
     .onConflictDoUpdate({ target: [boundingCurves.id], set: values })

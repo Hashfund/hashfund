@@ -6,9 +6,16 @@ export type LimitOffsetPaginationQuery = {
   limit: number;
 };
 
+const zNumber = z
+  .custom((input) => {
+    const value = Number(input);
+    return !Number.isNaN(value);
+  })
+  .transform((value) => Number(value));
+
 export const limitOffsetPaginationSchema = z.object({
-  limit: z.number().optional(),
-  offset: z.number().optional(),
+  limit: zNumber.optional(),
+  offset: zNumber.optional(),
 });
 
 export class LimitOffsetPagination {

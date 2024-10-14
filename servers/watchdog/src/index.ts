@@ -20,7 +20,7 @@ import {
   upsertUser,
 } from "@hashfund/api";
 
-import { catchAndRetryRuntimeError } from "./error";
+import { catchAndRetryRuntimeError, MultipleError } from "./error";
 import { omit, safeFetch, safeParse } from "./utils";
 
 export const getOrInsertBoundingCurve = async (
@@ -124,11 +124,17 @@ export const buildEventListeners = (program: Program<Zeroboost>) => {
   return async (logs: web3.Logs) => {
     const events = Array.from(parser.parseLogs(logs.logs));
     console.log(events.map((event) => event.name));
+    
+    const errors: any[] = [];
 
     for (const event of events) {
       const method = eventListeners[event.name as keyof typeof eventListeners];
-      await method(program, event.data as any, logs.signature);
+      await method(program, event.data as any, logs.signature).catch(
+        (error) => errors.push(error)
+      );
     }
+    
+    if(errors.length > 0) throw new MultipleError(...errors)
 
     return events.map((event) => event.name);
   };

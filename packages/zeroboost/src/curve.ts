@@ -1,5 +1,5 @@
 import { BN } from "@coral-xyz/anchor";
-const { safeBN, unsafeBN, unsafeBnToNumber } = require("@hashfund/bn");
+import { safeBN, unsafeBN, unsafeBnToNumber } from "@hashfund/bn";
 
 export enum TradeDirection {
   AtoB = 0,
@@ -46,11 +46,29 @@ export class ConstantCurveCalculator implements CurveCalculator {
     amount: BN,
     tradeDirection: TradeDirection
   ): BN {
+    const [, radix] = initialPrice.toString().split(".");
+    const decimals = radix.length;
+
+    const price = safeBN(Number(initialPrice), decimals);
+
     switch (tradeDirection) {
       case TradeDirection.AtoB:
-        return unsafeBN(safeBN(initialPrice).mul(amount));
+        return unsafeBN(price.mul(amount), decimals);
       case TradeDirection.BtoA:
-        return unsafeBN(amount.div(safeBN(initialPrice)));
+        return unsafeBN(amount.div(price), decimals);
+    }
+  }
+
+  static calculateAmountOutNumber(
+    initialPrice: number,
+    amount: number,
+    tradeDirection: TradeDirection
+  ): number {
+    switch (tradeDirection) {
+      case TradeDirection.AtoB:
+        return initialPrice * amount;
+      case TradeDirection.BtoA:
+        return amount / initialPrice;
     }
   }
 }

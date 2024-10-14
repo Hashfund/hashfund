@@ -9,6 +9,7 @@ import { Amman } from "@metaplex-foundation/amman-client";
 
 import {
   IDL,
+  TradeDirection,
   getEstimatedRaydiumCpPoolCreationFee,
   initializeConfig,
   migrateFund,
@@ -46,9 +47,9 @@ describe("zeroboost", async () => {
     maximumCurveUsdValuation: 60000,
     liquidityPercentage: 25,
     mint: {
-      name: "FliedLice",
-      symbol: "FLIEDLICE",
-      uri: "https://fliedlice.xyz",
+      name: "PumpPigg",
+      symbol: "$PUMPPIG",
+      uri: "https://cdn.dexscreener.com/cms/tokens/metadata/4PoxZA4BfFgmryu3DA0t",
       supply: 1_000_000_000,
       decimals: 9,
     },
@@ -120,11 +121,23 @@ describe("zeroboost", async () => {
             NATIVE_MINT,
             program.provider.publicKey!,
             {
-              amount: unsafeBN(safeBN(0.01).mul(new BN(10).pow(new BN(9)))),
-              tradeDirection: 0,
+              amount: unsafeBN(safeBN(0.05).mul(new BN(10).pow(new BN(9)))),
+              tradeDirection: TradeDirection.BtoA,
             }
           )
         ).instruction(),
+        // await (
+        //   await rawSwap(
+        //     program,
+        //     mint,
+        //     NATIVE_MINT,
+        //     program.provider.publicKey!,
+        //     {
+        //       amount: unsafeBN(safeBN(0.1, 6).mul(new BN(10).pow(new BN(6))), 6),
+        //       tradeDirection: TradeDirection.AtoB,
+        //     }
+        //   )
+        // ).instruction(),
       ])
       .rpc();
 
@@ -151,6 +164,7 @@ describe("zeroboost", async () => {
     );
   });
 
+  
   // it("Buy minted token", async () => {
   //   const boundingCurveInfo = await program.account.boundingCurve.fetch(
   //     boundingCurve
@@ -159,7 +173,7 @@ describe("zeroboost", async () => {
   //   const signature = await (
   //     await swap(program, boundingCurveInfo.mint, program.provider.publicKey!, {
   //       amount: unsafeBN(safeBN(0.01).mul(new BN(10).pow(new BN(9)))),
-  //       tradeDirection: 0,
+  //       tradeDirection: TradeDirection.BtoA,
   //     })
   //   ).rpc();
 

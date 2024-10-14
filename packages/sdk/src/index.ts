@@ -3,13 +3,14 @@ import xior from "xior";
 import { CrudApi } from "./crud";
 import { Omit } from "./object";
 import { ImageKitApi } from "./imagekit";
-import { SwapWithVolume } from "./models/swap";
 import type {
   User,
   Swap,
   LimitOffsetPagination,
   UserWithExtra,
   MintWithExtra,
+  SwapWithVolume,
+  SwapWithGraph,
 } from "./models";
 
 export class UserApi extends CrudApi<User> {
@@ -31,7 +32,9 @@ export class MintApi extends Omit(
   protected path = "mints";
 
   getMintByUser(user: string) {
-    return this.xior.get<LimitOffsetPagination<MintWithExtra>>(this.buildPath("users", user));
+    return this.xior.get<LimitOffsetPagination<MintWithExtra>>(
+      this.buildPath("users", user)
+    );
   }
 }
 
@@ -39,18 +42,9 @@ export class SwapApi extends Omit(CrudApi<Swap>, "create", "update", "delete") {
   protected path = "swaps";
 
   getSwapsGraph(query?: Record<string, string>) {
-    return this.xior.get<
-      LimitOffsetPagination<
-        Pick<
-          Swap,
-          | "marketCap"
-          | "pairAmount"
-          | "tokenAmount"
-          | "virtualPairBalance"
-          | "virtualTokenBalance"
-        >
-      >
-    >(this.buildPathWithQuery(this.buildPath("graph"), query));
+    return this.xior.get<LimitOffsetPagination<SwapWithGraph>>(
+      this.buildPathWithQuery(this.buildPath("graph"), query)
+    );
   }
 
   getSwapsVolume(query: Record<string, string>) {

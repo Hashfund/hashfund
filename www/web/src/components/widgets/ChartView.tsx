@@ -1,12 +1,20 @@
+import moment from "moment";
 import { useEffect, useRef } from "react";
-import * as TradeView from "@hashfund/chart";
+import {
+  type IChartingLibraryWidget,
+  type LanguageCode,
+  widget as Widget,
+  type ResolutionString,
+} from "@hashfund/chart";
 
 import { Api } from "@/lib/api";
+import { normalizeBN } from "@/web3";
+import { resolveResolution } from "@/lib/graph";
 
 type ChartViewProps = {
   width: number;
   height: number;
-  locale?: TradeView.LanguageCode;
+  locale?: LanguageCode;
   mint: string;
 };
 
@@ -17,11 +25,11 @@ export default function ChartView({
   locale = "en",
 }: ChartViewProps) {
   const container = useRef<HTMLDivElement>(null);
-  const widget = useRef<TradeView.IChartingLibraryWidget | null>(null);
+  const widget = useRef<IChartingLibraryWidget | null>(null);
 
   useEffect(() => {
     if (container.current) {
-      widget.current = new TradeView.widget({
+      widget.current = new Widget({
         container: container.current,
         symbol: mint,
         width,
@@ -29,7 +37,7 @@ export default function ChartView({
         locale,
         theme: "dark",
         debug: true,
-        interval: "5" as TradeView.ResolutionString,
+        interval: "5" as ResolutionString,
         datafeed: {
           async onReady(callback) {
             setTimeout(() =>
@@ -37,7 +45,7 @@ export default function ChartView({
                 supports_time: true,
                 supports_timescale_marks: true,
                 supports_marks: true,
-                supported_resolutions: ["5"] as TradeView.ResolutionString[],
+                supported_resolutions: ["1", "15", "30"] as ResolutionString[],
               })
             );
           },
@@ -74,8 +82,8 @@ export default function ChartView({
                   listed_exchange: "HashFund",
                   timezone: "Etc/UTC",
                   format: "price",
-                  pricescale: 1,
-                  minmov: 0.1,
+                  pricescale: Math.pow(10, data.decimals),
+                  minmov: 1 / Math.pow(10, data.decimals),
                   visible_plots_set: "ohlc",
                   data_status: "streaming",
                   session: "24x7",
@@ -94,27 +102,35 @@ export default function ChartView({
                 timestamp__gte: from.toISOString(),
                 timestamp__lte: to.toISOString(),
                 limit: periodParams.countBack.toString(),
-                resolution,
+                ...resolveResolution(resolution),
               })
               .then(({ data }) => {
-                const graph = data.results.map(
-                  ({}) =>
-                    ({
-                      time: 0,
-                      low: 0,
-                      high: 0,
-                      close: 0,
-                      open: 0,
-                    } as const)
-                );
+                const graph = data.results.map((data) => {
+                  const time = moment(data.time).unix() / 1000;
+                  const decimals = Math.log10(symbolInfo.pricescale);
+
+                  console.log("decimals=", decimals);
+
+                  const low = normalizeBN(data.low, decimals);
+                  const high = normalizeBN(data.high, decimals);
+                  const open = normalizeBN(data.open, decimals);
+                  const close = normalizeBN(data.close, decimals);
+
+                  return {
+                    low,
+                    high,
+                    open,
+                    close,
+                    time,
+                  };
+                });
                 if (graph.length > 0) onResult(graph, { noData: false });
               })
-              .catch(console.log);
+              .catch(onError);
           },
           subscribeBars() {},
           unsubscribeBars() {},
         },
-
         enabled_features: ["seconds_resolution", "tick_resolution"],
       });
     }

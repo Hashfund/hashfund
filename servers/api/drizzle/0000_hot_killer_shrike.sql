@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS "swaps" (
 	"mint" text NOT NULL,
 	"payer" text NOT NULL,
 	"signature" text NOT NULL,
-	"timestamp" timestamp DEFAULT now() NOT NULL
+	"timestamp" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "signature_trade_direction" UNIQUE("signature","trade_direction")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "boundingCurve" (

@@ -34,6 +34,6 @@ describe("Test constant curve js impl", () => {
       pairAmountOut.eq(
         curve.tokenBReserveBalance.div(new BN(10).pow(new BN(6)))
       )
-    ).equal(true, "Expect exert pair maxiumum reserve value");
+    ).equal(true, "Expect exact pair maxiumum reserve value");
   });
 });

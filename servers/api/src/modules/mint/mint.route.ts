@@ -1,4 +1,5 @@
 import type { z } from "zod";
+import { and } from "drizzle-orm";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
 import { StatusError } from "../../error";
@@ -11,7 +12,7 @@ import {
   limitOffsetPaginationSchema,
 } from "../../utils/pagination";
 
-import { mintQuery } from "./mint.query";
+import { mintQuery, mintSearch } from "./mint.query";
 import { getMintById, getMints, getMintsByUser } from "./mint.controller";
 
 const getMintsRoute = (
@@ -28,11 +29,16 @@ const getMintsRoute = (
         limit,
         offset
       );
+      let query = mintQuery(request.query);
+      if (request.query.search) {
+        const search = mintSearch(request.query.search);
+        query = query ? and(query, search) : search;
+      }
       return pagination.getResponse(
         await getMints(
           pagination.limit,
           pagination.getOffset(),
-          mintQuery(request.query),
+          query,
           orderByBuilder(request.query.orderBy)
         )
       );

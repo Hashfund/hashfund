@@ -14,7 +14,13 @@ export abstract class ApiImpl {
     path: string,
     query?: T
   ) => {
-    const q = new URLSearchParams(query);
-    return path + "?" + q.toString();
+    if (query) {
+      for (const [key, value] of Object.entries(query))
+        if (!value) delete query[key];
+      const q = new URLSearchParams(query);
+      return path + "?" + q.toString();
+    }
+
+    return path;
   };
 }

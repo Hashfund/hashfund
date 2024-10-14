@@ -18,6 +18,7 @@ import {
   getSwapsGraph,
   getSwapsVolume,
 } from "./swap.controller";
+import { graphSchema } from "./swap.schema";
 
 export const getSwapsRoute = (
   request: FastifyRequest<{
@@ -62,17 +63,27 @@ export const getSwapsGraphRoute = (
 ) =>
   limitOffsetPaginationSchema
     .parseAsync(request.query)
-    .then(async ({ limit, offset }) => {
-      const pagination = new LimitOffsetPagination(
-        buildURLFromRequest(request),
-        limit,
-        offset
-      );
-      const filter = swapQuery(request.query);
-      return pagination.getResponse(
-        await getSwapsGraph(pagination.limit, pagination.getOffset(), filter)
-      );
-    });
+    .then(async ({ limit, offset }) =>
+      graphSchema
+        .parseAsync(request.query)
+        .then(async ({ resolution, duration }) => {
+          const pagination = new LimitOffsetPagination(
+            buildURLFromRequest(request),
+            limit,
+            offset
+          );
+          const filter = swapQuery(request.query);
+          return pagination.getResponse(
+            await getSwapsGraph(
+              pagination.limit,
+              pagination.getOffset(),
+              resolution,
+              duration,
+              filter
+            )
+          );
+        })
+    );
 
 export const getSwapsVolumeRoute = (
   request: FastifyRequest<{ Querystring: Record<string, string> }>
