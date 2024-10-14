@@ -10,8 +10,7 @@ import {
   useState,
 } from "react";
 
-import { PYTH_ENPOINT_URL } from "@/config";
-import { priceToNumber } from "@/web3/math";
+import { mapFeed } from "@/web3";
 
 type PythPriceContext = {
   price: Map<string, number>;
@@ -25,25 +24,28 @@ export const PythPriceContext = createContext<PythPriceContext>({
 
 type PythPriceProviderProps = {
   feeds: string[];
+  priceFeeds?: ReturnType<typeof mapFeed>[];
+  pythEndpoint: string;
 } & React.PropsWithChildren;
 
 export default function PythPriceProvider({
   feeds,
+  priceFeeds,
   children,
+  pythEndpoint,
 }: PythPriceProviderProps) {
   const connection = useMemo(
-    () => new PriceServiceConnection(PYTH_ENPOINT_URL),
+    () => new PriceServiceConnection(pythEndpoint),
     []
   );
-  const [price, setPrice] = useState<Map<string, number>>(new Map());
+  const [price, setPrice] = useState<Map<string, number>>(new Map(priceFeeds));
 
   const onUpdate = (priceFeed: PriceFeed) => {
-    const id = "0x" + priceFeed.id;
-    const amount = priceToNumber(priceFeed.getEmaPriceUnchecked());
+    const [id, amount] = mapFeed(priceFeed);
+    const newValue = Number(amount.toFixed(2));
 
     setPrice((price) => {
       const value = price.get(id);
-      const newValue = Number(amount.toFixed(2));
       if (value && value === newValue) return price;
       price.set(id, newValue);
       return new Map(price);
@@ -55,7 +57,7 @@ export default function PythPriceProvider({
   useEffect(() => {
     const feedIds = feeds.map((feed) => feed);
     connection.getLatestPriceFeeds(feedIds).then((priceFeeds) => {
-      priceFeeds?.map(onUpdate);
+      if (priceFeeds) priceFeeds.forEach(onUpdate);
     });
 
     connection.subscribePriceFeedUpdates(feedIds, onUpdate);

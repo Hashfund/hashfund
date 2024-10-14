@@ -9,10 +9,13 @@ import type { Metadata, Viewport } from "next";
 import { ToastContainer } from "react-toastify";
 
 import "@/globals.css";
-import { RPC_URL } from "@/config";
+import { PYTH_ENPOINT_URL, RPC_URL } from "@/config";
 import Provider from "@/providers";
 import { defaultFont } from "@/assets/font";
 import { Navigation, Toolbar } from "@/components/layout";
+import { PriceServiceConnection } from "@pythnetwork/price-service-client";
+import { PythFeed } from "@/config/pyth";
+import { mapFeed } from "@/web3";
 
 export const metadata: Metadata = {
   metadataBase: new URL(
@@ -33,7 +36,14 @@ export const viewport: Viewport = {
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-export default function RootLayout({ children }: React.PropsWithChildren) {
+export default async function RootLayout({
+  children,
+}: React.PropsWithChildren) {
+  const connection = new PriceServiceConnection(PYTH_ENPOINT_URL);
+  const feeds = await connection
+    .getLatestPriceFeeds([PythFeed.SOL_USD])
+    .catch(() => undefined);
+
   return (
     <html lang="en">
       <body
@@ -45,6 +55,8 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
       >
         <Provider
           rpcEndpoint={RPC_URL}
+          pythDefaultPriceFeeds={feeds?.map(mapFeed)}
+          pythEndpoint={PYTH_ENPOINT_URL}
           zeroboostProgram={devnet.ZERO_BOOST_PROGRAM.toBase58()}
         >
           <Navigation className="border-dark lt-md:order-last lt-md:border-t-1 md:border-r-1" />

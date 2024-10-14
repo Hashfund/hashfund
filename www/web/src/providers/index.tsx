@@ -5,7 +5,9 @@ import {
   WalletProvider,
 } from "@solana/wallet-adapter-react";
 import { WalletModalProvider } from "@solana/wallet-adapter-react-ui";
+import type { PriceFeed } from "@pythnetwork/price-service-client";
 
+import { mapFeed } from "@/web3";
 import { BASE_API_URL } from "@/config";
 import { PythFeed } from "@/config/pyth";
 import { useWalletList } from "@/composables/useWalletList";
@@ -19,17 +21,25 @@ import NavigationProvider from "./NavigationProvider";
 type Props = {
   rpcEndpoint: string;
   zeroboostProgram: string;
+  pythEndpoint: string;
+  pythDefaultPriceFeeds?: ReturnType<typeof mapFeed>[];
 } & React.PropsWithChildren;
 
 export default function Provider({
   rpcEndpoint,
   zeroboostProgram,
+  pythEndpoint,
+  pythDefaultPriceFeeds,
   children,
 }: Props) {
   const wallets = useWalletList();
 
   return (
-    <PythPriceProvider feeds={[PythFeed.SOL_USD]}>
+    <PythPriceProvider
+      feeds={[PythFeed.SOL_USD]}
+      pythEndpoint={pythEndpoint}
+      priceFeeds={pythDefaultPriceFeeds}
+    >
       <NavigationProvider>
         <ConnectionProvider
           endpoint={rpcEndpoint}
