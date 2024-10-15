@@ -11,6 +11,7 @@ import { useFeedPrice } from "@/composables/useFeedPrice";
 import { denormalizeBN, normalizeBN } from "@/web3/decimal";
 
 import TokenPriceInput from "../widgets/TokenPriceInput";
+import { useMemo } from "react";
 
 type Props = {
   metadataForm: MetadataForm;
@@ -25,14 +26,18 @@ export default function CollateralInput({ metadataForm, supplyForm }: Props) {
     pairAmount: number;
     tokenAmount: number;
   }>();
-  const curve = new ConstantCurveCalculator(
-    denormalizeBN(supplyForm.supply, 6),
-    denormalizeBN(config.maximumCurveUsdValuation / solPrice, 9),
-    supplyForm.liquidityPercentage
+  const curve = useMemo(
+    () =>
+      new ConstantCurveCalculator(
+        denormalizeBN(supplyForm.supply, 6),
+        denormalizeBN(config.maximumCurveUsdValuation / solPrice, 9),
+        supplyForm.liquidityPercentage
+      ),
+    [config, supplyForm, solPrice]
   );
 
-  const balance = normalizeBN(solBalance, 9);
-  const initialPrice = curve.calculateInitialPrice();
+  const balance = useMemo(() => normalizeBN(solBalance, 9), [solBalance]);
+  const initialPrice = useMemo(() => curve.calculateInitialPrice(), [curve]);
 
   return (
     <div className="flex flex-col space-y-8">
@@ -45,22 +50,14 @@ export default function CollateralInput({ metadataForm, supplyForm }: Props) {
             image="/sol.png"
             ticker={"SOL"}
             onChange={(value) => {
-              console.log(
-                "onchange",
-                [
-                  denormalizeBN(supplyForm.supply, 6),
-                  denormalizeBN(config.maximumCurveUsdValuation / solPrice, 9),
-                  denormalizeBN(value, 9),
-                ].map((bn) => bn.toString())
-              );
-
-              const tokenAmount = ConstantCurveCalculator.calculateAmountOut(
-                initialPrice,
-                denormalizeBN(Number(value), 9),
-                TradeDirection.BtoA
-              );
+              const tokenAmount =
+                ConstantCurveCalculator.calculateAmountOutNumber(
+                  initialPrice,
+                  Number(value),
+                  TradeDirection.BtoA
+                );
               setFieldValue("pairAmount", value);
-              setFieldValue("tokenAmount", normalizeBN(tokenAmount, 6));
+              setFieldValue("tokenAmount", tokenAmount);
             }}
           />
           <small className="text-xs text-red">
