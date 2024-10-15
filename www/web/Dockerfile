@@ -15,7 +15,6 @@ WORKDIR /usr/src/app
 COPY . .
 COPY /packages/chart/charting_library/bundles /www/web/public/bundles
 
-
 RUN turbo prune web --docker
 
 FROM base as builder
