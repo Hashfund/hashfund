@@ -13,7 +13,6 @@ FROM base AS deps
 WORKDIR /usr/src/app
 
 COPY . .
-COPY /packages/chart/charting_library/bundles /www/web/public
 
 RUN turbo prune web --docker
 
@@ -41,6 +40,7 @@ USER nextjs
 COPY --from=builder --chown=nextjs:nodejs  /usr/src/app/www/web/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs  /usr/src/app/www/web/.next/static ./www/web/.next/static
 COPY --from=builder --chown=nextjs:nodejs /usr/src/app/www/web/public ./www/web/public
+COPY --from=deps /usr/src/app/packages/chart/charting_library/bundles ./www/web/public
 
 ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
