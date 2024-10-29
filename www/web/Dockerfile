@@ -13,7 +13,7 @@ FROM base AS deps
 WORKDIR /usr/src/app
 
 COPY . .
-COPY /packages/chart/charting_library/bundles /www/web/public/bundles
+COPY /packages/chart/charting_library/bundles /www/web/public
 
 RUN turbo prune web --docker
 
