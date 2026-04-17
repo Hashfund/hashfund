@@ -34,15 +34,17 @@ FROM base as runner
 
 WORKDIR /usr/src/app 
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
-USER nodejs
-
-COPY --from=installer --chown=nodejs:nodejs /usr/src/app/ .
+COPY --from=installer /usr/src/app/ .
 
 WORKDIR /usr/src/app/servers/api
 
 RUN npx --yes @fastify/secure-session > secret-key
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+RUN chown -R nodejs:nodejs /usr/src/app/
+
+USER nodejs
 
 EXPOSE 10000
 
