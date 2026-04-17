@@ -47,4 +47,4 @@ WORKDIR /usr/src/app/servers/watchdog
 
 EXPOSE 10000
 
-CMD node dist/main.js
+CMD node dist/servers/watchdog/src/main.js

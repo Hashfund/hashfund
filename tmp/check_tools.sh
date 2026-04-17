@@ -1,0 +1,12 @@
+#!/bin/bash
+export PATH="$HOME/.local/share/solana/install/active_release/bin:$HOME/.avm/bin:$HOME/.cargo/bin:$PATH"
+echo "=== Checking tools ==="
+echo "anchor: $(which anchor 2>/dev/null || echo 'NOT FOUND')"
+echo "anchor version: $(anchor --version 2>/dev/null || echo 'N/A')"
+echo "solana: $(which solana 2>/dev/null || echo 'NOT FOUND')"
+echo "solana version: $(solana --version 2>/dev/null || echo 'N/A')"
+echo "avm: $(which avm 2>/dev/null || echo 'NOT FOUND')"
+echo "cargo: $(which cargo 2>/dev/null || echo 'NOT FOUND')"
+echo "node: $(which node 2>/dev/null || echo 'NOT FOUND')"
+echo "bun: $(which bun 2>/dev/null || echo 'NOT FOUND')"
+echo "=== Done ==="

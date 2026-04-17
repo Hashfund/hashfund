@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "render": {
+      "command": "npx",
+      "args": ["-y", "@render-oss/mcp-server-render"],
+      "env": {
+        "RENDER_API_KEY": "rnd_GS6sC11u37avsECPEcswwxDrgTkZ"
+      }
+    },
+    "solana": {
+      "command": "npx",
+      "args": ["-y", "@chainstack/solana-mcp"],
+      "env": {
+        "SOLANA_RPC_URL": "https://devnet.helius-rpc.com/?api-key=6938ff69-b34f-4cc7-8023-c4025bb5faba"
+      }
+    },
+    "helius": {
+      "command": "npx",
+      "args": ["-y", "helius-mcp"],
+      "env": {
+        "HELIUS_API_KEY": "6938ff69-b34f-4cc7-8023-c4025bb5faba"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+ALTER TABLE mints ALTER COLUMN supply TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN initial_supply TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN minimum_pair_balance TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN maximum_pair_balance TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN virtual_token_balance TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN virtual_pair_balance TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN net_active_capital TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN total_contributed TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN total_burned_tokens TYPE numeric(40,0);
+ALTER TABLE "boundingCurve" ALTER COLUMN total_fees_collected TYPE numeric(40,0);
+ALTER TABLE swaps ALTER COLUMN token_amount TYPE numeric(40,0);
+ALTER TABLE swaps ALTER COLUMN pair_amount TYPE numeric(40,0);
+ALTER TABLE swaps ALTER COLUMN market_cap TYPE numeric(40,0);
+ALTER TABLE swaps ALTER COLUMN virtual_token_balance TYPE numeric(40,0);
+ALTER TABLE swaps ALTER COLUMN virtual_pair_balance TYPE numeric(40,0);

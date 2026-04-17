@@ -51,4 +51,4 @@ USER nodejs
 
 EXPOSE 10000
 
-CMD yarn drizzle-kit generate && yarn drizzle-kit migrate && node dist/index.js
+CMD yarn drizzle-kit generate && yarn drizzle-kit migrate && node dist/servers/api/src/index.js

@@ -1,0 +1,18 @@
+
+/mnt/c/Users/rolan/projects/hashfund/node_modules/ts-node/src/index.ts:261
+    return new TSError(diagnosticText, diagnosticCodes)
+           ^
+TSError: ⨯ Unable to compile TypeScript:
+scripts/initialize_devnet.ts(44,9): error TS18046: 'err' is of type 'unknown'.
+scripts/initialize_devnet.ts(45,30): error TS18046: 'err' is of type 'unknown'.
+
+    at createTSError (/mnt/c/Users/rolan/projects/hashfund/node_modules/ts-node/src/index.ts:261:12)
+    at getOutput (/mnt/c/Users/rolan/projects/hashfund/node_modules/ts-node/src/index.ts:367:40)
+    at Object.compile (/mnt/c/Users/rolan/projects/hashfund/node_modules/ts-node/src/index.ts:558:11)
+    at Module.m._compile (/mnt/c/Users/rolan/projects/hashfund/node_modules/ts-node/src/index.ts:439:43)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1623:10)
+    at Object.require.extensions.<computed> [as .ts] (/mnt/c/Users/rolan/projects/hashfund/node_modules/ts-node/src/index.ts:442:12)
+    at Module.load (node:internal/modules/cjs/loader:1266:32)
+    at Function.Module._load (node:internal/modules/cjs/loader:1091:12)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:164:12)
+    at Object.<anonymous> (/mnt/c/Users/rolan/projects/hashfund/node_modules/ts-node/src/bin.ts:157:12)
