@@ -2,7 +2,7 @@ import "dotenv/config";
 import { BN } from "bn.js";
 
 export const HOST = process.env.HOST || "0.0.0.0";
-export const PORT = Number(process.env.PORT || 3001);
+export const PORT = Number(process.env.PORT || 10000);
 export const DB_URL = process.env.DATABASE_URL!;
 export const SECRET_KEY = process.env.SECRET_KEY!;
 export const HTTP_RPC_ENDPOINT = process.env.HTTP_RPC_ENDPOINT!;

@@ -4,7 +4,11 @@ FROM node:22-alpine3.19 as base
 
 RUN apk upgrade && apk update && \
     apk add libgcc libstdc++ libc6-compat && \ 
-    apk add make gcc g++ python3
+    apk add make gcc g++ python3 curl bash
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
 
 RUN yarn global add turbo
 
@@ -26,6 +30,10 @@ RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn ins
 COPY --from=builder /usr/src/app/out/full/ .
 RUN yarn turbo run build --filter=@hashfund/api
 
+# Run generate during build so the SQL is ready in the image
+WORKDIR /usr/src/app/servers/api
+RUN yarn drizzle-kit generate
+
 FROM base as runner 
 
 WORKDIR /usr/src/app 
@@ -40,4 +48,6 @@ WORKDIR /usr/src/app/servers/api
 
 RUN npx --yes @fastify/secure-session > secret-key
 
-CMD yarn migrate && node dist/index.js
+EXPOSE 10000
+
+CMD yarn drizzle-kit migrate && node dist/index.js

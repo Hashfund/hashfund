@@ -4,7 +4,11 @@ FROM node:22-alpine3.19 as base
 
 RUN apk upgrade && apk update && \
   apk add libgcc libstdc++ libc6-compat && \
-  apk add make gcc g++ python3
+  apk add make gcc g++ python3 curl bash
+
+# Install Bun
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
 
 RUN yarn global add turbo
 
@@ -37,5 +41,7 @@ USER nodejs
 COPY --from=installer --chown=nodejs:nodejs /usr/src/app/ .
 
 WORKDIR /usr/src/app/servers/watchdog
+
+EXPOSE 10000
 
 CMD node dist/main.js
