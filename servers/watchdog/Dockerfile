@@ -36,9 +36,12 @@ WORKDIR /usr/src/app
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
-USER nodejs
+RUN chown -R nodejs:nodejs /usr/src/app/
 
-COPY --from=installer --chown=nodejs:nodejs /usr/src/app/ .
+ENV HOST=0.0.0.0
+ENV PORT=10000
+
+USER nodejs
 
 WORKDIR /usr/src/app/servers/watchdog
 

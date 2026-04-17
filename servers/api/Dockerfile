@@ -44,6 +44,9 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 RUN chown -R nodejs:nodejs /usr/src/app/
 
+ENV HOST=0.0.0.0
+ENV PORT=10000
+
 USER nodejs
 
 EXPOSE 10000
