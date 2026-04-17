@@ -34,7 +34,11 @@ export const getOrInsertBoundingCurve = async (
     )
   );
 
-  return upsertBoundingCurve(boundingCurve);
+  return upsertBoundingCurve({
+    ...boundingCurve,
+    initialPrice: String(boundingCurve.initialPrice),
+    liquidityPercentage: String(boundingCurve.liquidityPercentage),
+  } as any);
 };
 
 type Event<
@@ -46,21 +50,51 @@ const onMintEvent = catchAndRetryRuntimeError<Event<"MintEvent">>(
     await upsertUser({
       id: data.creator.toBase58(),
     });
-    const mint = omit(
-      safeParse({ id: data.mint, ...data }),
-      "decimals",
-      "timestamp",
-      "mint",
-      "boundingCurve"
-    );
-    const metadata = await safeFetch(mint.uri);
+
+    let metadata = null;
+    try {
+      console.log(`[Watchdog] Fetching metadata for ${data.mint.toBase58()} from ${data.uri}`);
+      metadata = await safeFetch(data.uri);
+    } catch (err) {
+      console.warn(`[Watchdog] Failed to fetch metadata for ${data.mint.toBase58()}:`, err);
+      metadata = {
+        name: data.name,
+        symbol: data.symbol,
+        description: "Metadata fetch failed. Description pending indexing.",
+        image: ""
+      };
+    }
+
+    // Fetch the actual bonding curve account to get precise initial_supply and liquidity_percentage
+    const boundingCurveAccount = await program.account.boundingCurve.fetch(data.boundingCurve);
+    
+    // Calculate Total Nominal Supply = (Initial Supply In Curve * 100) / Liquidity %
+    // This represents the 100% supply (including the portion reserved for LP)
+    const nominalSupply = (new BN(boundingCurveAccount.initialSupply.toString()).mul(new BN(100))).div(new BN(boundingCurveAccount.liquidityPercentage.toString()));
+    
+    console.log(`[Watchdog] Processing mint ${data.mint.toBase58()}:`);
+    console.log(`  Initial supply in curve: ${boundingCurveAccount.initialSupply.toString()}`);
+    console.log(`  Liquidity percentage:   ${boundingCurveAccount.liquidityPercentage.toString()}%`);
+    console.log(`  Calculated nominal:      ${nominalSupply.toString()}`);
+
     await createMint({
-      ...mint,
+      id: data.mint.toBase58(),
+      uri: data.uri,
+      name: data.name,
+      symbol: data.symbol,
+      creator: data.creator.toBase58(),
+      supply: nominalSupply.toString(),
       metadata,
       signature,
       decimals: data.decimals,
     });
-    await getOrInsertBoundingCurve(program, data.boundingCurve);
+
+    await upsertBoundingCurve({
+      id: data.boundingCurve.toBase58(),
+      ...safeParse(boundingCurveAccount),
+      initialPrice: String(boundingCurveAccount.initialPrice),
+      liquidityPercentage: String(boundingCurveAccount.liquidityPercentage),
+    } as any);
   }
 );
 

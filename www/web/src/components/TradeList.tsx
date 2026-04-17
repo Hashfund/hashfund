@@ -42,7 +42,7 @@ export async function TradeList({ className, mint, solPrice }: TradeListProps) {
           </tr>
         </thead>
         <tbody>
-          {swaps.results.map((swap) => {
+          {swaps?.results?.map((swap) => {
             const profileLink = `/profile?address=${swap.payer.id}`;
             const txLink = Explorer.buildTx(swap.signature);
 
@@ -71,9 +71,11 @@ export async function TradeList({ className, mint, solPrice }: TradeListProps) {
                     className="m-aut0"
                     target="_blank"
                   >
-                    {swap.tradeDirection === TradeDirection.AtoB
-                      ? "Sell"
-                      : "Buy"}
+                    <p className="font-semibold text-white">
+                      {swap.tradeDirection === TradeDirection.AtoB
+                        ? "Withdraw"
+                        : "Buy"}
+                    </p>
                   </Link>
                 </td>
                 <td>
@@ -97,6 +99,11 @@ export async function TradeList({ className, mint, solPrice }: TradeListProps) {
           })}
         </tbody>
       </table>
+      {(!swaps?.results || swaps.results.length === 0) && (
+        <div className="flex justify-center p-8 text-white/50">
+          No secondary market trades found yet.
+        </div>
+      )}
     </div>
   );
 }

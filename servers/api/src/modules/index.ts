@@ -4,7 +4,13 @@ import { registerUserRoutes } from "./user/user.route";
 import { registerSwapRoutes } from "./swap/swap.route";
 import { registerAssetRoutes } from "./asset/asset.route";
 
-export const registerRoutes = (server: FastifyInstance) => {
-  const fns = [registerAssetRoutes, registerUserRoutes, registerMintRoutes, registerSwapRoutes];
-  return fns.map((fn) => fn(server));
+const routes = async (server: FastifyInstance) => {
+  await registerAssetRoutes(server);
+  await registerUserRoutes(server);
+  await registerMintRoutes(server);
+  await registerSwapRoutes(server);
+};
+
+export const registerRoutes = async (server: FastifyInstance) => {
+  await server.register(routes, { prefix: "/api/v1" });
 };

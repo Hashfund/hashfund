@@ -14,7 +14,7 @@ const safeParse = (input) => {
             const result = {};
             for (const [key, value] of Object.entries(input)) {
                 if (value instanceof anchor_1.BN)
-                    result[key] = BigInt(value.toString());
+                    result[key] = value.toString();
                 else if (value instanceof anchor_1.web3.PublicKey)
                     result[key] = value.toBase58();
                 else

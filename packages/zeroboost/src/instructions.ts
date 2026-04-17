@@ -35,7 +35,6 @@ export const mintToken = (
   pair: web3.PublicKey,
   creator: web3.PublicKey,
   params: Parameters<(typeof program)["methods"]["mintToken"]>[number],
-  pythPairUsdFeed: web3.PublicKey,
   tokenMetadataProgram = MPL_TOKEN_METADATA_PROGRAM_ID,
   metadataFeeReciever = devnet.ZERO_BOOST_METADATA_FEE_RECIEVER
 ) => {
@@ -59,7 +58,6 @@ export const mintToken = (
     config,
     creator,
     metadata,
-    pythPairUsdFeed,
     boundingCurve,
     boundingCurveAta,
     boundingCurveReserve,
@@ -74,7 +72,8 @@ export const swap = async (
   program: Program<Zeroboost>,
   mint: web3.PublicKey,
   payer: web3.PublicKey,
-  params: Parameters<(typeof program)["methods"]["swap"]>[number]
+  params: Parameters<(typeof program)["methods"]["swap"]>[number],
+  feeReceiver = devnet.ZERO_BOOST_MIGRATION_FEE_RECIEVER
 ) => {
   const programId = program.programId;
 
@@ -89,6 +88,12 @@ export const swap = async (
 
   const payerAta = getAssociatedTokenAddressSync(mint, payer);
   const payerPairAta = getAssociatedTokenAddressSync(pair, payer);
+  const feeReceiverPairAta = getAssociatedTokenAddressSync(pair, feeReceiver);
+
+  const [userPosition] = web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("user_position"), payer.toBytes(), mint.toBytes()],
+    programId
+  );
 
   return program.methods.swap(params).accounts({
     mint,
@@ -96,12 +101,15 @@ export const swap = async (
     payer,
     payerAta,
     payerPairAta,
+    feeReceiver,
+    feeReceiverPairAta,
+    userPosition,
     config,
     boundingCurve,
     boundingCurveReserve,
     boundingCurveReserveAta,
     boundingCurveReservePairAta,
-  });
+  } as any);
 };
 
 export const rawSwap = async (
@@ -109,7 +117,8 @@ export const rawSwap = async (
   mint: web3.PublicKey,
   pair: web3.PublicKey,
   payer: web3.PublicKey,
-  params: Parameters<(typeof program)["methods"]["swap"]>[number]
+  params: Parameters<(typeof program)["methods"]["swap"]>[number],
+  feeReceiver = devnet.ZERO_BOOST_MIGRATION_FEE_RECIEVER
 ) => {
   const programId = program.programId;
   const [config] = getConfigPda(programId);
@@ -123,6 +132,11 @@ export const rawSwap = async (
 
   const payerAta = getAssociatedTokenAddressSync(mint, payer);
   const payerPairAta = getAssociatedTokenAddressSync(pair, payer);
+  const feeReceiverPairAta = getAssociatedTokenAddressSync(pair, feeReceiver);
+  const [userPosition] = web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("user_position"), payer.toBytes(), mint.toBytes()],
+    programId
+  );
 
   return program.methods.swap(params).accounts({
     mint,
@@ -130,12 +144,15 @@ export const rawSwap = async (
     payer,
     payerAta,
     payerPairAta,
+    feeReceiver,
+    feeReceiverPairAta,
+    userPosition,
     config,
     boundingCurve,
     boundingCurveReserve,
     boundingCurveReserveAta,
     boundingCurveReservePairAta,
-  });
+  } as any);
 };
 
 export const migrateFund = async (

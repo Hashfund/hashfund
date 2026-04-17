@@ -79,11 +79,6 @@ export type Zeroboost = {
           "isSigner": false
         },
         {
-          "name": "pythPairUsdFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "metadataFeeReciever",
           "isMut": true,
           "isSigner": false
@@ -368,7 +363,7 @@ export type Zeroboost = {
           },
           {
             "name": "initialPrice",
-            "type": "f64"
+            "type": "u64"
           },
           {
             "name": "initialSupply",
@@ -767,11 +762,6 @@ export const IDL: Zeroboost = {
           "isSigner": false
         },
         {
-          "name": "pythPairUsdFeed",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "metadataFeeReciever",
           "isMut": true,
           "isSigner": false
@@ -1056,7 +1046,7 @@ export const IDL: Zeroboost = {
           },
           {
             "name": "initialPrice",
-            "type": "f64"
+            "type": "u64"
           },
           {
             "name": "initialSupply",

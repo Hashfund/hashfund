@@ -4,7 +4,7 @@ import {
   timestamp,
   json,
   integer,
-  bigint,
+  numeric,
 } from "drizzle-orm/pg-core";
 
 import { users } from "./users";
@@ -15,7 +15,7 @@ export const mints = pgTable("mints", {
   uri: text("uri").notNull(),
   name: text("name").notNull(),
   symbol: text("symbol").notNull(),
-  supply: bigint("supply", { mode: "bigint" }).notNull(),
+  supply: numeric("supply", { precision: 40, scale: 0 }).notNull(),
   decimals: integer("decimals").notNull(),
   metadata: json("metadata").$type<JsonMetadata>(),
   creator: text("creator")

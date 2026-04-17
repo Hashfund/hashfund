@@ -29,7 +29,7 @@ export async function HodlList({ className, mint }: HodlListProps) {
         <h1 className="text-lg">Top Hodlers</h1>
       </div>
       <div className="flex flex-col space-y-2">
-        {users.map((user, index) => (
+        {users?.map((user, index) => (
           <Link
             key={user.id}
             href={`/profile/?address=${user.id}`}

@@ -1,3 +1,5 @@
-export const truncateAddress = (address: string, length = 5) => {
-  return address.slice(0, length) + "..." + address.slice(address.length - 5);
+export const truncateAddress = (address: any, length = 5) => {
+  if (!address) return "";
+  const str = address.toString();
+  return str.slice(0, length) + "..." + str.slice(str.length - 5);
 };

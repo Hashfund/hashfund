@@ -8,10 +8,13 @@ pub struct InitializeConfig<'info> {
         init_if_needed,
         seeds = [CONFIG_SEED.as_bytes()],
         bump,
+        payer = admin,
         space = CONFIG_SIZE,
-        payer = admin
+        realloc = CONFIG_SIZE,
+        realloc::payer = admin,
+        realloc::zero = false,
     )]
-    config: Account<'info, Config>,
+    pub config: Account<'info, Config>,
     #[account(mut, address=admin::ID)]
     admin: Signer<'info>,
     system_program: Program<'info, System>,

@@ -17,8 +17,8 @@ export default function TokenPriceInput({
   balance,
   onChange,
 }: TokenPriceInputProps) {
-  const { setFieldValue } = useFormikContext<{
-    [key: string]: number;
+  const { setFieldValue, values } = useFormikContext<{
+    [key: string]: any;
   }>();
   return (
     <div
@@ -37,17 +37,24 @@ export default function TokenPriceInput({
         <h4>{ticker}</h4>
       </div>
       <div className="flex flex-1 items-center space-x-2">
-        <Field
+        <input
           name={name}
+          value={values[name] === 0 || values[name] == null || Number.isNaN(values[name]) ? "" : values[name]}
           placeholder="0.00"
           type="number"
-          className="flex-1 py-4 text-xl"
-          lt-md="max-w-42"
-          md="flex-1 text-right"
+          step="any"
+          className="flex-1 py-4 text-xl bg-transparent outline-none focus:ring-0"
           onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            const value = event.target.value;
-            setFieldValue(name, value);
-            if (onChange) onChange(Number(value));
+            let rawValue = event.target.value;
+            
+            // Remove leading zeroes if not typing a decimal
+            if (rawValue.length > 1 && rawValue.startsWith("0") && !rawValue.startsWith("0.")) {
+              rawValue = rawValue.replace(/^0+/, "");
+              if (rawValue === "") rawValue = "0";
+            }
+
+            setFieldValue(name, rawValue);
+            if (onChange) onChange(Number(rawValue));
           }}
         />
         {balance !== undefined && (

@@ -23,7 +23,7 @@ export function Token({ className, mints }: TokenProps) {
           <div className="flex items-center p-2 text-amber space-x-2">
             <span>Tokens</span>
             <div className="rounded bg-amber-100/20 px-3 text-amber-100">
-              {mints.length}
+              {mints?.length || 0}
             </div>
           </div>
           <SearchInput qKey="token_search" />

@@ -20,7 +20,7 @@ solana_security_txt::security_txt!{
 }
 
 #[cfg(feature = "devnet")]
-declare_id!("HW7sPVEXwDyZ7WjmS52dLi6WYiWALnVbSvXYjZ9jErZq");
+declare_id!("G9hckfQ5yPjyqF9jTfPm2t3tBTxefgqrFrPPJsF8UJY6");
 #[cfg(not(feature = "devnet"))]
 declare_id!("Zero9JeEwbjEGE3u9d9xeAUXHbAvYTKMJ8zufMk3BeY");
 
@@ -28,7 +28,7 @@ pub mod admin {
     use anchor_lang::declare_id;
 
     #[cfg(feature = "devnet")]
-    declare_id!("9meGAekj5fSks2oYbv5RmVoxUam5d9T1RaxPhofnHmV2");
+    declare_id!("U1o9Wfe6PPe7UVtS2h3WQ2ZCxaGTWSpyXpFDYbfp18F");
     #[cfg(not(feature = "devnet"))]
     declare_id!("Hash4eNpLr5gw2VcRStzEn514fTYTkfmjFFb5bAPwB4z");
 }
@@ -37,7 +37,7 @@ pub mod metadata_fee_reciever {
     use anchor_lang::declare_id;
 
     #[cfg(feature = "devnet")]
-    declare_id!("2nAn6RP1zbSNDgkmh3atTJZn84oKkLnDDDdbruBTu4Lz");
+    declare_id!("U1o9Wfe6PPe7UVtS2h3WQ2ZCxaGTWSpyXpFDYbfp18F");
     #[cfg(not(feature = "devnet"))]
     declare_id!("FundhjabaKMsW3VrweuvMefcSUPLgdtUX7Dv5atUxSBP");
 }
@@ -47,7 +47,7 @@ pub mod migration_fee_receiver {
     use anchor_lang::declare_id;
 
     #[cfg(feature = "devnet")]
-    declare_id!("9meGAekj5fSks2oYbv5RmVoxUam5d9T1RaxPhofnHmV2");
+    declare_id!("U1o9Wfe6PPe7UVtS2h3WQ2ZCxaGTWSpyXpFDYbfp18F");
     #[cfg(not(feature = "devnet"))]
     declare_id!("FundQMz92akoVMxTn36yNxMiNJnecMPqKa3pTPDMA7MC");
 }

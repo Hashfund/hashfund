@@ -10,6 +10,17 @@ import { normalizeBN } from "@/web3/decimal";
 import { truncateAddress } from "@/web3/address";
 
 import { useFeedPrice } from "@/composables/useFeedPrice";
+import { formatNumberShort } from "@/web3/format";
+import {
+  calculateMarketCap,
+  calculateTokenPriceSol,
+  deriveCurvePhysics,
+  calculateRealSol,
+  calculateSolToBond,
+  calculateRealTokenRemaining,
+} from "@/web3/curve";
+
+import { getMintMetrics } from "@/web3/metrics";
 
 type InfoProps = {
   mint: MintWithExtra;
@@ -17,6 +28,7 @@ type InfoProps = {
 
 export function Info({ mint }: InfoProps) {
   const solPrice = useFeedPrice(PythFeed.SOL_USD);
+  const metrics = getMintMetrics(mint, solPrice || 1);
 
   return (
     <section
@@ -25,6 +37,9 @@ export function Info({ mint }: InfoProps) {
     >
       <div>
         <h1 className="text-xl font-medium">Hash Info</h1>
+        <p className="text-sm text-white/50 mt-1 italic">
+          {mint.metadata?.description || "No description available for this hash fund."}
+        </p>
       </div>
       <div
         className="flex"
@@ -32,52 +47,63 @@ export function Info({ mint }: InfoProps) {
         md="space-x-4"
       >
         <div className="flex-1">
-          <div className="flex py-4">
-            <p className="flex-1 text-white/75 underline underline-dashed">
-              Maximum marketcap
-            </p>
-            <p>
-              {formatPrice(
-                solPrice * normalizeBN(mint.boundingCurve.maximumPairBalance, 9)
-              )}
-            </p>
-          </div>
-          <div className="flex py-4">
-            <p className="flex-1 text-white/75 underline underline-dashed">
-              Current Marketcap
-            </p>
-            <p>{formatPrice(solPrice * normalizeBN(mint.boundingCurve.virtualPairBalance, 9))}</p>
-          </div>
+          {mint.boundingCurve ? (
+            <>
+              <div className="flex py-4 font-medium">
+                <p className="flex-1 text-white/75 underline underline-dashed">
+                  Graduation Marketcap
+                </p>
+                <p>{formatPrice(metrics.raydiumTargetUsd)}</p>
+              </div>
+              <div className="flex py-4 font-medium border-b border-white/5">
+                <p className="flex-1 text-white/75 underline underline-dashed">
+                  Current Marketcap
+                </p>
+                <p className="text-primary font-bold">{formatPrice(metrics.marketCapUsd)}</p>
+              </div>
 
-          <div className="flex py-4">
-            <p className="flex-1 text-white/75 underline underline-dashed">
-              Bounding Curve
-            </p>
-            <p className="sol">{normalizeBN(mint.boundingCurve.virtualPairBalance, 9)}</p>
-          </div>
-          <div className="flex py-4">
-            <p className="flex-1 text-white/75 underline underline-dashed">
-              Total Volume
-            </p>
-            <p className="sol">{normalizeBN(mint.boundingCurve.virtualPairBalance, 9)}</p>
-          </div>
-          <div className="flex py-4">
-            <p className="flex-1 text-white/75 underline underline-dashed">
-              Initial Price
-            </p>
-            <p className="sol">
-              {formatPrice(
-                solPrice * mint.boundingCurve.initialPrice
-              )}
-            </p>
-          </div>
-          <div className="flex py-4">
-            <p className="flex-1 text-white/75 underline underline-dashed">
-              Total Supply
-            </p>
-            <p>
-              {normalizeBN(mint.supply, 6)}&nbsp;
-              {mint.symbol}
+              <div className="flex py-4 font-medium">
+                <p className="flex-1 text-white/75 underline underline-dashed">
+                  SOL Raised
+                </p>
+                <p className="sol">{metrics.solRaised.toFixed(2)}</p>
+              </div>
+              <div className="flex py-4 font-medium">
+                <p className="flex-1 text-white/75 underline underline-dashed">
+                  SOL Needed to Bond
+                </p>
+                <p className="sol text-primary">
+                  {(metrics.solRequired - metrics.solRaised).toFixed(2)}
+                </p>
+              </div>
+              <div className="flex py-2 px-2 rounded bg-white/5 text-[10px] space-x-4 mb-2">
+                 <p><span className="text-white/50">Migration Target:</span> {metrics.solRequired.toFixed(2)} SOL</p>
+                 <p><span className="text-white/50">Completion:</span> {metrics.bondingProgress.toFixed(1)}%</p>
+              </div>
+              <div className="flex py-4 font-medium border-t border-white/5 mt-2">
+                <p className="flex-1 text-white/75 underline underline-dashed">
+                  Tokens Remaining
+                </p>
+                <p className="text-white">
+                  {formatNumberShort(calculateRealTokenRemaining(mint))}
+                </p>
+              </div>
+              <div className="flex py-4 border-y border-white/5 bg-white/2 my-2">
+                <p className="flex-1 text-white/75 font-medium">Token Price</p>
+                <p className="text-primary font-bold">
+                  {formatPrice(metrics.displayPriceUsd)}
+                </p>
+              </div>
+            </>
+          ) : (
+            <div className="py-10 text-center text-zinc-500 italic text-sm animate-pulse">
+              Crunching curve physics...
+            </div>
+          )}
+          <div className="flex py-2 font-medium">
+            <p className="flex-1 text-white/75 text-xs">Total Supply</p>
+            <p className="text-xs">
+              {formatNumberShort(metrics.nominalSupply)}&nbsp;{mint.symbol}
             </p>
           </div>
         </div>
@@ -106,7 +132,7 @@ export function Info({ mint }: InfoProps) {
           </div>
           <div className="flex py-4">
             <p className="flex-1 text-white/75 underline underline-dashed">
-              Bounding curve
+              Bonding curve
             </p>
             <Link
               href={Explorer.buildAccount(mint.boundingCurve?.id)}

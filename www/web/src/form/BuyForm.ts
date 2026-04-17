@@ -21,10 +21,73 @@ export async function processBuyForm(
   const payer = program.provider.publicKey!;
   const safeAmount = unsafeBN(safeBN(amount).mul(new BN(Math.pow(10, 9))));
 
-  return await (
-    await swap(program, mint, payer, {
-      amount: safeAmount,
-      tradeDirection: TradeDirection.BtoA,
-    })
-  ).rpc();
+  const instruction = await swap(program, mint, payer, {
+    amount: safeAmount,
+    tradeDirection: TradeDirection.BtoA,
+  });
+
+  const connection = program.provider.connection;
+
+  const getTx = async () => {
+    const { blockhash, lastValidBlockHeight } =
+      await connection.getLatestBlockhash("confirmed");
+    const tx = await instruction.transaction();
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = payer;
+    return { tx, blockhash, lastValidBlockHeight };
+  };
+
+  try {
+    const { tx, blockhash, lastValidBlockHeight } = await getTx();
+    const signedTx = await (
+      program.provider as any
+    ).wallet.signTransaction(tx);
+
+    const signature = await connection.sendRawTransaction(
+      signedTx.serialize(),
+      {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+      }
+    );
+
+    await connection.confirmTransaction(
+      {
+        signature,
+        blockhash,
+        lastValidBlockHeight,
+      },
+      "confirmed"
+    );
+
+    return signature;
+  } catch (err: any) {
+    console.error(
+      "Buy transaction failed, attempting retry with fresh blockhash...",
+      err
+    );
+
+    const { tx, blockhash, lastValidBlockHeight } = await getTx();
+    const signedTx = await (
+      program.provider as any
+    ).wallet.signTransaction(tx);
+    const signature = await connection.sendRawTransaction(
+      signedTx.serialize(),
+      {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+      }
+    );
+
+    await connection.confirmTransaction(
+      {
+        signature,
+        blockhash,
+        lastValidBlockHeight,
+      },
+      "confirmed"
+    );
+
+    return signature;
+  }
 }

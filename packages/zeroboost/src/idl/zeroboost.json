@@ -1,6 +1,9 @@
 {
   "version": "0.1.0",
   "name": "zeroboost",
+  "metadata": {
+    "address": "G9hckfQ5yPjyqF9jTfPm2t3tBTxefgqrFrPPJsF8UJY6"
+  },
   "instructions": [
     {
       "name": "initializeConfig",
@@ -132,22 +135,17 @@
       "name": "swap",
       "accounts": [
         {
-          "name": "mint",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "pair",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "config",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
           "name": "boundingCurve",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "payer",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "userPosition",
           "isMut": true,
           "isSigner": false
         },
@@ -167,11 +165,6 @@
           "isSigner": false
         },
         {
-          "name": "payer",
-          "isMut": true,
-          "isSigner": true
-        },
-        {
           "name": "payerAta",
           "isMut": true,
           "isSigner": false
@@ -179,6 +172,31 @@
         {
           "name": "payerPairAta",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeReceiverPairAta",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "feeReceiver",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "pair",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "config",
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -193,6 +211,11 @@
         },
         {
           "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
           "isMut": false,
           "isSigner": false
         }
@@ -389,6 +412,30 @@
           {
             "name": "virtualPairBalance",
             "type": "u64"
+          },
+          {
+            "name": "netActiveCapital",
+            "type": "u64"
+          },
+          {
+            "name": "totalContributed",
+            "type": "u64"
+          },
+          {
+            "name": "totalBurnedTokens",
+            "type": "u64"
+          },
+          {
+            "name": "totalFeesCollected",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserveBump",
+            "type": "u8"
           }
         ]
       }

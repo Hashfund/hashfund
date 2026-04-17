@@ -47,7 +47,9 @@ export default function CreatePage() {
     description: "",
     website: "",
     telegram: "",
-    twitter: "",
+    x: "",
+    tiktok: "",
+    instagram: "",
     decimals: 6,
     image: undefined as unknown as File,
   });
@@ -97,15 +99,15 @@ export default function CreatePage() {
         <TabList className="flex lg:w-sm lg:flex-col lg:justify-center lt-lg:space-x-2">
           <StepButton
             position="1"
-            title="Token Metdata"
+            title="Create Token"
           />
           <StepButton
             position="2"
-            title="Set maximum market cap & range"
+            title="Set Bonding Curve"
           />
           <StepButton
             position="3"
-            title="Enter deposit amount"
+            title="Dev Buy & Launch"
             hideLine
           />
         </TabList>

@@ -1,8 +1,8 @@
 import type { ConstantCurveCalculator } from "@hashfund/zeroboost";
 
-import { formatPrice } from "@/web3";
-import { normalizeBN } from "@/web3/decimal";
 import { useProgram } from "@/composables/useProgram";
+import { formatPrice } from "@/web3/price";
+import { deriveCurvePhysics } from "@/web3/curve";
 
 type Props = {
   solPrice: number;
@@ -12,26 +12,46 @@ type Props = {
 export default function MintCurveInfo({ solPrice, curve }: Props) {
   const { config } = useProgram();
 
+  const supplyNorm = Number.parseFloat((curve as any).supply.toString()) / 1e6;
+
+  if (!solPrice || solPrice <= 0 || !config || !curve || supplyNorm <= 0) {
+    return (
+      <div className="text-xs opacity-75 animate-pulse">
+        Finalizing bonding curve metrics...
+      </div>
+    );
+  }
+
+  const P = (curve as any).liquidityPercentage || 80;
+  
+  // Safe limits for empty forms
+  let totalSupplyNominal = 10_000_000_000;
+  try {
+    totalSupplyNominal = Number.parseFloat((curve as any).totalSupply.toString()) / 1e6;
+  } catch (e) {}
+
+  const physics = deriveCurvePhysics(totalSupplyNominal, P, solPrice);
+
   return (
-    <div className="text-xs opacity-75">
-      The Token will be launched on hashfund at&nbsp;
-      <pre className="inline text-amber">
-        {formatPrice(config.minimumCurveUsdValuation)}
+    <div className="text-xs opacity-75 leading-relaxed">
+      The Token will be launched on Hashfund at&nbsp;
+      <pre className="inline font-bold text-amber-400">
+        {formatPrice(physics.launchMarketCapUsd)}
       </pre>
-      &nbsp; marketcap, and it'll require&nbsp;
-      <pre className="inline text-amber">
-        {config.maximumCurveUsdValuation / solPrice}&nbsp;SOL
+      &nbsp;market cap, and it'll require&nbsp;
+      <pre className="inline font-bold text-amber-400">
+        {physics.solRequired.toFixed(2)}&nbsp;SOL
       </pre>
       &nbsp;to buy off&nbsp;
-      <pre className="inline text-amber">
-        {normalizeBN(curve.boundingCurveSupply, 6)}&nbsp;Token
+      <pre className="inline font-bold text-amber-400">
+        {physics.tokensInCurve.toLocaleString()}&nbsp;Tokens
       </pre>
-      &nbsp; available for sale in the bounding curve and launch on raydium
-      at&nbsp;
-      <pre className="inline text-amber">
-        {formatPrice(config.maximumCurveUsdValuation)}
+      &nbsp;available for sale in the bonding curve and graduate to Raydium
+      at a&nbsp;
+      <pre className="inline font-bold text-amber-400">
+        {formatPrice(physics.raydiumMarketCapUsd)}
       </pre>
-      &nbsp; marketcap
+      &nbsp;market cap.
     </div>
   );
 }

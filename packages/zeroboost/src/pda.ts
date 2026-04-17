@@ -18,6 +18,17 @@ export const getMintPda = (
   );
 };
 
+export const getUserPositionPda = (
+  payer: web3.PublicKey,
+  mint: web3.PublicKey,
+  programId = ZERO_BOOST_PROGRAM
+) => {
+  return web3.PublicKey.findProgramAddressSync(
+    [Buffer.from("user_position"), payer.toBytes(), mint.toBytes()],
+    programId
+  );
+};
+
 export const getBoundingCurvePda = (
   mint: web3.PublicKey,
   programId = ZERO_BOOST_PROGRAM

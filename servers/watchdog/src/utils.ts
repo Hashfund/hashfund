@@ -2,10 +2,10 @@ import xior from "xior";
 import { BN, web3 } from "@coral-xyz/anchor";
 
 type Safe<T> = {
-  [key in keyof T]: T[key] extends boolean
+  [key in keyof T]: T[key] extends boolean | number
     ? T[key]
     : T[key] extends BN
-    ? bigint
+    ? string
     : string;
 };
 
@@ -16,7 +16,7 @@ export const safeParse = <T extends Readonly<object>>(input: T): Safe<T> => {
       const result: Record<string, any> = {};
 
       for (const [key, value] of Object.entries(input)) {
-        if (value instanceof BN) result[key] = BigInt(value.toString());
+        if (value instanceof BN) result[key] = value.toString();
         else if (value instanceof web3.PublicKey)
           result[key] = value.toBase58();
         else result[key] = proxy(value);

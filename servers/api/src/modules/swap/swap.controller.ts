@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { eq, max, min, sql, SQL, sum } from "drizzle-orm";
+import { and, eq, max, min, sql, SQL, sum } from "drizzle-orm";
 
 import { db } from "../../db";
 import { swaps } from "../../db/schema";
@@ -76,7 +76,7 @@ export const getSwapsGraph = <TWhere extends SQL>(
     .from(swaps)
     .limit(limit)
     .offset(offset)
-    .where(where)
+    .where(where ? and(where, eq(swaps.tradeDirection, 1)) : eq(swaps.tradeDirection, 1))
     .orderBy(sql`time`)
     .groupBy(sql`time`);
 

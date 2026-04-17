@@ -1,5 +1,6 @@
 {
   "name": "hashfund",
+  "version": "1.0.0",
   "private": "true",
   "packageManager": "yarn@1.22.22",
   "scripts": {
@@ -16,8 +17,8 @@
     "turbo": "^2.1.2"
   },
   "workspaces": [
-    "www/**",
-    "servers/**",
-    "packages/**"
+    "www/*",
+    "servers/*",
+    "packages/*"
   ]
 }

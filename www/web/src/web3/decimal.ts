@@ -5,11 +5,9 @@ export const normalizeBN = (
   input: string | number | bigint | BN,
   decimals: number
 ) => {
-  const bn = unsafeBN(
-    safeBN(input, decimals).div(new BN(10).pow(new BN(decimals))),
-    decimals
-  );
-  return bn.toNumber();
+  const raw = input instanceof BN ? input : new BN(input.toString());
+  // Divide by 10^decimals and convert to number safely for display
+  return unsafeBnToNumber(raw, decimals);
 };
 
 export const denormalizeBN = (

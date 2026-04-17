@@ -64,9 +64,19 @@ export default function CreateFormMetadata({
                 placeholder="Telegram link"
               />
               <Input
-                name="twitter"
-                label="Twitter(Optional)"
-                placeholder="Twitter link"
+                name="x"
+                label="X(Optional)"
+                placeholder="X link"
+              />
+              <Input
+                name="tiktok"
+                label="TikTok(Optional)"
+                placeholder="TikTok link"
+              />
+              <Input
+                name="instagram"
+                label="Instagram(Optional)"
+                placeholder="Instagram link"
               />
             </div>
             <button

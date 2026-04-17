@@ -1,6 +1,6 @@
 import {
-  bigint,
   integer,
+  numeric,
   pgTable,
   text,
   timestamp,
@@ -15,16 +15,19 @@ export const swaps = pgTable(
   "swaps",
   {
     id: uuid("id").defaultRandom().primaryKey(),
-    tokenAmount: bigint("token_amount", { mode: "bigint" }).notNull(),
-    pairAmount: bigint("pair_amount", {
-      mode: "bigint",
+    tokenAmount: numeric("token_amount", { precision: 40, scale: 0 }).notNull(),
+    pairAmount: numeric("pair_amount", {
+      precision: 40,
+      scale: 0,
     }).notNull(),
-    marketCap: bigint("market_cap", { mode: "bigint" }).notNull(),
-    virtualTokenBalance: bigint("virtual_token_balance", {
-      mode: "bigint",
+    marketCap: numeric("market_cap", { precision: 40, scale: 0 }).notNull(),
+    virtualTokenBalance: numeric("virtual_token_balance", {
+      precision: 40,
+      scale: 0,
     }).notNull(),
-    virtualPairBalance: bigint("virtual_pair_balance", {
-      mode: "bigint",
+    virtualPairBalance: numeric("virtual_pair_balance", {
+      precision: 40,
+      scale: 0,
     }).notNull(),
     tradeDirection: integer("trade_direction").notNull(),
     mint: text("mint")

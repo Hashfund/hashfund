@@ -19,7 +19,11 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@hashfund/sdk": ["../../packages/sdk/src/index.ts"],
+      "@hashfund/sdk/*": ["../../packages/sdk/src/*"],
+      "@hashfund/zeroboost": ["../../packages/zeroboost/src/index.ts"],
+      "@hashfund/bn": ["../../packages/bn/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

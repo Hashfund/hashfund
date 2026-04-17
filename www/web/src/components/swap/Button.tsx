@@ -7,6 +7,7 @@ import { useState, useMemo } from "react";
 import { Popover, PopoverButton } from "@headlessui/react";
 
 import { normalizeBN } from "@/web3";
+import { calculateTokenPriceSol } from "@/web3/curve";
 import useBalance from "@/composables/useBalance";
 
 import SwapModal from "./Modal";
@@ -25,9 +26,13 @@ export function SwapButton({ mint }: SwapButtonProps) {
       symbol: "SOL",
       image: "/sol.png",
       balance: normalizeBN(solBalance, 9),
-      initialPrice: mint.boundingCurve.initialPrice,
+      virtualTokenReserve: normalizeBN(
+        mint.boundingCurve.virtualTokenBalance,
+        mint.decimals
+      ),
+      virtualPairReserve: normalizeBN(mint.boundingCurve.virtualPairBalance, 9),
     }),
-    [solBalance]
+    [solBalance, mint]
   );
 
   const mintSide = useMemo(
@@ -37,12 +42,16 @@ export function SwapButton({ mint }: SwapButtonProps) {
       image: mint.metadata.image,
       mint: new web3.PublicKey(mint.id),
       balance: mintBalance?.uiAmount ?? 0,
-      initialPrice: mint.boundingCurve.initialPrice,
+      virtualTokenReserve: normalizeBN(
+        mint.boundingCurve.virtualTokenBalance,
+        mint.decimals
+      ),
+      virtualPairReserve: normalizeBN(mint.boundingCurve.virtualPairBalance, 9),
     }),
-    [mintBalance]
+    [mintBalance, mint]
   );
 
-  const [side, setSide] = useState<"buy" | "sell">("buy");
+  const [side, setSide] = useState<"buy" | "withdraw">("buy");
 
   return (
     <Popover className="relative flex flex-col space-y-14">
@@ -50,11 +59,12 @@ export function SwapButton({ mint }: SwapButtonProps) {
         Swap
       </PopoverButton>
       <SwapModal
-        side={side}
+        isMigrated={mint.boundingCurve.migrated}
+        side={side as any}
         sideA={side === "buy" ? solSide : mintSide}
         sideB={side === "buy" ? mintSide : solSide}
         onSwapSide={() => {
-          setSide(side === "buy" ? "sell" : "buy");
+          setSide(side === "buy" ? "withdraw" : "buy");
         }}
       />
     </Popover>

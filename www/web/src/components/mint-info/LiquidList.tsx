@@ -28,7 +28,7 @@ export async function LiquidList({ className, mint }: LiquidListProps) {
         <h1 className="text-lg">Top Liquidators</h1>
       </div>
       <div className="flex flex-col space-y-2">
-        {users.map((user, index) => (
+        {users?.map((user, index) => (
           <Link
             key={user.id}
             href={`/profile/?address=${user.id}`}

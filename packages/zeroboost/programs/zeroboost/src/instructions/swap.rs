@@ -9,17 +9,18 @@ use anchor_spl::{
         Token,
         TokenAccount,
         TransferChecked,
+        Burn,
+        burn,
     },
 };
 use curve::{
     curve::{ constant_curve::ConstantCurveCalculator, CurveCalculator, TradeDirection },
-    safe_number::safe_number::NewSafeNumber,
 };
 
 use crate::{
     error::SwapTokenError,
     events::{ SwapEvent, MigrateTriggerEvent },
-    states::{ bounding_curve::BoundingCurve, config::Config },
+    states::{ bounding_curve::BoundingCurve, config::Config, user_position::{UserPosition, USER_POSITION_SIZE} },
     utils::Validate,
     CONFIG_SEED,
     CURVE_RESERVE_SEED,
@@ -28,60 +29,42 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct Swap<'info> {
-    #[account(address = bounding_curve.mint)]
-    mint: Box<Account<'info, Mint>>,
-    #[account(address = bounding_curve.pair)]
-    pair: Box<Account<'info, Mint>>,
-    #[account(seeds = [CONFIG_SEED.as_bytes()], bump = config.bump)]
-    config: Box<Account<'info, Config>>,
-    #[account(
-        mut,
-        seeds = [mint.key().as_ref(), CURVE_SEED.as_bytes()],
-        bump,
-    )]
-    bounding_curve: Box<Account<'info, BoundingCurve>>,
-    #[account(seeds = [bounding_curve.key().as_ref(), CURVE_RESERVE_SEED.as_bytes()], bump)]
-    /// CHECK: bounding curve extra layer account for token reserve
-    bounding_curve_reserve: AccountInfo<'info>,
-    #[account(
-        init_if_needed,
-        payer = payer,
-        associated_token::mint = mint,
-        associated_token::authority = bounding_curve_reserve
-    )]
-    bounding_curve_reserve_ata: Box<Account<'info, TokenAccount>>,
-    #[account(
-        init_if_needed,
-        payer = payer,
-        associated_token::mint = pair,
-        associated_token::authority = bounding_curve_reserve
-    )]
-    bounding_curve_reserve_pair_ata: Box<Account<'info, TokenAccount>>,
     #[account(mut)]
-    payer: Signer<'info>,
-    #[account(
-        init_if_needed,
-        payer = payer,
-        associated_token::mint = mint,
-        associated_token::authority = payer
-    )]
-    payer_ata: Box<Account<'info, TokenAccount>>,
-    #[account(
-        init_if_needed,
-        payer = payer,
-        associated_token::mint = pair,
-        associated_token::authority = payer
-    )]
-    payer_pair_ata: Box<Account<'info, TokenAccount>>,
-    system_program: Program<'info, System>,
-    token_program: Program<'info, Token>,
-    associated_token_program: Program<'info, AssociatedToken>,
+    pub bounding_curve: Box<Account<'info, BoundingCurve>>,
+    #[account(mut)]
+    pub payer: Signer<'info>,
+    /// CHECK: Manual validation & init
+    pub user_position: UncheckedAccount<'info>,
+    /// CHECK: Manual validation
+    pub bounding_curve_reserve: UncheckedAccount<'info>,
+    /// CHECK: Manual validation
+    pub bounding_curve_reserve_ata: UncheckedAccount<'info>,
+    /// CHECK: Manual validation
+    pub bounding_curve_reserve_pair_ata: UncheckedAccount<'info>,
+    /// CHECK: Manual validation
+    pub payer_ata: UncheckedAccount<'info>,
+    /// CHECK: Manual validation
+    pub payer_pair_ata: UncheckedAccount<'info>,
+    /// CHECK: Manual validation
+    pub fee_receiver_pair_ata: UncheckedAccount<'info>,
+    #[account(address = crate::migration_fee_receiver::id())]
+    /// CHECK: Fee receiver
+    pub fee_receiver: UncheckedAccount<'info>,
+    pub mint: Box<Account<'info, Mint>>,
+    pub pair: Box<Account<'info, Mint>>,
+    #[account(seeds = [CONFIG_SEED.as_bytes()], bump = config.bump)]
+    pub config: Box<Account<'info, Config>>,
+
+    pub system_program: Program<'info, System>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Debug)]
 pub struct SwapParams {
-    amount: u64,
-    trade_direction: u8,
+    pub amount: u64,
+    pub trade_direction: u8,
 }
 
 impl Validate for SwapParams {
@@ -94,12 +77,18 @@ impl Validate for SwapParams {
 }
 
 impl<'info> Swap<'info> {
-    pub fn process_swap(context: Context<Swap>, params: &SwapParams) -> Result<()> {
+    pub fn process_swap(mut context: Context<Swap>, params: &SwapParams) -> Result<()> {
         params.validate()?;
 
-        if !context.accounts.bounding_curve.tradeable {
+        let accounts = &mut context.accounts;
+        
+        if !accounts.bounding_curve.tradeable {
             return err!(SwapTokenError::NotTradeable);
         }
+
+        // Manual validation of addresses
+        require_keys_eq!(accounts.mint.key(), accounts.bounding_curve.mint, SwapTokenError::InvalidMint);
+        require_keys_eq!(accounts.pair.key(), accounts.bounding_curve.pair, SwapTokenError::InvalidPair);
 
         let trade_direction = (match params.trade_direction {
             0 => Ok(TradeDirection::AtoB),
@@ -109,9 +98,9 @@ impl<'info> Swap<'info> {
 
         let (token_amount, pair_amount) = (match trade_direction {
             TradeDirection::AtoB =>
-                context.accounts.process_sell(context.bumps.bounding_curve_reserve, &params),
+                accounts.process_sell(&params),
             TradeDirection::BtoA =>
-                context.accounts.process_buy(context.bumps.bounding_curve_reserve, &params),
+                accounts.process_buy(&params),
         })?;
 
         let clock = Clock::get()?;
@@ -119,51 +108,130 @@ impl<'info> Swap<'info> {
         emit!(SwapEvent {
             token_amount,
             pair_amount,
-            mint: context.accounts.mint.key(),
-            payer: context.accounts.payer.key(),
+            mint: accounts.mint.key(),
+            payer: accounts.payer.key(),
             trade_direction: params.trade_direction,
-            virtual_token_balance: context.accounts.bounding_curve.virtual_token_balance,
-            virtual_pair_balance: context.accounts.bounding_curve.virtual_pair_balance,
-            market_cap: context.accounts.bounding_curve_reserve_pair_ata.amount,
+            virtual_token_balance: accounts.bounding_curve.virtual_token_balance,
+            virtual_pair_balance: accounts.bounding_curve.virtual_pair_balance,
+            market_cap: 0, 
             timestamp: clock.unix_timestamp,
         });
 
         Ok(())
     }
 
+    fn ensure_ata_initialized(&self, ata: &AccountInfo<'info>, mint: &AccountInfo<'info>, owner: &AccountInfo<'info>) -> Result<()> {
+        if ata.data_is_empty() {
+             anchor_spl::associated_token::create(
+                CpiContext::new(
+                    self.associated_token_program.to_account_info(),
+                    anchor_spl::associated_token::Create {
+                        payer: self.payer.to_account_info(),
+                        associated_token: ata.to_account_info(),
+                        authority: owner.to_account_info(),
+                        mint: mint.to_account_info(),
+                        system_program: self.system_program.to_account_info(),
+                        token_program: self.token_program.to_account_info(),
+                    },
+                ),
+            )?;
+        }
+        Ok(())
+    }
+
+    fn ensure_user_position_initialized(&self) -> Result<()> {
+        if self.user_position.data_is_empty() {
+            let mint_key = self.mint.key();
+            let payer_key = self.payer.key();
+            let seeds = &[
+                b"user_position",
+                payer_key.as_ref(),
+                mint_key.as_ref(),
+            ];
+            let (pda, bump) = Pubkey::find_program_address(seeds, &crate::ID);
+            require_keys_eq!(self.user_position.key(), pda, SwapTokenError::InvalidUserPosition);
+
+            let signer_seeds = &[
+                b"user_position",
+                payer_key.as_ref(),
+                mint_key.as_ref(),
+                &[bump],
+            ];
+
+            let lamports = self.rent.minimum_balance(USER_POSITION_SIZE);
+            system_program::create_account(
+                CpiContext::new_with_signer(
+                    self.system_program.to_account_info(),
+                    system_program::CreateAccount {
+                        from: self.payer.to_account_info(),
+                        to: self.user_position.to_account_info(),
+                    },
+                    &[signer_seeds],
+                ),
+                lamports,
+                USER_POSITION_SIZE as u64,
+                &crate::ID,
+            )?;
+        }
+        Ok(())
+    }
+
     #[inline(never)]
-    fn process_buy(&mut self, curve_bump: u8, params: &SwapParams) -> Result<(u64, u64)> {
-        let bounding_curve = &mut self.bounding_curve;
-        let initial_price = f64::new(bounding_curve.initial_price);
+    fn process_buy(&mut self, params: &SwapParams) -> Result<(u64, u64)> {
+        // Validation & Init ATAs
+        self.ensure_ata_initialized(&self.payer_ata, &self.mint.to_account_info(), &self.payer.to_account_info())?;
+        self.ensure_ata_initialized(&self.bounding_curve_reserve_ata, &self.mint.to_account_info(), &self.bounding_curve_reserve.to_account_info())?;
+        self.ensure_ata_initialized(&self.bounding_curve_reserve_pair_ata, &self.pair.to_account_info(), &self.bounding_curve_reserve.to_account_info())?;
+        self.ensure_user_position_initialized()?;
+
+        let mut user_position = UserPosition::try_from_slice(&self.user_position.data.borrow()[8..])?;
 
         let amount_out = ConstantCurveCalculator::calculate_amount_out(
-            initial_price,
             params.amount,
+            self.bounding_curve.virtual_token_balance,
+            self.bounding_curve.virtual_pair_balance,
             TradeDirection::BtoA
         );
 
-        let amount_in = ConstantCurveCalculator::calculate_amount_out(
-            initial_price,
-            amount_out,
-            TradeDirection::AtoB
-        );
+        let amount_in = params.amount;
+
+        // Initialize user position if it's new
+        if user_position.user == Pubkey::default() {
+            user_position.user = self.payer.key();
+            user_position.mint = self.mint.key();
+        }
+        
+        user_position.contributed += amount_in;
+        user_position.allocated_tokens += amount_out;
+        user_position.refundable_remaining += amount_in;
+
+        self.bounding_curve.net_active_capital += amount_in;
+        self.bounding_curve.total_contributed += amount_in;
 
         let bounding_curve_key = self.bounding_curve.key();
-        let signer_seeds = &[
+        let signer_seeds_reserve = &[
             bounding_curve_key.as_ref(),
             CURVE_RESERVE_SEED.as_bytes(),
-            &[curve_bump],
+            &[self.bounding_curve.reserve_bump],
         ];
-        let signer_seeds = &[&signer_seeds[..]];
+        let signer_seeds_reserve = &[&signer_seeds_reserve[..]];
 
-        transfer(
-            CpiContext::new(self.token_program.to_account_info(), system_program::Transfer {
-                from: self.payer.to_account_info(),
-                to: self.bounding_curve_reserve_pair_ata.to_account_info(),
-            }),
-            amount_in
+        // Transfer pair tokens from payer to reserve
+        transfer_checked(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                TransferChecked {
+                    mint: self.pair.to_account_info(),
+                    from: self.payer_pair_ata.to_account_info(),
+                    to: self.bounding_curve_reserve_pair_ata.to_account_info(),
+                    authority: self.payer.to_account_info(),
+                }
+            ),
+            amount_in,
+            self.pair.decimals,
         )?;
 
+        // Transfer mint tokens from reserve to payer
         transfer_checked(
             CpiContext::new_with_signer(
                 self.token_program.to_account_info(),
@@ -173,28 +241,16 @@ impl<'info> Swap<'info> {
                     to: self.payer_ata.to_account_info(),
                     authority: self.bounding_curve_reserve.to_account_info(),
                 },
-                signer_seeds
+                signer_seeds_reserve,
             ),
             amount_out,
-            self.mint.decimals
+            self.mint.decimals,
         )?;
 
-        self.bounding_curve.add(self.pair.key(), amount_in);
-        self.bounding_curve.sub(self.mint.key(), amount_out);
+        // Save UserPosition (skip 8-byte discriminator)
+        user_position.serialize(&mut &mut self.user_position.data.borrow_mut()[8..])?;
 
-        sync_native(
-            CpiContext::new_with_signer(
-                self.token_program.to_account_info(),
-                SyncNative {
-                    account: self.bounding_curve_reserve_pair_ata.to_account_info(),
-                },
-                signer_seeds
-            )
-        )?;
-
-        // One off mutation, If trade is maked as non tradeable all swap is stop until token migrated to a dex
-        // when migrated token holders can continue trade with dex
-        if self.bounding_curve_reserve_pair_ata.amount >= self.bounding_curve.maximum_pair_balance  {
+        if self.bounding_curve.net_active_capital >= self.bounding_curve.maximum_pair_balance  {
             self.bounding_curve.tradeable = false;
             let clock = Clock::get()?;
             emit!(MigrateTriggerEvent { mint: self.mint.key(), timestamp: clock.unix_timestamp });
@@ -204,40 +260,57 @@ impl<'info> Swap<'info> {
     }
 
     #[inline(never)]
-    fn process_sell(&mut self, curve_bump: u8, params: &SwapParams) -> Result<(u64, u64)> {
-        let initial_price = f64::new(self.bounding_curve.initial_price);
+    fn process_sell(&mut self, params: &SwapParams) -> Result<(u64, u64)> {
+        if self.user_position.data_is_empty() {
+             return err!(SwapTokenError::InvalidAmount);
+        }
+        let mut user_position = UserPosition::try_from_slice(&self.user_position.data.borrow()[8..])?;
 
-        let amount_out = ConstantCurveCalculator::calculate_amount_out(
-            initial_price,
-            params.amount,
-            TradeDirection::AtoB
-        );
+        let amount_in = params.amount;
+        
+        if user_position.allocated_tokens == 0 || user_position.allocated_tokens < amount_in {
+            return err!(SwapTokenError::InvalidAmount);
+        }
 
-        let amount_in = ConstantCurveCalculator::calculate_amount_out(
-            initial_price,
-            amount_out,
-            TradeDirection::BtoA
-        );
+        // Validation & Init ATAs for sell
+        self.ensure_ata_initialized(&self.payer_pair_ata, &self.pair.to_account_info(), &self.payer.to_account_info())?;
+        self.ensure_ata_initialized(&self.fee_receiver_pair_ata, &self.pair.to_account_info(), &self.fee_receiver.to_account_info())?;
+
+        let total_out = ((user_position.refundable_remaining as u128 * amount_in as u128) / user_position.allocated_tokens as u128) as u64;
+        let fee_out = total_out * 5 / 100;
+        let amount_out = total_out - fee_out;
+
+        user_position.allocated_tokens -= amount_in;
+        user_position.burned_tokens += amount_in;
+        user_position.refundable_remaining -= total_out;
+        user_position.refunded += amount_out;
+
+        self.bounding_curve.net_active_capital -= total_out;
+        self.bounding_curve.total_burned_tokens += amount_in;
+        self.bounding_curve.total_fees_collected += fee_out;
 
         let bounding_curve_key = self.bounding_curve.key();
-        let signer_seeds = &[
+        let signer_seeds_reserve = &[
             bounding_curve_key.as_ref(),
             CURVE_RESERVE_SEED.as_bytes(),
-            &[curve_bump],
+            &[self.bounding_curve.reserve_bump],
         ];
-        let signer_seeds = &[&signer_seeds[..]];
+        let signer_seeds_reserve = &[&signer_seeds_reserve[..]];
 
-        transfer_checked(
-            CpiContext::new(self.token_program.to_account_info(), TransferChecked {
-                mint: self.mint.to_account_info(),
-                from: self.payer_ata.to_account_info(),
-                to: self.bounding_curve_reserve_ata.to_account_info(),
-                authority: self.payer.to_account_info(),
-            }),
+        // Burn tokens from payer
+        burn(
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                Burn {
+                    mint: self.mint.to_account_info(),
+                    from: self.payer_ata.to_account_info(),
+                    authority: self.payer.to_account_info(),
+                }
+            ),
             amount_in,
-            self.mint.decimals
         )?;
 
+        // Transfer pair tokens from reserve to payer
         transfer_checked(
             CpiContext::new_with_signer(
                 self.token_program.to_account_info(),
@@ -247,20 +320,38 @@ impl<'info> Swap<'info> {
                     from: self.bounding_curve_reserve_pair_ata.to_account_info(),
                     authority: self.bounding_curve_reserve.to_account_info(),
                 },
-                signer_seeds
+                signer_seeds_reserve,
             ),
             amount_out,
-            self.pair.decimals
+            self.pair.decimals,
         )?;
 
-        self.bounding_curve.sub(self.pair.key(), amount_out);
-        self.bounding_curve.add(self.mint.key(), amount_in);
+        // Transfer fee to fee receiver
+        transfer_checked(
+            CpiContext::new_with_signer(
+                self.token_program.to_account_info(),
+                TransferChecked {
+                    mint: self.pair.to_account_info(),
+                    to: self.fee_receiver_pair_ata.to_account_info(),
+                    from: self.bounding_curve_reserve_pair_ata.to_account_info(),
+                    authority: self.bounding_curve_reserve.to_account_info(),
+                },
+                signer_seeds_reserve,
+            ),
+            fee_out,
+            self.pair.decimals,
+        )?;
 
+        // Sync Native for SOL wrapped tokens
         sync_native(
-            CpiContext::new(self.token_program.to_account_info(), SyncNative {
-                account: self.payer_pair_ata.to_account_info(),
-            })
+            CpiContext::new(
+                self.token_program.to_account_info(),
+                SyncNative { account: self.payer_pair_ata.to_account_info() }
+            )
         )?;
+
+        // Save UserPosition (skip 8-byte discriminator)
+        user_position.serialize(&mut &mut self.user_position.data.borrow_mut()[8..])?;
 
         Ok((amount_in, amount_out))
     }

@@ -1,5 +1,4 @@
 use anchor_lang::prelude::*;
-use crate::safe_number::safe_number::SafeNumber;
 
 pub mod constant_curve;
 
@@ -10,10 +9,11 @@ pub enum TradeDirection {
 }
 
 pub trait CurveCalculator {
-    fn calculate_initial_price(&self) -> SafeNumber;
+    fn calculate_initial_price(&self) -> u64;
     fn calculate_amount_out(
-        initial_price: SafeNumber,
         amount: u64,
+        virtual_token_reserve: u64,
+        virtual_pair_reserve: u64,
         direction: TradeDirection
     ) -> u64;
 }

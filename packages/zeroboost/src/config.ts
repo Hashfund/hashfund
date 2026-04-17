@@ -27,17 +27,17 @@ export const PYTH_SOL_USD_FEED = new web3.PublicKey(
 
 export namespace devnet {
   export const ZERO_BOOST_PROGRAM = new web3.PublicKey(
-    "HW7sPVEXwDyZ7WjmS52dLi6WYiWALnVbSvXYjZ9jErZq"
+    "G9hckfQ5yPjyqF9jTfPm2t3tBTxefgqrFrPPJsF8UJY6"
   );
 
   export const ZERO_BOOST_ADMIN = new web3.PublicKey(
-    "9meGAekj5fSks2oYbv5RmVoxUam5d9T1RaxPhofnHmV2"
+    "U1o9Wfe6PPe7UVtS2h3WQ2ZCxaGTWSpyXpFDYbfp18F"
   );
   export const ZERO_BOOST_METADATA_FEE_RECIEVER = new web3.PublicKey(
-    "2nAn6RP1zbSNDgkmh3atTJZn84oKkLnDDDdbruBTu4Lz"
+    "U1o9Wfe6PPe7UVtS2h3WQ2ZCxaGTWSpyXpFDYbfp18F"
   );
   export const ZERO_BOOST_MIGRATION_FEE_RECIEVER = new web3.PublicKey(
-    "9meGAekj5fSks2oYbv5RmVoxUam5d9T1RaxPhofnHmV2"
+    "U1o9Wfe6PPe7UVtS2h3WQ2ZCxaGTWSpyXpFDYbfp18F"
   );
 
   export const RAYDIUM_CP_POOL_PROGRAM = new web3.PublicKey(

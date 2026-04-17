@@ -41,8 +41,9 @@ export default function LeaderboardItem({
         </div>
       </div>
       <div>
-        <p>
-          {amount} {ticker}
+        <p className="font-medium">
+          {amount}
+          {ticker}
         </p>
       </div>
     </div>

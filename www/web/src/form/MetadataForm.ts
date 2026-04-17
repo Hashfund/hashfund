@@ -9,7 +9,9 @@ import { createTokenRichMetadata } from "@/web3/asset";
 export const validateMetadataSchema = object().shape({
   website: string().url(),
   telegram: string().url(),
-  twitter: string().url(),
+  x: string().url(),
+  tiktok: string().url(),
+  instagram: string().url(),
   name: string().max(16).required(),
   symbol: string().max(10).required(),
   description: string().required().min(32),

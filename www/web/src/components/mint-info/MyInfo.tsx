@@ -7,6 +7,7 @@ import { normalizeBN } from "@/web3/decimal";
 import useBalance from "@/composables/useBalance";
 import { useFeedPrice } from "@/composables/useFeedPrice";
 import { useSDK } from "@/composables/useSDK";
+import { calculateTokenPriceSol } from "@/web3/curve";
 
 type MyInfoProps = {
   mint: MintWithExtra;
@@ -39,7 +40,11 @@ export function MyInfo({ mint }: MyInfoProps) {
             <p>
               {formatPrice(
                 (mintBalance?.uiAmount ?? 0) *
-                  mint.boundingCurve.initialPrice *
+                  calculateTokenPriceSol(
+                    mint.boundingCurve.virtualTokenBalance,
+                    mint.boundingCurve.virtualPairBalance,
+                    mint.decimals
+                  ) *
                   solPrice
               )}
             </p>

@@ -22,17 +22,20 @@ type Side = {
   symbol: string;
   image: string;
   decimals: number;
-  initialPrice: number;
+  virtualTokenReserve: number;
+  virtualPairReserve: number;
 };
 
 type SwapModalProps = {
-  side: "buy" | "sell";
+  isMigrated: boolean;
+  side: "buy" | "withdraw";
   sideA: Side;
   sideB: Side;
   onSwapSide: () => void;
 };
 
 export default function SwapModal({
+  isMigrated,
   side,
   sideA,
   sideB,
@@ -100,7 +103,7 @@ export default function SwapModal({
               <div className="flex flex-col space-y-4">
                 <div className="flex flex-col rounded-md bg-dark-500/50 p-4 space-y-2">
                   <div className="flex text-xs text-white/75">
-                    <p className="flex-1">Sell</p>
+                    <p className="flex-1">{side === "buy" ? "Withdraw" : "Buy"}</p>
                     <p>Wallet: {sideA.balance.toFixed(4)}</p>
                   </div>
                   <TokenPriceInput
@@ -109,29 +112,31 @@ export default function SwapModal({
                     ticker={sideA.symbol}
                     balance={sideA.balance}
                     onChange={(value) => {
-                      let amount: number;
+                      let amount = 0;
 
                       switch (side) {
                         case "buy":
                           amount =
                             ConstantCurveCalculator.calculateAmountOutNumber(
-                              sideA.initialPrice,
+                              sideA.virtualTokenReserve,
+                              sideA.virtualPairReserve,
                               Number(value),
-                              TradeDirection.BtoA
+                              TradeDirection.BtoA,
+                              isMigrated
                             );
                           break;
-                        case "sell":
+                        case "withdraw":
                           amount =
                             ConstantCurveCalculator.calculateAmountOutNumber(
-                              sideA.initialPrice,
+                              sideA.virtualTokenReserve,
+                              sideA.virtualPairReserve,
                               Number(value),
-                              TradeDirection.AtoB
+                              TradeDirection.AtoB,
+                              isMigrated
                             );
-
                           break;
                       }
 
-                      console.log("sellAmount=", side, amount);
                       setFieldValue("sellAmount", amount);
                     }}
                   />
@@ -148,34 +153,38 @@ export default function SwapModal({
                 </button>
                 <div className="flex flex-col rounded-md bg-dark-500/50 p-4 space-y-2">
                   <div className="flex text-xs text-white/75">
-                    <p className="flex-1">Buy</p>
+                    <p className="flex-1">{side === "buy" ? "Buy" : "Withdraw"}</p>
                   </div>
                   <TokenPriceInput
                     name="sellAmount"
                     image={sideB.image}
                     ticker={sideB.symbol}
                     onChange={(value) => {
-                      let amount: number;
+                      let amount = 0;
 
                       switch (side) {
                         case "buy":
                           amount =
                             ConstantCurveCalculator.calculateAmountOutNumber(
-                              sideB.initialPrice,
+                              sideB.virtualTokenReserve,
+                              sideB.virtualPairReserve,
                               Number(value),
-                              TradeDirection.AtoB
+                              TradeDirection.AtoB,
+                              isMigrated
                             );
                           break;
-                        case "sell":
+                        case "withdraw":
                           amount =
                             ConstantCurveCalculator.calculateAmountOutNumber(
-                              sideB.initialPrice,
+                              sideB.virtualTokenReserve,
+                              sideB.virtualPairReserve,
                               Number(value),
-                              TradeDirection.BtoA
+                              TradeDirection.BtoA,
+                              isMigrated
                             );
+                          break;
                       }
 
-                      console.log("buyAmount=", amount);
                       setFieldValue("buyAmount", amount);
                     }}
                   />

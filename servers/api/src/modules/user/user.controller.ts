@@ -5,6 +5,7 @@ import { TradeDirection } from "@hashfund/zeroboost";
 import { db } from "../../db";
 import { swaps, users } from "../../db/schema";
 import { coalesce } from "../../db/functions";
+import { and, eq, getTableColumns, SQL, sum } from "drizzle-orm";
 import type { insertUserSchema } from "../../db/zod";
 
 export const createUser = (values: z.infer<typeof insertUserSchema>) =>
@@ -24,15 +25,22 @@ export const getUsers = <TWhere extends SQL, TOrderBy extends SQL>(
   limit: number,
   offset: number,
   where?: TWhere,
-  orderBy?: TOrderBy
+  orderBy?: TOrderBy,
+  mintId?: string,
+  tradeDirection?: number
 ) => {
+  const swapFilters = [];
+  if (mintId !== undefined) swapFilters.push(eq(swaps.mint, mintId));
+  if (tradeDirection !== undefined) swapFilters.push(eq(swaps.tradeDirection, tradeDirection));
+
   const qSwaps = db.$with("swaps").as(
     db
       .select({
+        payer: swaps.payer,
         pairAmount: sum(swaps.pairAmount).as("pair_amount"),
       })
       .from(swaps)
-      .where(eq(swaps.tradeDirection, TradeDirection.BtoA))
+      .where(swapFilters.length > 0 ? and(...swapFilters) : undefined)
       .groupBy(swaps.payer)
   );
 
@@ -42,7 +50,7 @@ export const getUsers = <TWhere extends SQL, TOrderBy extends SQL>(
       pairAmount: coalesce(sum(qSwaps.pairAmount), 0).as("pair_amount"),
     })
     .from(users)
-    .leftJoin(qSwaps, eq(swaps.payer, users.id))
+    .innerJoin(qSwaps, eq(qSwaps.payer, users.id))
     .limit(limit)
     .offset(offset)
     .groupBy(users.id)

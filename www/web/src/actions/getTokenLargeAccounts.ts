@@ -8,14 +8,16 @@ import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 import { connection } from "@/web3";
 
-export const getTokenLargeAccounts = async ({
-  boundingCurve: { id: boundingCurveId },
-  id: mintId,
-  creator: creatorId,
-}: MintWithExtra) => {
+export const getTokenLargeAccounts = async (mintWithExtra: MintWithExtra) => {
+  const { boundingCurve: boundingCurveData, id: mintId, creator: creatorId } = mintWithExtra;
+  
+  if (!boundingCurveData) {
+    return [];
+  }
+
   const mint = new web3.PublicKey(mintId);
   const creator = new web3.PublicKey(creatorId);
-  const boundingCurve = new web3.PublicKey(boundingCurveId);
+  const boundingCurve = new web3.PublicKey(boundingCurveData.id);
 
   const boundingCurveAta = getAssociatedTokenAddressSync(
     mint,

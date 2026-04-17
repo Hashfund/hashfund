@@ -8,7 +8,9 @@ type CreateTokenMetadata = {
   description: string;
   website?: string;
   telegram?: string;
-  twitter?: string;
+  x?: string;
+  tiktok?: string;
+  instagram?: string;
 };
 
 export const createTokenRichMetadata = async (
@@ -19,7 +21,9 @@ export const createTokenRichMetadata = async (
     image,
     description,
     telegram,
-    twitter,
+    x,
+    tiktok,
+    instagram,
     website,
   }: CreateTokenMetadata,
   nonce: string
@@ -35,11 +39,15 @@ export const createTokenRichMetadata = async (
     properties: {
       files: [],
     },
-    websites: [{ label: "Website", url: website }],
+    websites: [
+      { label: "Website", url: website }
+    ].filter(w => w.url),
     socials: [
       { type: "Telegram", url: telegram },
-      { type: "twitter", url: twitter },
-    ],
+      { type: "twitter", url: x },
+      { type: "tiktok", url: tiktok },
+      { type: "instagram", url: instagram },
+    ].filter(social => social.url),
   });
 
   const file = new Blob([richMetadata], { type: "application/json" });

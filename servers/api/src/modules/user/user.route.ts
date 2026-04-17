@@ -37,7 +37,14 @@ const getUsersRoute = (
         offset
       );
       return pagination.getResponse(
-        await getUsers(pagination.limit, pagination.getOffset(), query, orderBy)
+        await getUsers(
+          pagination.limit, 
+          pagination.getOffset(), 
+          query, 
+          orderBy,
+          request.query.mint,
+          request.query.tradeDirection !== undefined ? Number(request.query.tradeDirection) : undefined
+        )
       );
     });
 

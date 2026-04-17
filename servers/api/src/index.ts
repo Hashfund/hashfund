@@ -35,6 +35,9 @@ const main = async () => {
   process.on("SIGINT", async () => await server.close());
   process.on("SIGTERM", async () => await server.close());
 
+  console.log(`[API] Starting server on ${HOST}:${PORT}`);
+  console.log(`[API] Connecting to database: ${require("./config").DB_URL}`);
+
   await server.listen({ port: PORT, host: HOST }).catch((error) => {
     server.log.error(error);
     process.exit(1);

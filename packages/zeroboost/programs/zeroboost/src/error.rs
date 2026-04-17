@@ -16,6 +16,22 @@ pub enum SwapTokenError {
     NotTradeable,
     #[msg("Amount must be a value greater than zero")]
     InvalidAmount,
+    #[msg("Invalid mint")]
+    InvalidMint,
+    #[msg("Invalid pair")]
+    InvalidPair,
+    #[msg("Invalid user position")]
+    InvalidUserPosition,
+    #[msg("Slippage tolerance exceeded")]
+    SlippageExceeded,
+    #[msg("Insufficient liquidity")]
+    InsufficientLiquidity,
+}
+
+pub struct BoundingCurve {
+    pub total_fees_collected: u64, // 8
+    pub bump: u8, // 1
+    pub reserve_bump: u8, // 1
 }
 
 #[error_code]

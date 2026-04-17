@@ -9,7 +9,11 @@ const error_1 = require("./error");
 const utils_1 = require("./utils");
 const getOrInsertBoundingCurve = async (program, boundingCurveId) => {
     const boundingCurve = (0, utils_1.safeParse)(Object.assign({ id: boundingCurveId }, await program.account.boundingCurve.fetch(boundingCurveId)));
-    return (0, api_1.upsertBoundingCurve)(boundingCurve);
+    return (0, api_1.upsertBoundingCurve)({
+        ...boundingCurve,
+        initialPrice: String(boundingCurve.initialPrice),
+        liquidityPercentage: String(boundingCurve.liquidityPercentage),
+    });
 };
 exports.getOrInsertBoundingCurve = getOrInsertBoundingCurve;
 const onMintEvent = (0, error_1.catchAndRetryRuntimeError)(async (program, data, signature) => {

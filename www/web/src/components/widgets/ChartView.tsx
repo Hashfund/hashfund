@@ -37,6 +37,7 @@ export default function ChartView({
         locale,
         theme: "dark",
         debug: true,
+        library_path: "/charting_library/",
         interval: "5" as ResolutionString,
         datafeed: {
           async onReady(callback) {
