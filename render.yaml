@@ -7,11 +7,8 @@ services:
     dockerfilePath: servers/api/Dockerfile
     buildFilter:
       paths:
-        - servers/api/**/*.ts
-        - servers/api/**/*.json
-        - servers/api/Dockerfile
-        - packages/program/*.json
-        - packages/program/**/*.ts
+        - servers/api/**
+        - packages/**
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -39,13 +36,9 @@ services:
     dockerfilePath: servers/watchdog/Dockerfile
     buildFilter:
       paths:
-        - servers/api/**/*.ts
-        - servers/api/**/*.json
-        - servers/api/Dockerfile
-        - servers/watchdog/*.json
-        - servers/watchdog/**/*.ts
-        - packages/program/*.json
-        - packages/program/**/*.ts
+        - servers/watchdog/**
+        - servers/api/**
+        - packages/**
     envVars:
       - key: DATABASE_URL
         fromDatabase:

@@ -1,10 +1,10 @@
 # syntax = docker/dockerfile:1.2
 
-FROM node:22-alpine3.19 as base
+FROM node:22-slim as base
 
-RUN apk upgrade && apk update && \
-  apk add libgcc libstdc++ libc6-compat && \
-  apk add make gcc g++ python3 curl bash
+RUN apt-get update && apt-get install -y \
+    build-essential python3 curl bash \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install Bun
 RUN curl -fsSL https://bun.sh/install | bash
