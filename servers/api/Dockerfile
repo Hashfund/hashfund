@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.2
 
-FROM node:22-slim as base 
+FROM node:20-slim as base 
 
 RUN apt-get update && apt-get install -y \
     build-essential python3 curl bash unzip \
@@ -10,13 +10,15 @@ RUN apt-get update && apt-get install -y \
 RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:${PATH}"
 
+RUN npm install -g turbo@latest
+
 FROM base as builder
 
 WORKDIR /usr/src/app
 
 COPY . .
 
-RUN  npx turbo prune @hashfund/api --docker
+RUN  turbo prune @hashfund/api --docker
 
 FROM base as installer
 
@@ -26,7 +28,7 @@ COPY --from=builder /usr/src/app/out/json/ .
 RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn install --frozen-lockfile
 
 COPY --from=builder /usr/src/app/out/full/ .
-RUN npx turbo run build --filter=@hashfund/api
+RUN turbo run build --filter=@hashfund/api
 
 FROM base as runner 
 
