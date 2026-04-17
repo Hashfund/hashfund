@@ -1,9 +1,19 @@
 import { devnet, IDL, Zeroboost } from "@hashfund/zeroboost";
 import { Program, AnchorProvider, Wallet, web3 } from "@coral-xyz/anchor";
+import * as http from "http";
 
 import { buildEventListeners } from ".";
 import { MultipleError } from "./error";
 import { ANCHOR_PROVIDER_URL, ANCHOR_WALLET } from "./config";
+
+// Small HTTP server to satisfy Render's health check requirement for Web Services
+const PORT = Number(process.env.PORT || 10000);
+http.createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("OK");
+}).listen(PORT, "0.0.0.0", () => {
+  console.log(`[Watchdog] Health check server listening on port ${PORT}`);
+});
 
 const provider = new AnchorProvider(
   new web3.Connection(ANCHOR_PROVIDER_URL),

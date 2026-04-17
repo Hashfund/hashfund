@@ -1,11 +1,10 @@
 import type { z } from "zod";
-import { eq, getTableColumns, SQL, sum } from "drizzle-orm";
+import { and, eq, getTableColumns, SQL, sum } from "drizzle-orm";
 import { TradeDirection } from "@hashfund/zeroboost";
 
 import { db } from "../../db";
 import { swaps, users } from "../../db/schema";
 import { coalesce } from "../../db/functions";
-import { and, eq, getTableColumns, SQL, sum } from "drizzle-orm";
 import type { insertUserSchema } from "../../db/zod";
 
 export const createUser = (values: z.infer<typeof insertUserSchema>) =>

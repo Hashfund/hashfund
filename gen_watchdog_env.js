@@ -5,6 +5,6 @@ const key = [168,213,183,139,91,93,7,191,216,107,5,254,166,72,148,220,30,179,197
 const encoder = (bs58.default && bs58.default.encode) ? bs58.default.encode : bs58.encode;
 const base58Key = encoder(Uint8Array.from(key));
 
-const envContent = `ANCHOR_PROVIDER_URL=https://api.devnet.solana.com\nANCHOR_WALLET=${base58Key}\n`;
+const envContent = `ANCHOR_PROVIDER_URL=https://devnet.helius-rpc.com/?api-key=6938ff69-b34f-4cc7-8023-c4025bb5faba\nANCHOR_WALLET=${base58Key}\nWALLET_PRIVATE_KEY=${JSON.stringify(key)}\n`;
 fs.writeFileSync("./servers/watchdog/.env", envContent);
 console.log("Successfully created .env file for watchdog");

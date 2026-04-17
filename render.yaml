@@ -2,7 +2,7 @@ services:
   - type: web
     name: api
     runtime: docker
-    plan: starter
+    plan: free
     autoDeploy: true
     dockerfilePath: servers/api/Dockerfile
     buildFilter:
@@ -20,10 +20,10 @@ services:
           property: connectionString
     domains:
       - "v1.api.hashfund.fun"
-  - type: worker
+  - type: web
     runtime: docker
     name: watchdog
-    plan: starter
+    plan: free
     autoDeploy: true
     dockerfilePath: servers/watchdog/Dockerfile
     buildFilter:
@@ -42,26 +42,8 @@ services:
         fromDatabase:
           name: hashfund
           property: connectionString
-  - type: web
-    runtime: docker
-    name: web
-    plan: starter
-    autoDeploy: true
-    dockerfilePath: www/web/Dockerfile
-    buildFilter:
-      paths:
-        - www/web/*.json
-        - www/web/**/*.ts
-        - www/web/Dockerfile
-        - packages/program/*.json
-        - packages/program/**/*.ts
-    envVars:
-      - fromGroup: web
-      - key: NEXT_PUBLIC_BASE_API_URL
-        fromService:
-          type: web
-          name: api
-          envVarKey: RENDER_EXTERNAL_URL
+      - key: WALLET_PRIVATE_KEY
+        generateValue: true
 databases:
   - name: hashfund
     databaseName: hashfund
