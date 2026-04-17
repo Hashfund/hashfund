@@ -17,7 +17,7 @@ export default async function HomePage({
   const mints = await Api.instance.mint.list({
     search,
     orderBy,
-  }).then(({ data }) => data.results);
+  }).then(({ data }) => data.results).catch(() => []);
 
   return (
     <main className="flex flex-col space-y-8">

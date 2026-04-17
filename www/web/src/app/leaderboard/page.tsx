@@ -10,7 +10,8 @@ import { normalizeBN } from "@/web3/decimal";
 export default async function LeaderboardPage() {
   const leaderboard = await Api.instance.user
     .list()
-    .then(({ data }) => data.results);
+    .then(({ data }) => data.results)
+    .catch(() => []);
 
   return (
     <main
