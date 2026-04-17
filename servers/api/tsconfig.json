@@ -2,7 +2,13 @@
   "compilerOptions": {
     "target": "ES2017",
     "outDir": "dist",
-    "baseUrl": "./src"
+    "baseUrl": "./src",
+    "resolveJsonModule": true,
+    "paths": {
+      "db/*": ["db/*"],
+      "@hashfund/zeroboost": ["../../../packages/zeroboost/src"],
+      "@hashfund/bn": ["../../../packages/bn/src"]
+    }
   },
   "include": ["src/"],
   "extends": "@tsconfig/recommended/tsconfig.json"

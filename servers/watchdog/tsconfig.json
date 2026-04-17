@@ -2,7 +2,13 @@
   "compilerOptions": {
     "target": "ESNext",
     "outDir": "dist",
-    "baseUrl": "./src"
+    "baseUrl": "./src",
+    "resolveJsonModule": true,
+    "paths": {
+      "@hashfund/zeroboost": ["../../../packages/zeroboost/src"],
+      "@hashfund/api": ["../../api/src/external"],
+      "@hashfund/bn": ["../../../packages/bn/src"]
+    }
   },
   "include": ["src/"],
   "extends": "@tsconfig/recommended/tsconfig.json"
