@@ -1,0 +1,9 @@
+**/.env*
+node_modules
+.git
+.agents
+.cursor
+dist
+out
+.turbo
+*.log
