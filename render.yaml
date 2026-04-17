@@ -13,11 +13,22 @@ services:
         - packages/program/*.json
         - packages/program/**/*.ts
     envVars:
-      - fromGroup: api
       - key: DATABASE_URL
         fromDatabase:
           name: hashfund
           property: connectionString
+      - key: HTTP_RPC_ENDPOINT
+        sync: false
+      - key: WSS_RPC_ENDPOINT
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: IMAGEKIT_PUBLIC_KEY
+        sync: false
+      - key: IMAGEKIT_PRIVATE_KEY
+        sync: false
+      - key: IMAGEKIT_URL_ENDPOINT
+        sync: false
     domains:
       - "v1.api.hashfund.fun"
   - type: web
@@ -36,12 +47,12 @@ services:
         - packages/program/*.json
         - packages/program/**/*.ts
     envVars:
-      - fromGroup: api
-      - fromGroup: watchdog
       - key: DATABASE_URL
         fromDatabase:
           name: hashfund
           property: connectionString
+      - key: ANCHOR_PROVIDER_URL
+        sync: false
       - key: WALLET_PRIVATE_KEY
         generateValue: true
 databases:
