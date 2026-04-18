@@ -42,7 +42,10 @@ RUN npx --yes @fastify/secure-session > secret-key
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
-RUN chown -R nodejs:nodejs /usr/src/app/
+RUN mkdir -p /home/nodejs
+RUN chown -R nodejs:nodejs /usr/src/app/ /home/nodejs
+
+ENV HOME=/home/nodejs
 
 ENV HOST=0.0.0.0
 ENV PORT=10000
