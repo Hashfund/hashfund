@@ -2,7 +2,8 @@
   "compilerOptions": {
     "target": "ES2017",
     "outDir": "dist",
-    "baseUrl": "./src"
+    "baseUrl": "./src",
+    "rootDir": "src"
   },
   "include": ["src/"],
   "extends": "@tsconfig/recommended/tsconfig.json"
