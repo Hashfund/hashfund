@@ -15,6 +15,13 @@
       "when": 1728926051468,
       "tag": "0001_function",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1776546581793,
+      "tag": "0002_fine_hitman",
+      "breakpoints": true
     }
   ]
 }

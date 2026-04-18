@@ -1,0 +1,382 @@
+{
+  "id": "23285aa1-948a-4c24-8699-2779d33a4a84",
+  "prevId": "750cccc7-38f5-40e4-9c5a-e7fcc19d8690",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "avatar": {
+          "name": "avatar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.mints": {
+      "name": "mints",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "uri": {
+          "name": "uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "symbol": {
+          "name": "symbol",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supply": {
+          "name": "supply",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decimals": {
+          "name": "decimals",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "creator": {
+          "name": "creator",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signature": {
+          "name": "signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "mints_creator_users_id_fk": {
+          "name": "mints_creator_users_id_fk",
+          "tableFrom": "mints",
+          "tableTo": "users",
+          "columnsFrom": [
+            "creator"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "public.swaps": {
+      "name": "swaps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "token_amount": {
+          "name": "token_amount",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pair_amount": {
+          "name": "pair_amount",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "market_cap": {
+          "name": "market_cap",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "virtual_token_balance": {
+          "name": "virtual_token_balance",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "virtual_pair_balance": {
+          "name": "virtual_pair_balance",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "trade_direction": {
+          "name": "trade_direction",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mint": {
+          "name": "mint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payer": {
+          "name": "payer",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "signature": {
+          "name": "signature",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timestamp": {
+          "name": "timestamp",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "swaps_mint_mints_id_fk": {
+          "name": "swaps_mint_mints_id_fk",
+          "tableFrom": "swaps",
+          "tableTo": "mints",
+          "columnsFrom": [
+            "mint"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "swaps_payer_users_id_fk": {
+          "name": "swaps_payer_users_id_fk",
+          "tableFrom": "swaps",
+          "tableTo": "users",
+          "columnsFrom": [
+            "payer"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "signature_trade_direction": {
+          "name": "signature_trade_direction",
+          "nullsNotDistinct": false,
+          "columns": [
+            "signature",
+            "trade_direction"
+          ]
+        }
+      }
+    },
+    "public.boundingCurve": {
+      "name": "boundingCurve",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "migrated": {
+          "name": "migrated",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tradeable": {
+          "name": "tradeable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "initial_price": {
+          "name": "initial_price",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "initial_supply": {
+          "name": "initial_supply",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "liquidity_percentage": {
+          "name": "liquidity_percentage",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minimum_pair_balance": {
+          "name": "minimum_pair_balance",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "maximum_pair_balance": {
+          "name": "maximum_pair_balance",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "virtual_token_balance": {
+          "name": "virtual_token_balance",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "virtual_pair_balance": {
+          "name": "virtual_pair_balance",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "net_active_capital": {
+          "name": "net_active_capital",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_contributed": {
+          "name": "total_contributed",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_burned_tokens": {
+          "name": "total_burned_tokens",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_fees_collected": {
+          "name": "total_fees_collected",
+          "type": "numeric(40, 0)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bump": {
+          "name": "bump",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reserve_bump": {
+          "name": "reserve_bump",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mint": {
+          "name": "mint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "boundingCurve_mint_mints_id_fk": {
+          "name": "boundingCurve_mint_mints_id_fk",
+          "tableFrom": "boundingCurve",
+          "tableTo": "mints",
+          "columnsFrom": [
+            "mint"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

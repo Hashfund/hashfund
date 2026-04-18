@@ -47,7 +47,7 @@ services:
       - key: ANCHOR_PROVIDER_URL
         sync: false
       - key: WALLET_PRIVATE_KEY
-        generateValue: true
+        sync: false
 databases:
   - name: hashfund
     databaseName: hashfund

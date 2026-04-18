@@ -5,6 +5,10 @@ import { web3 } from "@coral-xyz/anchor";
 
 export const ANCHOR_PROVIDER_URL = process.env.ANCHOR_PROVIDER_URL!;
 
+if (!ANCHOR_PROVIDER_URL) {
+  throw new Error("[Watchdog] FATAL: ANCHOR_PROVIDER_URL env var is required but was not set.");
+}
+
 // Load the keypair from environment variable (JSON array string) or local file fallback
 function loadKeypair() {
   const envKey = process.env.WALLET_PRIVATE_KEY;
