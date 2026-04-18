@@ -2,3 +2,9 @@ node_modules
 .turbo
 out
 .vercel
+dist
+.env*
+tmp
+.agents
+*.log
+.cursor/mcp.json.local

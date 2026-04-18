@@ -2,23 +2,28 @@
   "mcpServers": {
     "render": {
       "command": "npx",
-      "args": ["-y", "@render-oss/mcp-server-render"],
+      "args": ["-y", "@niyogi/render-mcp", "start"],
       "env": {
         "RENDER_API_KEY": "rnd_GS6sC11u37avsECPEcswwxDrgTkZ"
       }
     },
     "solana": {
       "command": "npx",
-      "args": ["-y", "@chainstack/solana-mcp"],
+      "args": ["-y", "solana-mcp-server"],
       "env": {
         "SOLANA_RPC_URL": "https://devnet.helius-rpc.com/?api-key=6938ff69-b34f-4cc7-8023-c4025bb5faba"
       }
     },
-    "helius": {
+    "postgres": {
       "command": "npx",
-      "args": ["-y", "helius-mcp"],
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://admin:REPLACE_WITH_YOUR_DB_PASSWORD@REPLACE_WITH_YOUR_RENDER_DB_HOST/hashfund"],
+      "env": {}
+    },
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
       "env": {
-        "HELIUS_API_KEY": "6938ff69-b34f-4cc7-8023-c4025bb5faba"
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN"
       }
     }
   }

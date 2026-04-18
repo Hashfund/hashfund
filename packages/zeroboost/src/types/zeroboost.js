@@ -82,11 +82,6 @@ exports.IDL = {
                     "isSigner": false
                 },
                 {
-                    "name": "pythPairUsdFeed",
-                    "isMut": false,
-                    "isSigner": false
-                },
-                {
                     "name": "metadataFeeReciever",
                     "isMut": true,
                     "isSigner": false
@@ -371,7 +366,7 @@ exports.IDL = {
                     },
                     {
                         "name": "initialPrice",
-                        "type": "f64"
+                        "type": "u64"
                     },
                     {
                         "name": "initialSupply",

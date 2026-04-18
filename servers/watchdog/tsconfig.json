@@ -5,9 +5,7 @@
     "baseUrl": "./src",
     "resolveJsonModule": true,
     "paths": {
-      "@hashfund/zeroboost": ["../../../packages/zeroboost/src"],
-      "@hashfund/api": ["../../api/src/external"],
-      "@hashfund/bn": ["../../../packages/bn/src"]
+      "@hashfund/api": ["../../api/src/external"]
     }
   },
   "include": ["src/"],
