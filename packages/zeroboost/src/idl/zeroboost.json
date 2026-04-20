@@ -81,11 +81,7 @@
           "isMut": true,
           "isSigner": false
         },
-        {
-          "name": "pythPairUsdFeed",
-          "isMut": false,
-          "isSigner": false
-        },
+
         {
           "name": "metadataFeeReciever",
           "isMut": true,

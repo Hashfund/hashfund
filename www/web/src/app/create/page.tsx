@@ -116,18 +116,28 @@ export default function CreatePage() {
             <CreateFormMetadata
               form={formMetadata}
               onSubmit={async (value) => {
-                return processMetadataForm(program, api, value).then((uri) => {
-                  setFormMetadata(Object.assign(value, {uri}));
-                  setTabIndex(tabIndex + 1);
-                });
+                return processMetadataForm(program, api, value)
+                  .then((uri) => {
+                    setFormMetadata(Object.assign(value, { uri }));
+                    setTabIndex(tabIndex + 1);
+                  })
+                  .catch((error) => {
+                    if (error instanceof Error)
+                      toast.error("Metadata Processing Failed: " + error.message);
+                  });
               }}
             />
 
             <CreateFormMintSupply
               form={formMintSupply}
               onSubmit={(value) => {
-                setFormMintSupply(value);
-                setTabIndex(tabIndex + 1);
+                try {
+                  setFormMintSupply(value);
+                  setTabIndex(tabIndex + 1);
+                } catch (error) {
+                  if (error instanceof Error)
+                    toast.error("Bonding Curve Setup Failed: " + error.message);
+                }
               }}
             />
             <CreateFormInitialBuy

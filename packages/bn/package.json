@@ -8,18 +8,19 @@
   "publishConfig": {
     "access": "public"
   },
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
   "scripts": {
     "test": "jest",
-    "build": "tsup src/index.ts --format=cjs,esm --minify --treeshake --dts"
+    "build": "tsup src/index.ts --format=esm --minify --treeshake --dts"
   },
   "author": "Oguntunde Caleb Fiyinfoluwa <payouk.msytre@gmail.com>",
   "license": "ISC",

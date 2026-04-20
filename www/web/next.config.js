@@ -2,9 +2,14 @@ const path = require("path");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  webpack: true,
   output: "standalone",
   reactStrictMode: true,
+  transpilePackages: [
+    "@hashfund/zeroboost",
+    "@hashfund/sdk",
+    "@hashfund/bn",
+    "@hashfund/wallets",
+  ],
   images: {
     remotePatterns: [
       {
@@ -13,15 +18,23 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.resolve.fallback = {
-      fs: false,
       fs: false,
       path: false,
       os: false,
       net: false,
       tls: false,
     };
+
+    // Fix "exports is not defined" for CJS packages bundled for the browser
+    config.module.rules.push({
+      test: /\.m?js$/,
+      resolve: {
+        fullySpecified: false,
+      },
+    });
+
     config.externals.push("pino-pretty", "lokijs", "encoding");
     return config;
   },
@@ -37,6 +50,7 @@ const nextConfig = {
       "@metaplex-foundation/umi-serializers-encodings",
       "@metaplex-foundation/umi-bundle-defaults",
     ],
+    esmExternals: "loose",
   },
 };
 

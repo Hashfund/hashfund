@@ -63,6 +63,7 @@ export const mintToken = (
     boundingCurveReserve,
     boundingCurveReserveAta,
     boundingCurveReservePairAta,
+
     metadataFeeReciever,
     tokenMetadataProgram,
   });

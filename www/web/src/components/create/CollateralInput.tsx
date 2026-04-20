@@ -40,7 +40,7 @@ export default function CollateralInput({ metadataForm, supplyForm }: Props) {
   // Pull native Javascript bounds directly from the pure mathematical constants generated in the class constructor 
   // to avoid arbitrary fractional truncation caused by the legacy unsafeBN wrapper inside the getters.
   const virtualTokenReserve = useMemo(() => {
-     const rawVal = (curve as any).vt_0;
+     const rawVal = (curve as any).virtualTokenSupply;
      return Number.isNaN(rawVal) ? 0 : rawVal;
   }, [curve]);
   

@@ -78,6 +78,7 @@ export type Zeroboost = {
           "isMut": true,
           "isSigner": false
         },
+
         {
           "name": "metadataFeeReciever",
           "isMut": true,
@@ -761,6 +762,7 @@ export const IDL: Zeroboost = {
           "isMut": true,
           "isSigner": false
         },
+
         {
           "name": "metadataFeeReciever",
           "isMut": true,
