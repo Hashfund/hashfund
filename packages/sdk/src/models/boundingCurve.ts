@@ -1,4 +1,5 @@
-import { BN, web3 } from "@coral-xyz/anchor";
+import type BN from "bn.js";
+import type { web3 } from "@coral-xyz/anchor";
 
 export type BoundingCurve = {
   id: string;

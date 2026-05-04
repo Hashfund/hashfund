@@ -1,4 +1,4 @@
-import type { BN } from "@coral-xyz/anchor";
+import type BN from "bn.js";
 
 export type Market = {
   pairVolume: string;

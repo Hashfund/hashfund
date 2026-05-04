@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import BN from "bn.js";
 
 /**
  * Safely convert any value to a BN with specified decimals.

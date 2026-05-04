@@ -1,4 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
+import BN from "bn.js";
 import { safeBN, unsafeBN, unsafeBnToNumber } from "@hashfund/bn";
 
 export enum TradeDirection {
